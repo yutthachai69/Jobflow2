@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Pagination from '@/app/components/Pagination'
 
 interface Site {
   id: string
@@ -104,10 +105,16 @@ export default function WorkOrdersClient({
   allSites = null,
   selectedSiteId,
   userSiteName,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  itemsPerPage = 20,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [filterSiteId, setFilterSiteId] = useState(selectedSiteId || '')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('ALL')
 
   const handleSiteFilterChange = (siteId: string) => {
     setFilterSiteId(siteId)
@@ -248,11 +255,11 @@ export default function WorkOrdersClient({
 
   // สำหรับ ADMIN และ CLIENT: แสดง Work Orders
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
               {userRole === 'CLIENT' ? '📋 ประวัติงานทั้งหมด' : '📋 ใบสั่งงานทั้งหมด'}
             </h1>
             {userRole === 'CLIENT' && userSiteName && (
@@ -270,37 +277,154 @@ export default function WorkOrdersClient({
           {userRole === 'ADMIN' && (
             <Link
               href="/work-orders/new"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+              className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base text-center"
             >
               + สร้างใบสั่งงานใหม่
             </Link>
           )}
         </div>
 
-        {/* Filter สำหรับ ADMIN */}
-        {userRole === 'ADMIN' && allSites && allSites.length > 0 && (
-          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-                กรองตามสถานที่:
+        {/* Search & Filters */}
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
+          {/* Search */}
+          <div>
+            <input
+              type="text"
+              placeholder="ค้นหาตาม ID, ชนิดงาน, สถานที่..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Site Filter (ADMIN only) */}
+            {userRole === 'ADMIN' && allSites && allSites.length > 0 && (
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  กรองตามสถานที่:
+                </label>
+                <select
+                  value={filterSiteId}
+                  onChange={(e) => handleSiteFilterChange(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
+                >
+                  <option value="">ทั้งหมด</option>
+                  {allSites.map((site) => (
+                    <option key={site.id} value={site.id}>
+                      {site.name} ({site.client.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Status Filter */}
+            <div className="sm:w-48">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                กรองตามสถานะ:
               </label>
               <select
-                value={filterSiteId}
-                onChange={(e) => handleSiteFilterChange(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">ทั้งหมด</option>
-                {allSites.map((site) => (
-                  <option key={site.id} value={site.id}>
-                    {site.name} ({site.client.name})
-                  </option>
-                ))}
+                <option value="ALL">ทุกสถานะ</option>
+                <option value="OPEN">เปิด</option>
+                <option value="IN_PROGRESS">กำลังทำ</option>
+                <option value="COMPLETED">เสร็จสิ้น</option>
+                <option value="CANCELLED">ยกเลิก</option>
               </select>
             </div>
           </div>
-        )}
+        </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3">
+          {workOrders
+            .filter((wo) => {
+              const searchLower = search.toLowerCase()
+              const matchesSearch = 
+                !search ||
+                wo.id.toLowerCase().includes(searchLower) ||
+                wo.jobType.toLowerCase().includes(searchLower) ||
+                wo.site.name.toLowerCase().includes(searchLower) ||
+                wo.site.client.name.toLowerCase().includes(searchLower)
+              const matchesStatus = statusFilter === 'ALL' || wo.status === statusFilter
+              return matchesSearch && matchesStatus
+            })
+            .map((wo) => {
+              const doneCount = wo.jobItems.filter((j) => j.status === "DONE").length;
+              const statusColors = {
+                COMPLETED: "bg-green-100 text-green-800",
+                IN_PROGRESS: "bg-blue-100 text-blue-800",
+                CANCELLED: "bg-red-100 text-red-800",
+                OPEN: "bg-gray-100 text-gray-800",
+              }
+              return (
+                <div key={wo.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <div className="font-mono text-xs text-gray-600 mb-1">
+                        {wo.id.slice(0, 8)}...
+                      </div>
+                      <div className="font-bold text-gray-900 text-base mb-2">
+                        {wo.jobType}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColors[wo.status as keyof typeof statusColors] || statusColors.OPEN}`}>
+                      {wo.status}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">สถานที่</div>
+                      <div className="text-sm text-gray-900 font-medium">{wo.site.name}</div>
+                      <div className="text-xs text-gray-500">{wo.site.client.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">วันนัดหมาย</div>
+                      <div className="text-sm text-gray-900">
+                        {new Date(wo.scheduledDate).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">รายการงาน</div>
+                      <div className="text-sm text-gray-900 mb-1">
+                        {doneCount}/{wo.jobItems.length} เสร็จ
+                      </div>
+                      {wo.jobItems.length > 0 && (
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-blue-600 h-1.5 rounded-full"
+                            style={{
+                              width: `${(doneCount / wo.jobItems.length) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/work-orders/${wo.id}`}
+                    className="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium text-sm transition-colors"
+                  >
+                    ดูรายละเอียด
+                  </Link>
+                </div>
+              );
+            })}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
@@ -328,7 +452,23 @@ export default function WorkOrdersClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {workOrders.map((wo) => {
+              {workOrders
+                .filter((wo) => {
+                  // Search filter
+                  const searchLower = search.toLowerCase()
+                  const matchesSearch = 
+                    !search ||
+                    wo.id.toLowerCase().includes(searchLower) ||
+                    wo.jobType.toLowerCase().includes(searchLower) ||
+                    wo.site.name.toLowerCase().includes(searchLower) ||
+                    wo.site.client.name.toLowerCase().includes(searchLower)
+
+                  // Status filter
+                  const matchesStatus = statusFilter === 'ALL' || wo.status === statusFilter
+
+                  return matchesSearch && matchesStatus
+                })
+                .map((wo) => {
                 const doneCount = wo.jobItems.filter((j) => j.status === "DONE").length;
                 return (
                   <tr key={wo.id} className="hover:bg-gray-50">
@@ -392,9 +532,21 @@ export default function WorkOrdersClient({
               })}
             </tbody>
           </table>
-          {workOrders.length === 0 && (
+          {workOrders.filter((wo) => {
+            const searchLower = search.toLowerCase()
+            const matchesSearch = 
+              !search ||
+              wo.id.toLowerCase().includes(searchLower) ||
+              wo.jobType.toLowerCase().includes(searchLower) ||
+              wo.site.name.toLowerCase().includes(searchLower) ||
+              wo.site.client.name.toLowerCase().includes(searchLower)
+            const matchesStatus = statusFilter === 'ALL' || wo.status === statusFilter
+            return matchesSearch && matchesStatus
+          }).length === 0 && (
             <div className="text-center py-12 text-gray-500">
-              {userRole === 'ADMIN' && selectedSiteId 
+              {search || statusFilter !== 'ALL' || selectedSiteId
+                ? 'ไม่พบข้อมูลที่ตรงกับเงื่อนไข'
+                : userRole === 'ADMIN' && selectedSiteId 
                 ? 'ไม่พบใบสั่งงานในสถานที่ที่เลือก'
                 : 'ยังไม่มีใบสั่งงาน'
               }
@@ -406,6 +558,16 @@ export default function WorkOrdersClient({
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+          />
+        )}
       </div>
     </div>
   )

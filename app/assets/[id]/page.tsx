@@ -3,9 +3,59 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import QRCodeDisplay from "./QRCodeDisplay";
+import DeleteAssetButton from "./DeleteButton";
+import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const asset = await prisma.asset.findUnique({
+    where: { id },
+    include: {
+      room: {
+        include: {
+          floor: {
+            include: {
+              building: {
+                include: { site: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!asset) {
+    return {
+      title: "ไม่พบข้อมูล - AirService Enterprise",
+    };
+  }
+
+  const title = `${asset.brand} ${asset.model} - AirService Enterprise`;
+  const description = `รายละเอียดเครื่องปรับอากาศ ${asset.brand} ${asset.model} | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
 }
 
 export default async function AssetDetailPage({ params }: Props) {
@@ -106,68 +156,6 @@ export default async function AssetDetailPage({ params }: Props) {
           />
         </div>
       </div>
-
-      {/* สำหรับช่าง: แสดงงานที่รอทำ */}
-      {user.role === 'TECHNICIAN' && pendingJobItems.length > 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">⚡</span>
-            <h2 className="text-xl font-bold text-gray-900">
-              งานที่รอทำ ({pendingJobItems.length} งาน)
-            </h2>
-          </div>
-          <div className="space-y-3">
-            {pendingJobItems.map((jobItem) => (
-              <Link
-                key={jobItem.id}
-                href={`/technician/job-item/${jobItem.id}`}
-                className="block bg-white rounded-lg p-4 border border-yellow-200 hover:border-yellow-400 hover:shadow-md transition-all"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-900 mb-1">
-                      {jobItem.workOrder.jobType} - {jobItem.workOrder.site.name}
-                    </div>
-                    <div className="text-sm text-gray-600 mb-1">
-                      {jobItem.workOrder.site.client.name}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      วันนัดหมาย: {new Date(jobItem.workOrder.scheduledDate).toLocaleDateString('th-TH')}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        jobItem.status === 'PENDING'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {jobItem.status === 'PENDING' ? 'รอดำเนินการ' : 'กำลังทำงาน'}
-                    </span>
-                    <span className="text-xs text-blue-600 font-medium">
-                      เริ่มงาน →
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* สำหรับช่าง: แสดงข้อความเมื่อไม่มีงานรอทำ */}
-      {user.role === 'TECHNICIAN' && pendingJobItems.length === 0 && (
-        <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-6 mb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">✅</span>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1">ไม่มีงานที่รอทำ</h3>
-              <p className="text-sm text-gray-600">เครื่องนี้ไม่มีงานที่ต้องดำเนินการ</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* สำหรับช่าง: แสดงงานที่รอทำ */}
       {user.role === 'TECHNICIAN' && pendingJobItems.length > 0 && (

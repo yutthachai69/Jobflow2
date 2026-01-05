@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import DeleteButton from "./DeleteButton";
+import UsersClient from "./UsersClient";
+import Pagination from "@/app/components/Pagination";
 
 interface Props {
   searchParams: Promise<{ error?: string; success?: string }>;
@@ -20,14 +21,31 @@ export default async function UsersPage({ searchParams }: Props) {
     redirect('/');
   }
 
-  const { error, success } = await searchParams;
+  const params = await searchParams;
+  const { error, success } = params;
+  const currentPage = parseInt(params.page || '1', 10);
+  const itemsPerPage = 20;
 
-  // ดึงข้อมูล Users ทั้งหมด
+  // ดึงข้อมูล Users ทั้งหมด (รวม locked fields)
   const users = await prisma.user.findMany({
-    include: {
+    select: {
+      id: true,
+      username: true,
+      fullName: true,
+      role: true,
+      locked: true,
+      lockedUntil: true,
+      lockedReason: true,
+      createdAt: true,
       site: {
-        include: {
-          client: true,
+        select: {
+          id: true,
+          name: true,
+          client: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -80,7 +98,7 @@ export default async function UsersPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
       {/* Success/Error Messages */}
       {success === 'deleted' && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -93,80 +111,42 @@ export default async function UsersPage({ searchParams }: Props) {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">👥 จัดการผู้ใช้งาน ({users.length})</h1>
-          <p className="text-gray-600 mt-1">สร้างและจัดการบัญชีผู้ใช้งานในระบบ</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">👥 จัดการผู้ใช้งาน ({users.length})</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">สร้างและจัดการบัญชีผู้ใช้งานในระบบ</p>
         </div>
         <Link
           href="/users/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+          className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base text-center"
         >
           + เพิ่มผู้ใช้ใหม่
         </Link>
       </div>
 
-      <div className="overflow-x-auto border rounded-lg shadow-sm bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-100 uppercase font-medium border-b">
-            <tr>
-              <th className="px-6 py-3 text-gray-900">ชื่อผู้ใช้</th>
-              <th className="px-6 py-3 text-gray-900">ชื่อ-นามสกุล</th>
-              <th className="px-6 py-3 text-gray-900">บทบาท</th>
-              <th className="px-6 py-3 text-gray-900">สถานที่ (สำหรับ CLIENT)</th>
-              <th className="px-6 py-3 text-gray-900">วันที่สร้าง</th>
-              <th className="px-6 py-3 text-gray-900">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900">{u.username}</td>
-                <td className="px-6 py-4 text-gray-700">{u.fullName || '-'}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(u.role)}`}>
-                    {getRoleLabel(u.role)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-700">
-                  {u.role === 'CLIENT' && u.site ? (
-                    <div>
-                      <div className="font-medium">{u.site.name}</div>
-                      <div className="text-xs text-gray-500">{u.site.client.name}</div>
-                    </div>
-                  ) : (
-                    '-'
-                  )}
-                </td>
-                <td className="px-6 py-4 text-gray-600 text-xs">
-                  {new Date(u.createdAt).toLocaleDateString('th-TH')}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/users/${u.id}/edit`}
-                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      แก้ไข
-                    </Link>
-                    {u.id !== user.id ? (
-                      <DeleteButton userId={u.id} username={u.username} />
-                    ) : (
-                      <button
-                        disabled
-                        className="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm rounded-md cursor-not-allowed opacity-50"
-                        title="ไม่สามารถลบบัญชีของตัวเองได้"
-                      >
-                        ลบ
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {(() => {
+        // Pagination
+        const totalItems = users.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedUsers = users.slice(startIndex, endIndex);
+
+        return (
+          <>
+            <UsersClient users={paginatedUsers} currentUserId={user.id} />
+            
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+              />
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

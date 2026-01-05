@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import DeleteClientButton from "./DeleteClientButton";
+import DeleteSiteButton from "./DeleteSiteButton";
+import DeleteBuildingButton from "./DeleteBuildingButton";
+import DeleteFloorButton from "./DeleteFloorButton";
+import DeleteRoomButton from "./DeleteRoomButton";
 
 export default async function LocationsPage() {
   const user = await getCurrentUser();
@@ -86,12 +91,25 @@ export default async function LocationsPage() {
                         {client._count.sites} สถานที่
                       </p>
                     </div>
-                    <Link
-                      href={`/locations/sites/new?clientId=${client.id}`}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
-                    >
-                      + เพิ่มสถานที่
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {user.role === 'ADMIN' && (
+                        <>
+                          <Link
+                            href={`/locations/clients/${client.id}/edit`}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+                          >
+                            แก้ไข
+                          </Link>
+                          <DeleteClientButton clientId={client.id} clientName={client.name} />
+                        </>
+                      )}
+                      <Link
+                        href={`/locations/sites/new?clientId=${client.id}`}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+                      >
+                        + เพิ่มสถานที่
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
@@ -121,12 +139,25 @@ export default async function LocationsPage() {
                                 <p className="text-sm text-gray-600">{site.address}</p>
                               )}
                             </div>
-                            <Link
-                              href={`/locations/buildings/new?siteId=${site.id}`}
-                              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm font-medium"
-                            >
-                              + เพิ่มอาคาร
-                            </Link>
+                            <div className="flex items-center gap-2">
+                              {user.role === 'ADMIN' && (
+                                <>
+                                  <Link
+                                    href={`/locations/sites/${site.id}/edit`}
+                                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm font-medium"
+                                  >
+                                    แก้ไข
+                                  </Link>
+                                  <DeleteSiteButton siteId={site.id} siteName={site.name} />
+                                </>
+                              )}
+                              <Link
+                                href={`/locations/buildings/new?siteId=${site.id}`}
+                                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm font-medium"
+                              >
+                                + เพิ่มอาคาร
+                              </Link>
+                            </div>
                           </div>
 
                           {/* Buildings */}
@@ -148,12 +179,25 @@ export default async function LocationsPage() {
                                     <h4 className="font-semibold text-gray-900">
                                       🏛️ {building.name}
                                     </h4>
-                                    <Link
-                                      href={`/locations/floors/new?buildingId=${building.id}`}
-                                      className="text-blue-600 hover:underline text-sm"
-                                    >
-                                      + เพิ่มชั้น
-                                    </Link>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {user.role === 'ADMIN' && (
+                                        <>
+                                          <Link
+                                            href={`/locations/buildings/${building.id}/edit`}
+                                            className="text-blue-600 hover:text-blue-800 hover:underline text-xs sm:text-sm"
+                                          >
+                                            แก้ไข
+                                          </Link>
+                                          <DeleteBuildingButton buildingId={building.id} buildingName={building.name} />
+                                        </>
+                                      )}
+                                      <Link
+                                        href={`/locations/floors/new?buildingId=${building.id}`}
+                                        className="text-blue-600 hover:underline text-xs sm:text-sm"
+                                      >
+                                        + เพิ่มชั้น
+                                      </Link>
+                                    </div>
                                   </div>
 
                                   {/* Floors */}
@@ -167,9 +211,22 @@ export default async function LocationsPage() {
                                         <div key={floor.id} className="border-l-2 border-gray-200 pl-3">
                                           <div className="flex justify-between items-start">
                                             <div className="flex-1">
-                                              <h5 className="font-medium text-gray-800 text-sm mb-1">
-                                                🏢 {floor.name}
-                                              </h5>
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <h5 className="font-medium text-gray-800 text-sm">
+                                                  🏢 {floor.name}
+                                                </h5>
+                                                {user.role === 'ADMIN' && (
+                                                  <>
+                                                    <Link
+                                                      href={`/locations/floors/${floor.id}/edit`}
+                                                      className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
+                                                    >
+                                                      แก้ไข
+                                                    </Link>
+                                                    <DeleteFloorButton floorId={floor.id} floorName={floor.name} />
+                                                  </>
+                                                )}
+                                              </div>
                                               {/* Rooms */}
                                               {floor.rooms.length === 0 ? (
                                                 <div className="text-xs text-gray-500">
@@ -188,9 +245,22 @@ export default async function LocationsPage() {
                                                       key={room.id}
                                                       className="text-xs text-gray-600 flex justify-between items-center"
                                                     >
-                                                      <span>
-                                                        🚪 {room.name} ({room._count.assets} แอร์)
-                                                      </span>
+                                                      <div className="flex items-center gap-2">
+                                                        <span>
+                                                          🚪 {room.name} ({room._count.assets} แอร์)
+                                                        </span>
+                                                        {user.role === 'ADMIN' && (
+                                                          <>
+                                                            <Link
+                                                              href={`/locations/rooms/${room.id}/edit`}
+                                                              className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
+                                                            >
+                                                              แก้ไข
+                                                            </Link>
+                                                            <DeleteRoomButton roomId={room.id} roomName={room.name} />
+                                                          </>
+                                                        )}
+                                                      </div>
                                                       <Link
                                                         href={`/locations/rooms/new?floorId=${floor.id}`}
                                                         className="text-blue-600 hover:underline ml-2"

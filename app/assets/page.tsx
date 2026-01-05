@@ -2,13 +2,23 @@ import { prisma } from "@/lib/prisma"; // เรียกตัวเชื่�
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import AssetsClient from "./AssetsClient";
+import Pagination from "@/app/components/Pagination";
 
-export default async function AssetsPage() {
+interface Props {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function AssetsPage({ searchParams }: Props) {
   const user = await getCurrentUser();
   
   if (!user) {
     redirect('/login');
   }
+
+  const params = await searchParams;
+  const currentPage = parseInt(params.page || '1', 10);
+  const itemsPerPage = 20;
 
   // สำหรับ CLIENT: ดูเฉพาะแอร์ใน Site ของตัวเอง
   // สำหรับ ADMIN: ดูทั้งหมด
@@ -103,11 +113,18 @@ export default async function AssetsPage() {
     });
   }
 
+  // Pagination
+  const totalItems = assets.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedAssets = assets.slice(startIndex, endIndex);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans">
-      <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📋 ทะเบียนแอร์ทั้งหมด ({assets.length})</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">📋 ทะเบียนแอร์ทั้งหมด ({assets.length})</h1>
           {user.role === 'CLIENT' && user.site?.name && (
             <p className="text-gray-600 mt-1">สถานที่: {user.site.name}</p>
           )}
@@ -115,64 +132,23 @@ export default async function AssetsPage() {
         {user.role === 'ADMIN' && (
           <Link
             href="/assets/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+            className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base text-center"
           >
             + เพิ่มแอร์ใหม่
           </Link>
         )}
       </div>
 
-      <div className="overflow-x-auto border rounded-lg shadow-sm">
-        <table className="w-full text-left text-sm text-gray-600">
-          <thead className="bg-gray-100 uppercase font-medium border-b">
-            <tr>
-              <th className="px-6 py-3">QR Code</th>
-              <th className="px-6 py-3">ยี่ห้อ / รุ่น</th>
-              <th className="px-6 py-3">สถานที่ติดตั้ง</th>
-              <th className="px-6 py-3">สถานะ</th>
-              <th className="px-6 py-3">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {assets.map((asset) => (
-              <tr key={asset.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-mono font-medium text-blue-600">
-                  {asset.qrCode}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="font-bold text-gray-900">{asset.brand}</div>
-                  <div className="text-xs text-gray-500">{asset.model} ({asset.btu} BTU)</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-gray-900">{asset.room.floor.building.site.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      asset.status === "ACTIVE"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {asset.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <Link
-                    href={`/assets/${asset.id}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                  >
-                    {user.role === 'CLIENT' ? 'ดูสถานะ' : 'ดูรายละเอียด'}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AssetsClient assets={paginatedAssets} userRole={user.role} />
+      
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+        />
+      )}
     </div>
   );
 }

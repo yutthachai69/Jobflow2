@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logSecurityEvent } from '@/lib/security'
+import { handleApiError, createLogContext } from '@/lib/error-handler'
+import { logger } from '@/lib/logger'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -59,7 +61,11 @@ export async function POST(
     revalidatePath('/users')
     redirect('/users?success=deleted')
   } catch (error) {
-    console.error('Error deleting user:', error)
+    const user = await getCurrentUser().catch(() => null)
+    const context = createLogContext(request, user)
+    const errorResponse = handleApiError(error, request, user)
+    
+    logger.error('Failed to delete user', context, error as Error)
     redirect('/users?error=server_error')
   }
 }

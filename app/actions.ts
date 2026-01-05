@@ -9,14 +9,17 @@ import { sanitizeString, validateUsername, validatePassword } from "@/lib/valida
 import { 
   checkRateLimit, 
   recordFailedLogin, 
-  clearFailedLogins, 
+  clearFailedLogin, 
   logSecurityEvent, 
-  isPasswordCompromised 
+  isPasswordCompromised,
+  getClientIP
 } from "@/lib/security"
+import { checkRateLimit as checkApiRateLimit, recordRequest, resetRateLimit } from "@/lib/rate-limit"
 
 export async function createMockMaintenance(assetId: string) {
-  // 1. สร้างใบงาน
-  const wo = await prisma.workOrder.create({
+  try {
+    // 1. สร้างใบงาน
+    const wo = await prisma.workOrder.create({
     data: {
       jobType: 'PM',
       scheduledDate: new Date(),
@@ -56,22 +59,109 @@ export async function createMockMaintenance(assetId: string) {
 
   // 4. รีเฟรชหน้า
   revalidatePath(`/assets/${assetId}`)
+  } catch (error) {
+    const { handleServerActionError } = await import('@/lib/error-handler')
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
 }
 
 export async function createWorkOrder(formData: FormData) {
-  // Authorization: Only ADMIN can create work orders
+  try {
+    // Authorization: Only ADMIN can create work orders
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      throw new Error('Unauthorized')
+    }
+
+    const siteId = sanitizeString(formData.get('siteId') as string)
+    const jobType = formData.get('jobType') as 'PM' | 'CM' | 'INSTALL'
+    const scheduledDateStr = formData.get('scheduledDate') as string
+    const assignedTeam = sanitizeString(formData.get('assignedTeam') as string)
+    const assetIds = formData.getAll('assetIds') as string[]
+
+    // Validation
+    if (!siteId) {
+      throw new Error('Site ID is required')
+    }
+    if (!jobType || !['PM', 'CM', 'INSTALL'].includes(jobType)) {
+      throw new Error('Invalid job type')
+    }
+    if (!scheduledDateStr) {
+      throw new Error('Scheduled date is required')
+    }
+    if (assetIds.length === 0) {
+      throw new Error('At least one asset is required')
+    }
+
+    const scheduledDate = new Date(scheduledDateStr)
+    if (isNaN(scheduledDate.getTime())) {
+      throw new Error('Invalid date format')
+    }
+
+    // สร้าง Work Order
+    const workOrder = await prisma.workOrder.create({
+      data: {
+        siteId,
+        jobType,
+        scheduledDate,
+        assignedTeam: assignedTeam || null,
+        status: 'OPEN',
+      },
+    })
+
+    // สร้าง Job Items สำหรับแต่ละ Asset
+    await prisma.jobItem.createMany({
+      data: assetIds.map((assetId) => ({
+        workOrderId: workOrder.id,
+        assetId,
+        status: 'PENDING',
+      })),
+    })
+
+    revalidatePath('/work-orders')
+    redirect(`/work-orders/${workOrder.id}`)
+  } catch (error) {
+    const { handleServerActionError } = await import('@/lib/error-handler')
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
+}
+
+export async function updateWorkOrderStatus(workOrderId: string, status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED') {
+  // Authorization: Only ADMIN can update work order status
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
     throw new Error('Unauthorized')
   }
 
+  await prisma.workOrder.update({
+    where: { id: workOrderId },
+    data: { status },
+  })
+
+  revalidatePath(`/work-orders/${workOrderId}`)
+  revalidatePath('/work-orders')
+  revalidatePath('/')
+}
+
+export async function updateWorkOrder(formData: FormData) {
+  // Authorization: Only ADMIN can update work orders
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const workOrderId = sanitizeString(formData.get('workOrderId') as string)
   const siteId = sanitizeString(formData.get('siteId') as string)
   const jobType = formData.get('jobType') as 'PM' | 'CM' | 'INSTALL'
   const scheduledDateStr = formData.get('scheduledDate') as string
   const assignedTeam = sanitizeString(formData.get('assignedTeam') as string)
-  const assetIds = formData.getAll('assetIds') as string[]
 
   // Validation
+  if (!workOrderId) {
+    throw new Error('Work Order ID is required')
+  }
   if (!siteId) {
     throw new Error('Site ID is required')
   }
@@ -81,48 +171,137 @@ export async function createWorkOrder(formData: FormData) {
   if (!scheduledDateStr) {
     throw new Error('Scheduled date is required')
   }
-  if (assetIds.length === 0) {
-    throw new Error('At least one asset is required')
-  }
 
   const scheduledDate = new Date(scheduledDateStr)
   if (isNaN(scheduledDate.getTime())) {
     throw new Error('Invalid date format')
   }
 
-  // สร้าง Work Order
-  const workOrder = await prisma.workOrder.create({
+  // Check if work order exists
+  const existingWorkOrder = await prisma.workOrder.findUnique({
+    where: { id: workOrderId },
+  })
+  if (!existingWorkOrder) {
+    throw new Error('Work Order not found')
+  }
+
+  // Update Work Order
+  await prisma.workOrder.update({
+    where: { id: workOrderId },
     data: {
       siteId,
       jobType,
       scheduledDate,
       assignedTeam: assignedTeam || null,
-      status: 'OPEN',
     },
   })
 
-  // สร้าง Job Items สำหรับแต่ละ Asset
-  await prisma.jobItem.createMany({
-    data: assetIds.map((assetId) => ({
-      workOrderId: workOrder.id,
-      assetId,
-      status: 'PENDING',
-    })),
-  })
-
-  revalidatePath('/work-orders')
-  redirect(`/work-orders/${workOrder.id}`)
-}
-
-export async function updateWorkOrderStatus(workOrderId: string, status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED') {
-  await prisma.workOrder.update({
-    where: { id: workOrderId },
-    data: { status },
+  logSecurityEvent('WORK_ORDER_UPDATED', {
+    updatedBy: user.id,
+    workOrderId,
+    timestamp: new Date().toISOString(),
   })
 
   revalidatePath(`/work-orders/${workOrderId}`)
   revalidatePath('/work-orders')
-  revalidatePath('/')
+  redirect(`/work-orders/${workOrderId}`)
+}
+
+export async function deleteWorkOrder(workOrderId: string) {
+  // Authorization: Only ADMIN can delete work orders
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if work order exists
+  const workOrder = await prisma.workOrder.findUnique({
+    where: { id: workOrderId },
+    include: {
+      jobItems: {
+        include: {
+          photos: true,
+        },
+      },
+    },
+  })
+
+  if (!workOrder) {
+    throw new Error('Work Order not found')
+  }
+
+  // Check if work order has job items with DONE status (prevent deletion if has completed work)
+  const hasCompletedJobs = workOrder.jobItems.some(job => job.status === 'DONE')
+  if (hasCompletedJobs) {
+    throw new Error('Cannot delete work order with completed jobs')
+  }
+
+  // Delete job items (and their photos) first
+  for (const jobItem of workOrder.jobItems) {
+    await prisma.jobPhoto.deleteMany({
+      where: { jobItemId: jobItem.id },
+    })
+  }
+  await prisma.jobItem.deleteMany({
+    where: { workOrderId },
+  })
+
+  // Delete work order
+  await prisma.workOrder.delete({
+    where: { id: workOrderId },
+  })
+
+  logSecurityEvent('WORK_ORDER_DELETED', {
+    deletedBy: user.id,
+    workOrderId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/work-orders')
+  redirect('/work-orders')
+}
+
+export async function assignTechnicianToJobItem(jobItemId: string, technicianId: string | null) {
+  // Authorization: Only ADMIN can assign technicians
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const jobItem = await prisma.jobItem.findUnique({
+    where: { id: jobItemId },
+  })
+
+  if (!jobItem) {
+    throw new Error('Job item not found')
+  }
+
+  // Check if technician exists (if provided)
+  if (technicianId) {
+    const technician = await prisma.user.findUnique({
+      where: { id: technicianId },
+    })
+    if (!technician || technician.role !== 'TECHNICIAN') {
+      throw new Error('Invalid technician')
+    }
+  }
+
+  await prisma.jobItem.update({
+    where: { id: jobItemId },
+    data: {
+      technicianId: technicianId || null,
+    },
+  })
+
+  logSecurityEvent('JOB_ITEM_TECHNICIAN_ASSIGNED', {
+    assignedBy: user.id,
+    jobItemId,
+    technicianId: technicianId || null,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath(`/work-orders/${jobItem.workOrderId}`)
+  revalidatePath(`/technician/job-item/${jobItemId}`)
 }
 
 export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'ISSUE_FOUND') {
@@ -191,6 +370,55 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
   revalidatePath(`/work-orders/${jobItem.workOrderId}`)
 }
 
+export async function deleteJobPhoto(photoId: string) {
+  // Authorization: Only TECHNICIAN or ADMIN can delete photos
+  const user = await getCurrentUser()
+  if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {
+    throw new Error('Unauthorized')
+  }
+
+  const photo = await prisma.jobPhoto.findUnique({
+    where: { id: photoId },
+    include: {
+      jobItem: {
+        include: {
+          workOrder: true,
+        },
+      },
+    },
+  })
+
+  if (!photo) {
+    throw new Error('Photo not found')
+  }
+
+  // Authorization: TECHNICIAN can only delete photos from their own job items (unless ADMIN)
+  if (user.role === 'TECHNICIAN') {
+    if (photo.jobItem.technicianId !== user.id) {
+      throw new Error('Unauthorized')
+    }
+  }
+
+  // Prevent deletion if job is DONE (unless ADMIN)
+  if (photo.jobItem.status === 'DONE' && user.role !== 'ADMIN') {
+    throw new Error('Cannot delete photo from completed job')
+  }
+
+  await prisma.jobPhoto.delete({
+    where: { id: photoId },
+  })
+
+  logSecurityEvent('JOB_PHOTO_DELETED', {
+    deletedBy: user.id,
+    photoId,
+    jobItemId: photo.jobItemId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath(`/technician/job-item/${photo.jobItemId}`)
+  revalidatePath(`/work-orders/${photo.jobItem.workOrderId}`)
+}
+
 export async function createJobPhoto(jobItemId: string, formData: FormData) {
   // Authorization: Only TECHNICIAN or ADMIN can upload photos
   const user = await getCurrentUser()
@@ -224,24 +452,21 @@ export async function createJobPhoto(jobItemId: string, formData: FormData) {
   }
 
   const photoType = formData.get('photoType') as 'BEFORE' | 'AFTER' | 'DEFECT' | 'METER'
-  const imageData = formData.get('imageData') as string // Base64 encoded image
+  const imageUrl = formData.get('imageUrl') as string // URL from blob storage
 
   if (!photoType || !['BEFORE', 'AFTER', 'DEFECT', 'METER'].includes(photoType)) {
     throw new Error('Invalid photo type')
   }
 
-  if (!imageData || !imageData.startsWith('data:image/')) {
-    throw new Error('Invalid image data')
+  if (!imageUrl) {
+    throw new Error('Image URL is required')
   }
-
-  // Store image as base64 data URL (in production, upload to cloud storage like S3, Cloudinary, etc.)
-  const photoUrl = imageData
 
   await prisma.jobPhoto.create({
     data: {
       jobItemId,
       type: photoType,
-      url: photoUrl,
+      url: imageUrl,
     },
   })
 
@@ -328,6 +553,93 @@ export async function createClient(formData: FormData) {
     },
   })
 
+  logSecurityEvent('CLIENT_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function updateClient(formData: FormData) {
+  // Authorization: Only ADMIN can update clients
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const clientId = sanitizeString(formData.get('clientId') as string)
+  const name = sanitizeString(formData.get('name') as string)
+  const contactInfo = sanitizeString(formData.get('contactInfo') as string)
+
+  if (!clientId) {
+    throw new Error('Client ID is required')
+  }
+  if (!name) {
+    throw new Error('Client name is required')
+  }
+
+  // Check if client exists
+  const existingClient = await prisma.client.findUnique({
+    where: { id: clientId },
+  })
+  if (!existingClient) {
+    throw new Error('Client not found')
+  }
+
+  await prisma.client.update({
+    where: { id: clientId },
+    data: {
+      name,
+      contactInfo: contactInfo || null,
+    },
+  })
+
+  logSecurityEvent('CLIENT_UPDATED', {
+    updatedBy: user.id,
+    clientId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function deleteClient(clientId: string) {
+  // Authorization: Only ADMIN can delete clients
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if client exists
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    include: {
+      sites: true,
+    },
+  })
+
+  if (!client) {
+    throw new Error('Client not found')
+  }
+
+  // Check if client has sites (prevent deletion if has sites)
+  if (client.sites.length > 0) {
+    throw new Error('Cannot delete client with sites')
+  }
+
+  await prisma.client.delete({
+    where: { id: clientId },
+  })
+
+  logSecurityEvent('CLIENT_DELETED', {
+    deletedBy: user.id,
+    clientId,
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath('/locations')
   redirect('/locations')
 }
@@ -358,6 +670,110 @@ export async function createSite(formData: FormData) {
     },
   })
 
+  logSecurityEvent('SITE_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function updateSite(formData: FormData) {
+  // Authorization: Only ADMIN can update sites
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const siteId = sanitizeString(formData.get('siteId') as string)
+  const clientId = sanitizeString(formData.get('clientId') as string)
+  const name = sanitizeString(formData.get('name') as string)
+  const address = sanitizeString(formData.get('address') as string)
+
+  if (!siteId) {
+    throw new Error('Site ID is required')
+  }
+  if (!clientId) {
+    throw new Error('Client ID is required')
+  }
+  if (!name) {
+    throw new Error('Site name is required')
+  }
+
+  // Check if site exists
+  const existingSite = await prisma.site.findUnique({
+    where: { id: siteId },
+  })
+  if (!existingSite) {
+    throw new Error('Site not found')
+  }
+
+  await prisma.site.update({
+    where: { id: siteId },
+    data: {
+      clientId,
+      name,
+      address: address || null,
+    },
+  })
+
+  logSecurityEvent('SITE_UPDATED', {
+    updatedBy: user.id,
+    siteId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function deleteSite(siteId: string) {
+  // Authorization: Only ADMIN can delete sites
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if site exists
+  const site = await prisma.site.findUnique({
+    where: { id: siteId },
+    include: {
+      buildings: true,
+      users: true,
+      workOrders: true,
+    },
+  })
+
+  if (!site) {
+    throw new Error('Site not found')
+  }
+
+  // Check if site has buildings (prevent deletion if has buildings)
+  if (site.buildings.length > 0) {
+    throw new Error('Cannot delete site with buildings')
+  }
+
+  // Check if site has users (prevent deletion if has users assigned)
+  if (site.users.length > 0) {
+    throw new Error('Cannot delete site with assigned users')
+  }
+
+  // Check if site has work orders (prevent deletion if has work orders)
+  if (site.workOrders.length > 0) {
+    throw new Error('Cannot delete site with work orders')
+  }
+
+  await prisma.site.delete({
+    where: { id: siteId },
+  })
+
+  logSecurityEvent('SITE_DELETED', {
+    deletedBy: user.id,
+    siteId,
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath('/locations')
   redirect('/locations')
 }
@@ -384,6 +800,96 @@ export async function createBuilding(formData: FormData) {
       siteId,
       name,
     },
+  })
+
+  logSecurityEvent('BUILDING_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function updateBuilding(formData: FormData) {
+  // Authorization: Only ADMIN can update buildings
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const buildingId = sanitizeString(formData.get('buildingId') as string)
+  const siteId = sanitizeString(formData.get('siteId') as string)
+  const name = sanitizeString(formData.get('name') as string)
+
+  if (!buildingId) {
+    throw new Error('Building ID is required')
+  }
+  if (!siteId) {
+    throw new Error('Site ID is required')
+  }
+  if (!name) {
+    throw new Error('Building name is required')
+  }
+
+  // Check if building exists
+  const existingBuilding = await prisma.building.findUnique({
+    where: { id: buildingId },
+  })
+  if (!existingBuilding) {
+    throw new Error('Building not found')
+  }
+
+  await prisma.building.update({
+    where: { id: buildingId },
+    data: {
+      siteId,
+      name,
+    },
+  })
+
+  logSecurityEvent('BUILDING_UPDATED', {
+    updatedBy: user.id,
+    buildingId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function deleteBuilding(buildingId: string) {
+  // Authorization: Only ADMIN can delete buildings
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if building exists
+  const building = await prisma.building.findUnique({
+    where: { id: buildingId },
+    include: {
+      floors: true,
+    },
+  })
+
+  if (!building) {
+    throw new Error('Building not found')
+  }
+
+  // Check if building has floors (prevent deletion if has floors)
+  if (building.floors.length > 0) {
+    throw new Error('Cannot delete building with floors')
+  }
+
+  await prisma.building.delete({
+    where: { id: buildingId },
+  })
+
+  logSecurityEvent('BUILDING_DELETED', {
+    deletedBy: user.id,
+    buildingId,
+    timestamp: new Date().toISOString(),
   })
 
   revalidatePath('/locations')
@@ -414,6 +920,96 @@ export async function createFloor(formData: FormData) {
     },
   })
 
+  logSecurityEvent('FLOOR_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function updateFloor(formData: FormData) {
+  // Authorization: Only ADMIN can update floors
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const floorId = sanitizeString(formData.get('floorId') as string)
+  const buildingId = sanitizeString(formData.get('buildingId') as string)
+  const name = sanitizeString(formData.get('name') as string)
+
+  if (!floorId) {
+    throw new Error('Floor ID is required')
+  }
+  if (!buildingId) {
+    throw new Error('Building ID is required')
+  }
+  if (!name) {
+    throw new Error('Floor name is required')
+  }
+
+  // Check if floor exists
+  const existingFloor = await prisma.floor.findUnique({
+    where: { id: floorId },
+  })
+  if (!existingFloor) {
+    throw new Error('Floor not found')
+  }
+
+  await prisma.floor.update({
+    where: { id: floorId },
+    data: {
+      buildingId,
+      name,
+    },
+  })
+
+  logSecurityEvent('FLOOR_UPDATED', {
+    updatedBy: user.id,
+    floorId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function deleteFloor(floorId: string) {
+  // Authorization: Only ADMIN can delete floors
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if floor exists
+  const floor = await prisma.floor.findUnique({
+    where: { id: floorId },
+    include: {
+      rooms: true,
+    },
+  })
+
+  if (!floor) {
+    throw new Error('Floor not found')
+  }
+
+  // Check if floor has rooms (prevent deletion if has rooms)
+  if (floor.rooms.length > 0) {
+    throw new Error('Cannot delete floor with rooms')
+  }
+
+  await prisma.floor.delete({
+    where: { id: floorId },
+  })
+
+  logSecurityEvent('FLOOR_DELETED', {
+    deletedBy: user.id,
+    floorId,
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath('/locations')
   redirect('/locations')
 }
@@ -442,38 +1038,209 @@ export async function createRoom(formData: FormData) {
     },
   })
 
+  logSecurityEvent('ROOM_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath('/locations')
   redirect('/locations')
 }
 
-export async function createAsset(formData: FormData) {
-  // Authorization: Only ADMIN can create assets
+export async function updateRoom(formData: FormData) {
+  // Authorization: Only ADMIN can update rooms
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
     throw new Error('Unauthorized')
   }
 
   const roomId = sanitizeString(formData.get('roomId') as string)
+  const floorId = sanitizeString(formData.get('floorId') as string)
+  const name = sanitizeString(formData.get('name') as string)
+
+  if (!roomId) {
+    throw new Error('Room ID is required')
+  }
+  if (!floorId) {
+    throw new Error('Floor ID is required')
+  }
+  if (!name) {
+    throw new Error('Room name is required')
+  }
+
+  // Check if room exists
+  const existingRoom = await prisma.room.findUnique({
+    where: { id: roomId },
+  })
+  if (!existingRoom) {
+    throw new Error('Room not found')
+  }
+
+  await prisma.room.update({
+    where: { id: roomId },
+    data: {
+      floorId,
+      name,
+    },
+  })
+
+  logSecurityEvent('ROOM_UPDATED', {
+    updatedBy: user.id,
+    roomId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function deleteRoom(roomId: string) {
+  // Authorization: Only ADMIN can delete rooms
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if room exists
+  const room = await prisma.room.findUnique({
+    where: { id: roomId },
+    include: {
+      assets: true,
+    },
+  })
+
+  if (!room) {
+    throw new Error('Room not found')
+  }
+
+  // Check if room has assets (prevent deletion if has assets)
+  if (room.assets.length > 0) {
+    throw new Error('Cannot delete room with assets')
+  }
+
+  await prisma.room.delete({
+    where: { id: roomId },
+  })
+
+  logSecurityEvent('ROOM_DELETED', {
+    deletedBy: user.id,
+    roomId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+export async function createAsset(formData: FormData) {
+  try {
+    // Authorization: Only ADMIN can create assets
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      throw new Error('Unauthorized')
+    }
+
+    const roomId = sanitizeString(formData.get('roomId') as string)
+    const serialNo = sanitizeString(formData.get('serialNo') as string)
+    const brand = sanitizeString(formData.get('brand') as string)
+    const model = sanitizeString(formData.get('model') as string)
+    const btuStr = formData.get('btu') as string
+    const installDateStr = formData.get('installDate') as string
+
+    // Validation
+    if (!roomId) {
+      throw new Error('Room ID is required')
+    }
+    if (!serialNo) {
+      throw new Error('Serial Number is required')
+    }
+
+    // Check if QR Code (serialNo) already exists
+    const existingAsset = await prisma.asset.findUnique({
+      where: { qrCode: serialNo },
+    })
+    if (existingAsset) {
+      throw new Error('QR Code already exists')
+    }
+
+    const btu = btuStr ? parseInt(btuStr, 10) : null
+    if (btuStr && (isNaN(btu!) || btu! < 0 || btu! > 1000000)) {
+      throw new Error('Invalid BTU value')
+    }
+
+    const installDate = installDateStr ? new Date(installDateStr) : null
+    if (installDateStr && (!installDate || isNaN(installDate.getTime()))) {
+      throw new Error('Invalid date format')
+    }
+
+    await prisma.asset.create({
+      data: {
+        roomId,
+        qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
+        brand: brand || null,
+        model: model || null,
+        serialNo: serialNo || null,
+        btu: btu || null,
+        installDate: installDate || null,
+        status: 'ACTIVE',
+      },
+    })
+
+    revalidatePath('/assets')
+    redirect('/assets')
+  } catch (error) {
+    const { handleServerActionError } = await import('@/lib/error-handler')
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
+}
+
+export async function updateAsset(formData: FormData) {
+  // Authorization: Only ADMIN can update assets
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const assetId = sanitizeString(formData.get('assetId') as string)
+  const roomId = sanitizeString(formData.get('roomId') as string)
   const serialNo = sanitizeString(formData.get('serialNo') as string)
   const brand = sanitizeString(formData.get('brand') as string)
   const model = sanitizeString(formData.get('model') as string)
   const btuStr = formData.get('btu') as string
   const installDateStr = formData.get('installDate') as string
+  const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
 
   // Validation
+  if (!assetId) {
+    throw new Error('Asset ID is required')
+  }
   if (!roomId) {
     throw new Error('Room ID is required')
   }
   if (!serialNo) {
     throw new Error('Serial Number is required')
   }
+  if (!status || !['ACTIVE', 'BROKEN', 'RETIRED'].includes(status)) {
+    throw new Error('Invalid status')
+  }
 
-  // Check if QR Code (serialNo) already exists
+  // Check if asset exists
   const existingAsset = await prisma.asset.findUnique({
-    where: { qrCode: serialNo },
+    where: { id: assetId },
   })
-  if (existingAsset) {
-    throw new Error('QR Code already exists')
+  if (!existingAsset) {
+    throw new Error('Asset not found')
+  }
+
+  // Check if QR Code (serialNo) already exists for different asset
+  if (serialNo !== existingAsset.qrCode) {
+    const duplicateAsset = await prisma.asset.findUnique({
+      where: { qrCode: serialNo },
+    })
+    if (duplicateAsset) {
+      throw new Error('QR Code already exists')
+    }
   }
 
   const btu = btuStr ? parseInt(btuStr, 10) : null
@@ -486,17 +1253,63 @@ export async function createAsset(formData: FormData) {
     throw new Error('Invalid date format')
   }
 
-  await prisma.asset.create({
+  await prisma.asset.update({
+    where: { id: assetId },
     data: {
       roomId,
-      qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
+      qrCode: serialNo,
       brand: brand || null,
       model: model || null,
       serialNo: serialNo || null,
       btu: btu || null,
       installDate: installDate || null,
-      status: 'ACTIVE',
+      status,
     },
+  })
+
+  logSecurityEvent('ASSET_UPDATED', {
+    updatedBy: user.id,
+    assetId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/assets')
+  revalidatePath(`/assets/${assetId}`)
+  redirect(`/assets/${assetId}`)
+}
+
+export async function deleteAsset(assetId: string) {
+  // Authorization: Only ADMIN can delete assets
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  // Check if asset exists
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    include: {
+      jobItems: true,
+    },
+  })
+
+  if (!asset) {
+    throw new Error('Asset not found')
+  }
+
+  // Check if asset has job items (prevent deletion if has work history)
+  if (asset.jobItems.length > 0) {
+    throw new Error('Cannot delete asset with work history')
+  }
+
+  await prisma.asset.delete({
+    where: { id: assetId },
+  })
+
+  logSecurityEvent('ASSET_DELETED', {
+    deletedBy: user.id,
+    assetId,
+    timestamp: new Date().toISOString(),
   })
 
   revalidatePath('/assets')
@@ -692,6 +1505,67 @@ export async function updateContactInfo(formData: FormData) {
   revalidatePath('/contact')
 }
 
+export async function submitContactMessage(formData: FormData) {
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    throw new Error('Unauthorized')
+  }
+
+  // Rate limiting for contact form submissions
+  const identifier = user.id
+  const rateLimitResult = checkApiRateLimit(identifier, 'CONTACT')
+  
+  if (!rateLimitResult.allowed) {
+    logSecurityEvent('CONTACT_FORM_RATE_LIMIT_EXCEEDED', {
+      userId: user.id,
+      username: user.username,
+    })
+    throw new Error(`Too many submissions. Please try again after ${rateLimitResult.retryAfter || 60} seconds.`)
+  }
+
+  const phone = sanitizeString(formData.get('phone') as string)
+  const message = sanitizeString(formData.get('message') as string)
+
+  if (!phone || !message) {
+    throw new Error('Phone and message are required')
+  }
+
+  // เก็บข้อความใน database
+  await prisma.contactMessage.create({
+    data: {
+      userId: user.id,
+      phone,
+      message,
+      isRead: false,
+    },
+  })
+
+  logSecurityEvent('CONTACT_MESSAGE_SUBMITTED', {
+    submittedBy: user.id,
+    phone,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/messages')
+  revalidatePath('/contact')
+}
+
+export async function markMessageAsRead(messageId: string) {
+  const user = await getCurrentUser()
+  
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  await prisma.contactMessage.update({
+    where: { id: messageId },
+    data: { isRead: true },
+  })
+
+  revalidatePath('/messages')
+}
+
 export async function login(formData: FormData) {
   const username = formData.get('username') as string
   const password = formData.get('password') as string
@@ -700,24 +1574,101 @@ export async function login(formData: FormData) {
     redirect('/login?error=missing')
   }
 
+  // Rate limiting: Check both IP and username
+  // Note: In server actions, we need to get IP from headers
+  // For now, we'll use username as identifier (can be enhanced with request headers)
+  const rateLimitResult = checkRateLimit(username)
+  
+  if (!rateLimitResult.allowed) {
+    logSecurityEvent('LOGIN_RATE_LIMIT_EXCEEDED', {
+      username,
+      lockoutUntil: rateLimitResult.lockoutUntil,
+    })
+    redirect(`/login?error=rate_limit&retryAfter=${rateLimitResult.lockoutUntil ? Math.ceil((rateLimitResult.lockoutUntil.getTime() - Date.now()) / 1000) : 900}`)
+  }
+
   // ค้นหา User
   const user = await prisma.user.findUnique({
     where: { username },
   })
 
   if (!user) {
+    recordFailedLogin(username)
     redirect('/login?error=invalid')
+  }
+
+  // Auto-unlock expired accounts before checking
+  const { autoUnlockExpiredAccounts } = await import('@/lib/account-lock')
+  await autoUnlockExpiredAccounts()
+  
+  // Refresh user data after auto-unlock
+  const refreshedUser = await prisma.user.findUnique({
+    where: { id: user.id },
+  })
+  
+  if (!refreshedUser) {
+    redirect('/login?error=invalid')
+  }
+  
+  // Check if account is locked
+  const now = new Date()
+  const isLocked = refreshedUser.locked || (refreshedUser.lockedUntil && refreshedUser.lockedUntil > now)
+  
+  if (isLocked) {
+    const lockoutMessage = refreshedUser.lockedUntil && refreshedUser.lockedUntil > now
+      ? `บัญชีถูกล็อกจนถึง ${refreshedUser.lockedUntil.toLocaleString('th-TH')}`
+      : 'บัญชีถูกล็อก กรุณาติดต่อ Admin'
+    
+    logSecurityEvent('LOGIN_ATTEMPT_LOCKED_ACCOUNT', {
+      username: refreshedUser.username,
+      userId: refreshedUser.id,
+      lockedReason: refreshedUser.lockedReason,
+      lockedUntil: refreshedUser.lockedUntil?.toISOString(),
+    })
+    
+    redirect(`/login?error=locked&message=${encodeURIComponent(lockoutMessage)}`)
   }
 
   // Verify password with bcrypt
-  const isValidPassword = await bcrypt.compare(password, user.password)
+  const isValidPassword = await bcrypt.compare(password, refreshedUser.password)
   if (!isValidPassword) {
+    recordFailedLogin(username)
+    
+    // Check if we should lock the account after failed attempts
+    const rateLimitResult = checkRateLimit(username)
+    if (!rateLimitResult.allowed && rateLimitResult.lockoutUntil) {
+      // Lock the account
+      await prisma.user.update({
+        where: { id: refreshedUser.id },
+        data: {
+          locked: true,
+          lockedUntil: rateLimitResult.lockoutUntil,
+          lockedReason: 'Too many failed login attempts',
+        },
+      })
+      
+      logSecurityEvent('ACCOUNT_AUTO_LOCKED', {
+        userId: refreshedUser.id,
+        username: refreshedUser.username,
+        lockoutUntil: rateLimitResult.lockoutUntil.toISOString(),
+      })
+    }
+    
     redirect('/login?error=invalid')
   }
 
+  // Successful login: Clear failed attempts
+  clearFailedLogin(username)
+
   // ตั้ง Session
   const { setSession } = await import('@/lib/auth')
-  await setSession(user.id)
+  await setSession(refreshedUser.id)
+
+  logSecurityEvent('LOGIN_SUCCESS', {
+    userId: refreshedUser.id,
+    username: refreshedUser.username,
+    role: refreshedUser.role,
+  })
 
   // Redirect ตาม Role
   const role = String(user.role)

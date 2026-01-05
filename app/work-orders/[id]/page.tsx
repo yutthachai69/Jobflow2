@@ -3,9 +3,66 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateWorkOrderStatus } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
+import DeleteWorkOrderButton from "./DeleteButton";
+import AssignTechnicianButton from "./AssignTechnicianButton";
+import ExportButton from "./ExportButton";
+import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const workOrder = await prisma.workOrder.findUnique({
+    where: { id },
+    include: {
+      site: {
+        include: { client: true },
+      },
+    },
+  });
+
+  if (!workOrder) {
+    return {
+      title: "ไม่พบข้อมูล - AirService Enterprise",
+    };
+  }
+
+  const jobTypeLabels: Record<string, string> = {
+    PM: "บำรุงรักษา",
+    CM: "ซ่อมแซม",
+    INSTALL: "ติดตั้ง",
+  };
+
+  const statusLabels: Record<string, string> = {
+    OPEN: "เปิด",
+    IN_PROGRESS: "กำลังดำเนินการ",
+    COMPLETED: "เสร็จสิ้น",
+    CANCELLED: "ยกเลิก",
+  };
+
+  const title = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} - AirService Enterprise`;
+  const description = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} | สถานะ: ${statusLabels[workOrder.status] || workOrder.status} | ${workOrder.site.client.name} - ${workOrder.site.name}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
 }
 
 export default async function WorkOrderDetailPage({ params }: Props) {
@@ -66,6 +123,17 @@ export default async function WorkOrderDetailPage({ params }: Props) {
     ? (doneCount / workOrder.jobItems.length) * 100
     : 0;
 
+  // Get all technicians for assignment (only for ADMIN)
+  const technicians = user.role === 'ADMIN' ? await prisma.user.findMany({
+    where: { role: 'TECHNICIAN' },
+    select: {
+      id: true,
+      username: true,
+      fullName: true,
+    },
+    orderBy: { username: 'asc' },
+  }) : [];
+
   const getWOStatusConfig = (status: string) => {
     const configs = {
       COMPLETED: { bg: "from-green-500 to-emerald-600", text: "เสร็จสิ้น", icon: "" },
@@ -97,11 +165,24 @@ export default async function WorkOrderDetailPage({ params }: Props) {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span>
-          <span className="font-medium">กลับไปหน้ารายการ</span>
+          <span className="font-medium text-gray-900">กลับไปหน้ารายการ</span>
         </Link>
 
         {/* Header Card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+          {/* Action Buttons - Only for ADMIN */}
+          {user.role === 'ADMIN' && (
+            <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-gray-200">
+              <ExportButton workOrder={workOrder} />
+              <Link
+                href={`/work-orders/${id}/edit`}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                แก้ไข
+              </Link>
+              <DeleteWorkOrderButton workOrderId={id} />
+            </div>
+          )}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6 mb-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3 flex-wrap">
@@ -119,7 +200,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-gray-700">
-                  <span className="font-medium">{workOrder.site.name}</span>
+                  <span className="font-medium text-gray-900">{workOrder.site.name}</span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-600">{workOrder.site.client.name}</span>
                 </div>
@@ -160,8 +241,8 @@ export default async function WorkOrderDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Status Actions */}
-          {workOrder.status !== "COMPLETED" && workOrder.status !== "CANCELLED" && (
+          {/* Status Actions - Only for ADMIN */}
+          {user.role === 'ADMIN' && workOrder.status !== "COMPLETED" && workOrder.status !== "CANCELLED" && (
             <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-200">
               {workOrder.status === "OPEN" && (
                 <form action={updateWorkOrderStatus.bind(null, workOrder.id, "IN_PROGRESS")}>
@@ -247,9 +328,22 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                         <span>{jobStatusConfig.icon}</span>
                         <span className="font-semibold text-sm">{jobStatusConfig.text}</span>
                       </div>
-                      {jobItem.technician && (
+                      {jobItem.technician ? (
                         <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <span>{jobItem.technician.fullName}</span>
+                          <span>ช่าง: {jobItem.technician.fullName || jobItem.technician.username}</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                          <span>ยังไม่ได้มอบหมาย</span>
+                        </div>
+                      )}
+                      {user.role === 'ADMIN' && (
+                        <div className="mt-2">
+                          <AssignTechnicianButton
+                            jobItemId={jobItem.id}
+                            currentTechnicianId={jobItem.technicianId}
+                            technicians={technicians}
+                          />
                         </div>
                       )}
                       {jobItem.startTime && (

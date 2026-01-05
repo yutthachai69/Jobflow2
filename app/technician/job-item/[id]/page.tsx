@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { updateJobItemStatus, updateJobItemNote } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
 import PhotoUpload from "./PhotoUpload";
+import DeletePhotoButton from "./DeletePhotoButton";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -206,7 +207,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               </div>
             </div>
           ) : (
-            <form action={updateJobItemNote.bind(null, id)} method="POST">
+            <form action={updateJobItemNote.bind(null, id)}>
               <textarea
                 name="techNote"
                 defaultValue={jobItem.techNote || ""}
@@ -244,6 +245,9 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                     {photo.type === "DEFECT" && <span>จุดชำรุด</span>}
                     {photo.type === "METER" && <span>ค่าเกจ</span>}
                   </div>
+                  {jobItem.status !== 'DONE' && (user.role === 'ADMIN' || (user.role === 'TECHNICIAN' && jobItem.technicianId === user.id)) && (
+                    <DeletePhotoButton photoId={photo.id} photoType={photo.type} />
+                  )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
                     <div className="text-xs text-white">
                       {new Date(photo.createdAt).toLocaleString("th-TH")}

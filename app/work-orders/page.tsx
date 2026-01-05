@@ -7,7 +7,7 @@ import WorkOrdersClient from "./WorkOrdersClient";
 export default async function WorkOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ siteId?: string }>;
+  searchParams: Promise<{ siteId?: string; page?: string }>;
 }) {
   const user = await getCurrentUser();
 
@@ -15,7 +15,10 @@ export default async function WorkOrdersPage({
     redirect('/login');
   }
 
-  const { siteId: selectedSiteId } = await searchParams;
+  const params = await searchParams;
+  const { siteId: selectedSiteId } = params;
+  const currentPage = parseInt(params.page || '1', 10);
+  const itemsPerPage = 20;
 
   // สำหรับ CLIENT: ดูเฉพาะ Work Orders ใน Site ของตัวเอง
   // สำหรับ ADMIN: ดูทั้งหมด หรือ filter ตาม siteId ที่เลือก
@@ -105,7 +108,7 @@ export default async function WorkOrdersPage({
   if (user.role === 'CLIENT') {
     if (!user.siteId) {
       return (
-        <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">ไม่พบข้อมูลสถานที่</h1>
             <p className="text-gray-600">กรุณาติดต่อผู้ดูแลระบบ</p>
@@ -205,14 +208,25 @@ export default async function WorkOrdersPage({
     );
   }
 
+  // Pagination for Work Orders
+  const totalItems = workOrders.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedWorkOrders = workOrders.slice(startIndex, endIndex);
+
   // สำหรับ ADMIN และ CLIENT: ส่งข้อมูล Work Orders ไปให้ Client Component
   return (
     <WorkOrdersClient 
       userRole={user.role}
-      workOrders={workOrders}
+      workOrders={paginatedWorkOrders}
       allSites={allSites}
       selectedSiteId={selectedSiteId}
       userSiteName={user.role === 'CLIENT' ? user.site?.name : undefined}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      itemsPerPage={itemsPerPage}
     />
   );
 }

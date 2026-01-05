@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createBuilding } from "@/app/actions";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 
 interface Props {
   searchParams: Promise<{ siteId?: string }>;
@@ -42,7 +43,7 @@ export default async function NewBuildingPage({ searchParams }: Props) {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span>
-          <span className="font-medium">กลับ</span>
+          <span className="font-medium text-gray-900">กลับ</span>
         </Link>
 
         {/* Header */}

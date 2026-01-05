@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createFloor } from "@/app/actions";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 
 interface Props {
   searchParams: Promise<{ buildingId?: string }>;
@@ -46,7 +47,7 @@ export default async function NewFloorPage({ searchParams }: Props) {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span>
-          <span className="font-medium">กลับ</span>
+          <span className="font-medium text-gray-900">กลับ</span>
         </Link>
 
         {/* Header */}
@@ -94,20 +95,6 @@ export default async function NewFloorPage({ searchParams }: Props) {
               <p className="mt-2 text-xs text-gray-500">
                 💡 ระบุชื่อชั้นให้ชัดเจน เช่น G สำหรับชั้น Ground หรือ R สำหรับ Rooftop
               </p>
-            </div>
-
-            {/* Examples Box */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="text-sm">
-                  <p className="font-semibold text-gray-900 mb-2">ตัวอย่างการตั้งชื่อ</p>
-                  <div className="space-y-1 text-gray-600">
-                    <p>• <span className="font-medium">ชั้น 1, ชั้น 2, ชั้น 3</span> - สำหรับอาคารทั่วไป</p>
-                    <p>• <span className="font-medium">G, 1, 2, 3</span> - แบบสากล (G = Ground Floor)</p>
-                    <p>• <span className="font-medium">Lobby, Mezzanine, Rooftop</span> - ตามการใช้งาน</p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Action Buttons */}

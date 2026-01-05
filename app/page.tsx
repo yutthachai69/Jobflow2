@@ -2,6 +2,33 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    return {
+      title: "Dashboard - AirService Enterprise",
+      description: "Dashboard - ระบบบริหารจัดการงานบริการแอร์",
+    };
+  }
+
+  const roleTitles: Record<string, string> = {
+    ADMIN: "Dashboard - ผู้ดูแลระบบ",
+    TECHNICIAN: "Dashboard - ช่าง",
+    CLIENT: "Dashboard - ลูกค้า",
+  };
+
+  return {
+    title: `${roleTitles[user.role] || "Dashboard"} - AirService Enterprise`,
+    description: `Dashboard สำหรับ ${user.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : user.role === 'TECHNICIAN' ? 'ช่าง' : 'ลูกค้า'} - ระบบบริหารจัดการงานบริการแอร์`,
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
+}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -339,13 +366,13 @@ export default async function DashboardPage() {
       new Date(wo.updatedAt).toDateString() === new Date().toDateString()
     ).length;
 
-    return (
+  return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-gray-900 mb-1">
               Dashboard
-            </h1>
+          </h1>
             <p className="text-sm text-gray-600">{site.name} • {site.client.name}</p>
           </div>
 

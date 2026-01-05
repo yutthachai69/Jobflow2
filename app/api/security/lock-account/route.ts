@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
-import { logSecurityEvent } from '@/lib/security'
 import { prisma } from '@/lib/prisma'
+import { lockAccount, unlockAccount } from '@/lib/account-lock'
+import { handleApiError, createLogContext } from '@/lib/error-handler'
+import { logger } from '@/lib/logger'
 
 /**
  * Lock user account (ADMIN only)
@@ -16,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, reason } = body
+    const { userId, reason, durationMinutes, action } = body
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -31,27 +33,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // TODO: In production, implement account locking mechanism
-    // Option 1: Add a 'locked' field to User model
-    // Option 2: Use a separate AccountLock table
-    // Option 3: Set a special role like 'LOCKED'
+    // Prevent locking yourself
+    if (userId === user.id) {
+      return NextResponse.json({ error: 'Cannot lock your own account' }, { status: 400 })
+    }
 
-    // Log security event
-    logSecurityEvent('ACCOUNT_LOCKED_BY_ADMIN', {
-      lockedBy: user.id,
-      lockedUserId: userId,
-      reason: reason || 'Security incident',
-      timestamp: new Date().toISOString(),
-    })
+    // Prevent locking other admins (optional - can be removed if needed)
+    if (targetUser.role === 'ADMIN' && user.id !== userId) {
+      return NextResponse.json({ error: 'Cannot lock another admin account' }, { status: 403 })
+    }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Account ${targetUser.username} has been locked`,
-      note: 'Account locking feature needs to be implemented in database schema'
-    })
+    // Handle lock/unlock action
+    if (action === 'unlock') {
+      await unlockAccount({
+        userId,
+        unlockedBy: user.id,
+      })
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `Account ${targetUser.username} has been unlocked`,
+      })
+    } else {
+      // Lock account
+      await lockAccount({
+        userId,
+        reason: reason || 'Security incident',
+        durationMinutes: durationMinutes || 15,
+        lockedBy: user.id,
+      })
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `Account ${targetUser.username} has been locked`,
+      })
+    }
   } catch (error) {
-    console.error('Error locking account:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const context = createLogContext(request, user)
+    const errorResponse = handleApiError(error, request, user)
+    
+    logger.error('Failed to lock/unlock account', context, error as Error)
+    
+    return NextResponse.json(
+      { error: errorResponse.error },
+      { status: errorResponse.statusCode }
+    )
   }
 }
+
 

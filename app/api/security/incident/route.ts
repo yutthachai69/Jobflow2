@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { logSecurityEvent } from '@/lib/security'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, createLogContext } from '@/lib/error-handler'
+import { logger } from '@/lib/logger'
 
 /**
  * Security Incident Reporting Endpoint
@@ -39,8 +41,15 @@ export async function POST(request: NextRequest) {
       message: 'Incident reported and logged' 
     })
   } catch (error) {
-    console.error('Error reporting security incident:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const context = createLogContext(request, user)
+    const errorResponse = handleApiError(error, request, user)
+    
+    logger.error('Failed to report security incident', context, error as Error)
+    
+    return NextResponse.json(
+      { error: errorResponse.error },
+      { status: errorResponse.statusCode }
+    )
   }
 }
 
@@ -62,8 +71,16 @@ export async function GET(request: NextRequest) {
       message: 'Incident log feature coming soon' 
     })
   } catch (error) {
-    console.error('Error fetching security incidents:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const context = createLogContext(request, user)
+    const errorResponse = handleApiError(error, request, user)
+    
+    logger.error('Failed to fetch security incidents', context, error as Error)
+    
+    return NextResponse.json(
+      { error: errorResponse.error },
+      { status: errorResponse.statusCode }
+    )
   }
 }
+
 

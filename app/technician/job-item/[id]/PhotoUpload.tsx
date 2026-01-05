@@ -112,9 +112,9 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
       return
     }
 
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('ขนาดไฟล์ต้องไม่เกิน 5MB')
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('ขนาดไฟล์ต้องไม่เกิน 10MB')
       return
     }
 
@@ -122,11 +122,26 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
     setError(null)
 
     try {
-      // Convert file to base64
-      const base64 = await fileToBase64(file)
-      
+      // Upload to blob storage first
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('photoType', photoType)
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      })
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json()
+        throw new Error(errorData.error || 'Failed to upload image')
+      }
+
+      const { url } = await uploadResponse.json()
+
+      // Then create job photo record
       const formData = new FormData()
-      formData.append('imageData', base64)
+      formData.append('imageUrl', url)
       formData.append('photoType', photoType)
 
       await createJobPhoto(jobItemId, formData)
@@ -138,18 +153,6 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
     } finally {
       setIsUploading(false)
     }
-  }
-
-  function fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        resolve(result)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
   }
 
   return (
@@ -216,7 +219,7 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
           </div>
 
           <div className="text-xs text-gray-500 text-center">
-            รองรับไฟล์ JPG, PNG, GIF ขนาดไม่เกิน 5MB
+            รองรับไฟล์ JPG, PNG, GIF ขนาดไม่เกิน 10MB
           </div>
         </>
       ) : (

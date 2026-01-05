@@ -80,7 +80,7 @@ export function recordFailedLogin(identifier: string) {
 /**
  * Clear failed login attempts (on successful login)
  */
-export function clearFailedLogins(identifier: string) {
+export function clearFailedLogin(identifier: string) {
   loginAttempts.delete(identifier)
 }
 
@@ -98,22 +98,61 @@ function cleanupOldRecords() {
 
 /**
  * Security event logging
+ * Now records to database as SecurityIncident
  */
 export function logSecurityEvent(eventType: string, details: Record<string, any>) {
-  const timestamp = new Date().toISOString()
-  const logEntry = {
-    timestamp,
-    eventType,
-    details,
+  // Import logger here to avoid circular dependency
+  const { logger } = require('./logger')
+  
+  logger.security(eventType, details)
+  
+  // Record to database (async, don't await to avoid blocking)
+  const { createSecurityIncident } = require('./security-incident')
+  const { IncidentType, IncidentSeverity } = require('@prisma/client')
+  
+  // Map event types to IncidentType enum
+  const typeMap: Record<string, any> = {
+    'FAILED_LOGIN': IncidentType.FAILED_LOGIN,
+    'ACCOUNT_LOCKED': IncidentType.ACCOUNT_LOCKED,
+    'ACCOUNT_UNLOCKED': IncidentType.ACCOUNT_UNLOCKED,
+    'ACCOUNT_AUTO_LOCKED': IncidentType.ACCOUNT_AUTO_LOCKED,
+    'LOGIN_ATTEMPT_LOCKED_ACCOUNT': IncidentType.LOGIN_ATTEMPT_LOCKED_ACCOUNT,
+    'LOGIN_RATE_LIMIT_EXCEEDED': IncidentType.LOGIN_RATE_LIMIT_EXCEEDED,
+    'LOGIN_SUCCESS': IncidentType.LOGIN_SUCCESS,
+    'SECURITY_BREACH': IncidentType.SECURITY_BREACH,
+    'UNAUTHORIZED_ACCESS': IncidentType.UNAUTHORIZED_ACCESS,
+    'SUSPICIOUS_ACTIVITY': IncidentType.SUSPICIOUS_ACTIVITY,
   }
   
-  // In production, log to a secure logging service (e.g., CloudWatch, Datadog, etc.)
-  console.error(`[SECURITY] ${timestamp} - ${eventType}:`, JSON.stringify(details))
+  // Determine severity based on event type
+  const severityMap: Record<string, any> = {
+    'FAILED_LOGIN': IncidentSeverity.LOW,
+    'ACCOUNT_LOCKED': IncidentSeverity.MEDIUM,
+    'ACCOUNT_AUTO_LOCKED': IncidentSeverity.MEDIUM,
+    'LOGIN_ATTEMPT_LOCKED_ACCOUNT': IncidentSeverity.MEDIUM,
+    'LOGIN_RATE_LIMIT_EXCEEDED': IncidentSeverity.HIGH,
+    'SECURITY_BREACH': IncidentSeverity.CRITICAL,
+    'UNAUTHORIZED_ACCESS': IncidentSeverity.HIGH,
+    'SUSPICIOUS_ACTIVITY': IncidentSeverity.MEDIUM,
+  }
   
-  // TODO: In production, send to:
-  // - Security Information and Event Management (SIEM) system
-  // - Database for audit trail
-  // - Alert system (email, SMS, Slack, etc.)
+  const incidentType = typeMap[eventType] || IncidentType.SUSPICIOUS_ACTIVITY
+  const severity = severityMap[eventType] || IncidentSeverity.MEDIUM
+  
+  // Create incident asynchronously (don't block)
+  createSecurityIncident({
+    type: incidentType,
+    severity,
+    description: `Security Event: ${eventType}`,
+    metadata: details,
+    userId: details.userId,
+    username: details.username || details.identifier,
+    ipAddress: details.ip || details.ipAddress,
+    userAgent: details.userAgent,
+  }).catch((error: Error) => {
+    // Silently fail - we don't want security logging to break the app
+    logger.error('Failed to create security incident', { error: error.message })
+  })
 }
 
 /**

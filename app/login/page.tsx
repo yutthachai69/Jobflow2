@@ -1,7 +1,23 @@
 import Link from "next/link";
 import LoginForm from "./LoginForm";
+import type { Metadata } from "next";
 
-export default function LoginPage() {
+export const metadata: Metadata = {
+  title: "เข้าสู่ระบบ - AirService Enterprise",
+  description: "เข้าสู่ระบบ AirService Enterprise - ระบบบริหารจัดการงานบริการแอร์",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+interface Props {
+  searchParams: Promise<{ error?: string; message?: string; retryAfter?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const { error, message, retryAfter } = params;
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Floating decorative elements */}
@@ -21,6 +37,32 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-100">
+          {/* Error Messages from URL */}
+          {error === 'locked' && message && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-sm text-red-600 font-medium">บัญชีถูกล็อก</p>
+              <p className="text-sm text-red-600 mt-1">{decodeURIComponent(message)}</p>
+            </div>
+          )}
+          {error === 'rate_limit' && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <p className="text-sm text-yellow-800 font-medium">พยายามเข้าสู่ระบบมากเกินไป</p>
+              <p className="text-sm text-yellow-700 mt-1">
+                กรุณารอ {retryAfter ? `${Math.ceil(parseInt(retryAfter) / 60)} นาที` : '15 นาที'} ก่อนลองใหม่
+              </p>
+            </div>
+          )}
+          {error === 'invalid' && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-sm text-red-600">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
+            </div>
+          )}
+          {error === 'missing' && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-sm text-red-600">กรุณากรอกชื่อผู้ใช้และรหัสผ่าน</p>
+            </div>
+          )}
+          
           <LoginForm />
 
           <div className="mt-6 pt-6 border-t border-gray-200">

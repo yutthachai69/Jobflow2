@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { submitContactMessage } from '@/app/actions'
 
 interface ContactFormProps {
   userName: string // fullName หรือ username
@@ -48,15 +49,23 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
 
     setErrors({})
 
-    // จำลองการส่งข้อมูล (ในอนาคตสามารถเชื่อมต่อกับ API หรือ Email service)
-    setTimeout(() => {
+    try {
+      const formDataObj = new FormData()
+      formDataObj.append('phone', formData.phone)
+      formDataObj.append('message', formData.message)
+
+      await submitContactMessage(formDataObj)
+      
       setIsSubmitting(false)
       setSubmitted(true)
       setFormData({ phone: '', message: '' })
       
       // Reset submitted state after 5 seconds
       setTimeout(() => setSubmitted(false), 5000)
-    }, 1000)
+    } catch (error) {
+      setIsSubmitting(false)
+      setErrors({ submit: 'เกิดข้อผิดพลาดในการส่งข้อความ กรุณาลองใหม่อีกครั้ง' })
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -70,6 +79,20 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
     return (
       <div className="text-center py-12">
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg
+            className="w-10 h-10 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">ส่งข้อมูลเรียบร้อย!</h2>
         <p className="text-gray-600 mb-6">เราจะติดต่อกลับโดยเร็วที่สุด</p>

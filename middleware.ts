@@ -1,11 +1,46 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const IDLE_TIMEOUT_MINUTES = 30 // Idle timeout 30 นาที
+const IDLE_TIMEOUT_MS = IDLE_TIMEOUT_MINUTES * 60 * 1000
+
 /**
- * Security middleware for adding security headers
+ * Security middleware for adding security headers and session management
  */
 export function middleware(request: NextRequest) {
   const response = NextResponse.next()
+  
+  const userId = request.cookies.get('user_id')?.value
+  const lastActivity = request.cookies.get('session_last_activity')?.value
+
+  // Session Management: เช็ค idle timeout
+  if (userId && lastActivity) {
+    const lastActivityTime = parseInt(lastActivity, 10)
+    const now = Date.now()
+    const timeSinceLastActivity = now - lastActivityTime
+
+    if (timeSinceLastActivity > IDLE_TIMEOUT_MS) {
+      // Session หมดอายุเนื่องจาก idle timeout - clear cookies
+      response.cookies.delete('user_id')
+      response.cookies.delete('session_last_activity')
+    } else {
+      // Session ยัง active - อัพเดท lastActivity
+      response.cookies.set('session_last_activity', now.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+    }
+  } else if (userId && !lastActivity) {
+    // มี user_id แต่ไม่มี lastActivity - set lastActivity (สำหรับ session เก่า)
+    response.cookies.set('session_last_activity', Date.now().toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    })
+  }
 
   // Security Headers
   response.headers.set('X-Content-Type-Options', 'nosniff')
@@ -47,4 +82,5 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
+
 
