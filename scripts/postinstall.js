@@ -33,15 +33,20 @@ try {
   }
 
   // 3. Seed database (run ทุกครั้ง เพราะ SQLite reset ทุก deploy)
+  // ใช้ seed-production.js โดยตรง (ไม่ต้องใช้ ts-node)
   console.log('🌱 Seeding database...')
   try {
-    execSync('npm run db:seed', {
+    // ใช้ node เรียก seed-production.js โดยตรง (CommonJS)
+    execSync('node scripts/seed-production.js', {
       stdio: 'inherit',
       cwd: process.cwd(),
     })
     console.log('✅ Database seeded successfully!')
   } catch (seedError) {
-    console.warn('⚠️  Seed failed (may already be seeded):', seedError.message)
+    // ถ้า seed fail ไม่เป็นไร (อาจจะ seed ไปแล้ว หรือ database ยังไม่พร้อม)
+    // เราจะใช้ API route seed แทน
+    console.warn('⚠️  Seed via postinstall failed:', seedError.message)
+    console.warn('📝 Note: You can seed manually via POST /api/seed after deployment')
   }
 
   console.log('✅ Post-install setup completed!')
