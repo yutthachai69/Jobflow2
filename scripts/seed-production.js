@@ -13,17 +13,27 @@ async function main() {
   console.log('🌱 Start seeding (production)...')
 
   try {
-    // 1. ล้างข้อมูลเก่าทิ้งก่อน
-    await prisma.jobPhoto.deleteMany()
-    await prisma.jobItem.deleteMany()
-    await prisma.workOrder.deleteMany()
-    await prisma.asset.deleteMany()
-    await prisma.room.deleteMany()
-    await prisma.floor.deleteMany()
-    await prisma.building.deleteMany()
-    await prisma.site.deleteMany()
-    await prisma.client.deleteMany()
-    await prisma.user.deleteMany()
+    // เช็คว่า Prisma Client พร้อมใช้งานก่อน
+    await prisma.$connect()
+    console.log('✅ Prisma Client connected')
+
+    // 1. ล้างข้อมูลเก่าทิ้งก่อน (ถ้ามี) - ใช้ try-catch เพื่อ skip ถ้า table ยังไม่มี
+    try {
+      await prisma.jobPhoto.deleteMany().catch(() => {})
+      await prisma.jobItem.deleteMany().catch(() => {})
+      await prisma.workOrder.deleteMany().catch(() => {})
+      await prisma.asset.deleteMany().catch(() => {})
+      await prisma.room.deleteMany().catch(() => {})
+      await prisma.floor.deleteMany().catch(() => {})
+      await prisma.building.deleteMany().catch(() => {})
+      await prisma.site.deleteMany().catch(() => {})
+      await prisma.client.deleteMany().catch(() => {})
+      await prisma.user.deleteMany().catch(() => {})
+      console.log('✅ Cleared existing data (if any)')
+    } catch (clearError) {
+      console.warn('⚠️  Clear data warning (tables may not exist yet):', clearError.message)
+      // Continue anyway - tables might not exist yet
+    }
 
     // 2. Hash passwords
     const adminPasswordHash = await bcrypt.hash('admin123', 10)
@@ -133,6 +143,13 @@ async function main() {
     console.log('✅ Seeding finished (production)')
   } catch (error) {
     console.error('❌ Seed error:', error)
+    // Log detailed error info
+    if (error.code) {
+      console.error('Error code:', error.code)
+    }
+    if (error.meta) {
+      console.error('Error meta:', JSON.stringify(error.meta, null, 2))
+    }
     throw error
   }
 }

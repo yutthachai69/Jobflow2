@@ -23,13 +23,33 @@ try {
       stdio: 'inherit',
       cwd: process.cwd(),
     })
+    console.log('✅ Migrations deployed successfully')
   } catch (migrateError) {
     // ถ้าไม่มี migrations ใช้ db:push แทน (สำหรับ SQLite)
     console.log('⚠️  migrate deploy failed, trying db push...')
-    execSync('npx prisma db push --accept-data-loss', {
+    try {
+      execSync('npx prisma db push --accept-data-loss --skip-generate', {
+        stdio: 'inherit',
+        cwd: process.cwd(),
+      })
+      console.log('✅ Database schema pushed successfully')
+    } catch (pushError) {
+      console.warn('⚠️  db push also failed:', pushError.message)
+      throw pushError
+    }
+  }
+  
+  // 2.5. Generate Prisma Client อีกครั้งหลัง migrate (เพื่อให้แน่ใจว่า sync)
+  console.log('📦 Re-generating Prisma Client after migration...')
+  try {
+    execSync('npx prisma generate', {
       stdio: 'inherit',
       cwd: process.cwd(),
     })
+    console.log('✅ Prisma Client re-generated successfully')
+  } catch (generateError) {
+    console.warn('⚠️  Re-generate warning:', generateError.message)
+    // Continue anyway
   }
 
   // 3. Seed database (run ทุกครั้ง เพราะ SQLite reset ทุก deploy)
