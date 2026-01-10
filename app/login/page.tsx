@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LoginForm from "./LoginForm";
+import SetupDatabaseButton from "./SetupDatabaseButton";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -65,8 +66,44 @@ export default async function LoginPage({ searchParams }: Props) {
           {error === 'database' && (
             <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
               <p className="text-sm text-yellow-800 font-medium">⚠️ ฐานข้อมูลยังไม่พร้อม</p>
-              <p className="text-sm text-yellow-700 mt-1">
-                กรุณา seed database ก่อน: <a href="/api/seed" target="_blank" className="underline">/api/seed</a>
+              <p className="text-sm text-yellow-700 mt-2">
+                กรุณา setup database ก่อน (จะสร้าง schema + seed อัตโนมัติ)
+              </p>
+              <button
+                onClick={async () => {
+                  const btn = event?.currentTarget as HTMLButtonElement
+                  if (btn) {
+                    btn.disabled = true
+                    btn.textContent = 'กำลัง setup...'
+                  }
+                  
+                  try {
+                    const response = await fetch('/api/setup', { method: 'POST' })
+                    const data = await response.json()
+                    
+                    if (data.success) {
+                      alert('✅ Setup สำเร็จ! Database พร้อมใช้งานแล้ว\n\nลอง login ใหม่')
+                      window.location.reload()
+                    } else {
+                      alert('❌ Setup ไม่สำเร็จ: ' + data.message)
+                      console.error('Setup error:', data)
+                    }
+                  } catch (err: any) {
+                    alert('❌ Error: ' + err.message)
+                    console.error('Setup error:', err)
+                  } finally {
+                    if (btn) {
+                      btn.disabled = false
+                      btn.textContent = 'Setup Database'
+                    }
+                  }
+                }}
+                className="mt-3 w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+              >
+                🔧 Setup Database
+              </button>
+              <p className="text-xs text-yellow-600 mt-2">
+                หรือใช้ Browser Console: <code className="bg-yellow-100 px-1 rounded">fetch('/api/setup', {`{method: 'POST'}`}).then(r => r.json()).then(console.log)</code>
               </p>
             </div>
           )}
