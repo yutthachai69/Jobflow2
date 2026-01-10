@@ -37,17 +37,55 @@ export async function POST(request: NextRequest) {
     const seedPrisma = new PrismaClient()
 
     try {
-      // Run seed logic (ซ้ำจาก prisma/seed.ts)
-      await seedPrisma.jobPhoto.deleteMany()
-      await seedPrisma.jobItem.deleteMany()
-      await seedPrisma.workOrder.deleteMany()
-      await seedPrisma.asset.deleteMany()
-      await seedPrisma.room.deleteMany()
-      await seedPrisma.floor.deleteMany()
-      await seedPrisma.building.deleteMany()
-      await seedPrisma.site.deleteMany()
-      await seedPrisma.client.deleteMany()
-      await seedPrisma.user.deleteMany()
+      // เช็คว่า database schema พร้อมหรือยัง (ตรวจสอบ User table)
+      let schemaReady = false
+      try {
+        // Try to query User table to check if schema exists
+        await seedPrisma.user.findFirst({ take: 1 })
+        schemaReady = true
+      } catch (schemaError: any) {
+        // P2021 = Table does not exist, SQLITE_ERROR = SQLite error
+        if (schemaError.code === 'P2021' || 
+            schemaError.code === 'P2001' ||
+            schemaError.message?.includes('does not exist') || 
+            schemaError.message?.includes('no such table')) {
+          schemaReady = false
+        } else {
+          // Different error, throw it
+          throw schemaError
+        }
+      }
+
+      if (!schemaReady) {
+        await seedPrisma.$disconnect()
+        return NextResponse.json(
+          {
+            error: 'Database schema not ready',
+            message: 'Database tables do not exist yet. Please ensure migrations are run first.',
+            solution: 'The postinstall script should create the schema automatically. Check Vercel deployment logs.',
+            code: 'SCHEMA_NOT_READY'
+          },
+          { status: 500 }
+        )
+      }
+
+      // Run seed logic (ซ้ำจาก prisma/seed.ts) - ใช้ catch เพื่อ skip ถ้า table ยังไม่มี
+      try {
+        await seedPrisma.jobPhoto.deleteMany().catch(() => {})
+        await seedPrisma.jobItem.deleteMany().catch(() => {})
+        await seedPrisma.workOrder.deleteMany().catch(() => {})
+        await seedPrisma.asset.deleteMany().catch(() => {})
+        await seedPrisma.room.deleteMany().catch(() => {})
+        await seedPrisma.floor.deleteMany().catch(() => {})
+        await seedPrisma.building.deleteMany().catch(() => {})
+        await seedPrisma.site.deleteMany().catch(() => {})
+        await seedPrisma.client.deleteMany().catch(() => {})
+        await seedPrisma.user.deleteMany().catch(() => {})
+        console.log('✅ Cleared existing data (if any)')
+      } catch (clearError) {
+        console.warn('⚠️  Clear data warning (some tables may not exist)')
+        // Continue anyway
+      }
 
       // Hash passwords
       const adminPasswordHash = await bcrypt.hash('admin123', 10)
@@ -166,10 +204,25 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Seed error:', error)
+    
+    // Check if it's a schema error
+    if (error.code === 'P2021' || error.message?.includes('does not exist') || error.message?.includes('no such table')) {
+      return NextResponse.json(
+        {
+          error: 'Database schema not ready',
+          message: 'Database tables do not exist yet.',
+          solution: 'Please ensure database migrations are run first. Check Vercel deployment logs for postinstall script errors.',
+          code: 'SCHEMA_NOT_READY'
+        },
+        { status: 500 }
+      )
+    }
+    
     return NextResponse.json(
       { 
         error: 'Failed to seed database',
         message: error.message,
+        code: error.code || 'SEED_ERROR',
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
