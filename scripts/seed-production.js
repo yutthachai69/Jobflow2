@@ -9,6 +9,29 @@ const bcrypt = require('bcryptjs')
 
 const prisma = new PrismaClient()
 
+// Helper function to check if table exists (for SQLite)
+async function tableExists(tableName) {
+  try {
+    // For SQLite, try to query the table (will fail if table doesn't exist)
+    // SQLite table names are case-insensitive and we need to escape them
+    const escapedName = `"${tableName}"`
+    await prisma.$queryRawUnsafe(`SELECT 1 FROM ${escapedName} LIMIT 1`)
+    return true
+  } catch (error) {
+    // P2021 = Table does not exist
+    // Other codes might be permission errors, but we'll treat as "not exists"
+    if (error.code === 'P2021' || 
+        error.code === 'SQLITE_ERROR' ||
+        error.message?.includes('does not exist') ||
+        error.message?.includes('no such table')) {
+      return false
+    }
+    // If it's a different error, assume table exists (might be permission or other issue)
+    console.warn(`Warning checking table ${tableName}:`, error.message)
+    return true
+  }
+}
+
 async function main() {
   console.log('🌱 Start seeding (production)...')
 
@@ -16,6 +39,33 @@ async function main() {
     // เช็คว่า Prisma Client พร้อมใช้งานก่อน
     await prisma.$connect()
     console.log('✅ Prisma Client connected')
+
+    // Wait a bit to ensure database is ready (especially for SQLite)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // เช็คว่า User table มีอยู่หรือไม่ (เป็น indicator ว่า migrate เสร็จแล้วหรือยัง)
+    console.log('🔍 Checking if database schema is ready...')
+    let userTableExists = false
+    let retries = 3
+    
+    while (!userTableExists && retries > 0) {
+      userTableExists = await tableExists('User').catch(() => false)
+      
+      if (!userTableExists) {
+        retries--
+        if (retries > 0) {
+          console.log(`⏳ Table not ready yet, retrying in 2 seconds... (${retries} retries left)`)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+      }
+    }
+    
+    if (!userTableExists) {
+      console.error('❌ Database tables not found after retries! Migration may have failed.')
+      console.error('Please ensure migrations are run before seeding.')
+      throw new Error('Database schema not ready. Run migrations first.')
+    }
+    console.log('✅ Database schema is ready')
 
     // 1. ล้างข้อมูลเก่าทิ้งก่อน (ถ้ามี) - ใช้ try-catch เพื่อ skip ถ้า table ยังไม่มี
     try {
