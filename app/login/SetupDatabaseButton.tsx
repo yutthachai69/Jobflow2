@@ -56,7 +56,7 @@ export default function SetupDatabaseButton() {
         </p>
       )}
       <p className="text-xs text-yellow-600 mt-2">
-        หรือใช้ Browser Console: <code className="bg-yellow-100 px-1 rounded text-xs">fetch('/api/setup', {`{method: 'POST'}`}).then(r => r.json()).then(console.log)</code>
+        หรือใช้ Browser Console: <code className="bg-yellow-100 px-1 rounded text-xs">{`fetch('/api/setup', {method: 'POST'}).then(r => r.json()).then(console.log)`}</code>
       </p>
     </div>
   )
