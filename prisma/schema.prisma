@@ -1,13 +1,16 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma Schema สำหรับ PostgreSQL
+// 
+// วิธีใช้:
+// 1. Copy ไฟล์นี้ไปแทนที่ schema.prisma
+// 2. หรือใช้: cp prisma/schema.postgresql.prisma prisma/schema.prisma
+// 3. รัน: npx prisma generate && npx prisma migrate dev
 
 generator client {
   provider = "prisma-client-js"
-  // แนะนำให้ลบบรรทัด output ออกเพื่อให้ Next.js หาเจออัตโนมัติครับ
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -285,3 +288,6 @@ model SecurityIncident {
   @@index([createdAt])
   @@index([userId])
 }
+
+
+
