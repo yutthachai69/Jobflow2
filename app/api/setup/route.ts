@@ -24,15 +24,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  try {
-    console.log('🔧 Starting complete database setup...')
-    
-    const results: string[] = []
-    let schemaCreated = false
-    let seedCompleted = false
-    const setupPrisma = new PrismaClient()
+  console.log('🔧 Starting complete database setup...')
+  
+  const results: string[] = []
+  let schemaCreated = false
+  let seedCompleted = false
+  const setupPrisma = new PrismaClient()
 
-    try {
+  try {
       // Step 1: เช็คว่า schema มีอยู่แล้วหรือยัง
       console.log('🔍 Step 1: Checking database schema...')
       try {
