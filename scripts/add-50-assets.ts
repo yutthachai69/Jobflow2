@@ -120,8 +120,7 @@ async function main() {
   // 5. สร้าง Assets แบบ batch
   try {
     await prisma.asset.createMany({
-      data: assets,
-      skipDuplicates: true
+      data: assets
     })
     console.log(`✅ เพิ่มทรัพย์สินสำเร็จ: ${assets.length} รายการ`)
   } catch (error: any) {
