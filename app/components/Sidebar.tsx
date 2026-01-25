@@ -168,8 +168,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 left-0 h-screen bg-app-section border-r border-app z-[60] transition-all duration-300 ease-in-out lg:translate-x-0 lg:static flex-shrink-0 flex flex-col
-          ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:shadow-none'} 
+        className={`fixed top-0 left-0 h-screen bg-app-section border-r border-app z-[60] transition-all duration-300 ease-in-out hidden lg:flex flex-shrink-0 flex-col
+          ${isMobileOpen ? 'flex translate-x-0 shadow-2xl' : '-translate-x-full'} 
           ${mounted && isCollapsed ? 'w-20' : 'w-64'}
         `}
       >

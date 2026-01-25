@@ -28,15 +28,15 @@ export default function AppLayout({ role, username, fullName, siteName, children
   return (
     // 🔥 Flex Container ที่สูงเต็มจอและห้าม Scroll ที่ Body หลัก
     <div className="flex h-screen overflow-hidden bg-app-bg" style={{ position: 'relative' }}>
-      {/* Sidebar: ส่ง Props ควบคุม Mobile Menu */}
+      {/* Sidebar: ส่ง Props ควบคุม Mobile Menu - ซ่อนในมือถือ (hidden lg:flex) */}
       <Sidebar 
         role={role}
         isMobileOpen={isMobileMenuOpen}
         onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
-      {/* Content Area: ส่วนขวามือ */}
-      <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300">
+      {/* Content Area: ส่วนขวามือ - เต็มหน้าจอในมือถือ */}
+      <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300 w-full lg:w-auto">
         {/* Header: ส่ง User Data ไปแสดงผล */}
         <Header 
           role={role}
