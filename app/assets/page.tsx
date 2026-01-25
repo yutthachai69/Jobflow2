@@ -45,6 +45,7 @@ export default async function AssetsPage({ searchParams }: Props) {
       }
     }
   }>
+  
   let assets: AssetWithRoom[] = []
 
   if (user.role === 'CLIENT') {
@@ -66,7 +67,7 @@ export default async function AssetsPage({ searchParams }: Props) {
 
     // Query ตรงๆ จาก Asset โดยใช้ siteId (ไม่ต้องเช็ค site ก่อน)
     try {
-      assets = await prisma.asset.findMany({
+      const clientAssets = await prisma.asset.findMany({
         where: {
           room: {
             floor: {
@@ -83,7 +84,11 @@ export default async function AssetsPage({ searchParams }: Props) {
                 include: {
                   building: {
                     include: {
-                      site: true,
+                      site: {
+                        include: {
+                          client: true,
+                        },
+                      },
                     },
                   },
                 },
@@ -95,6 +100,7 @@ export default async function AssetsPage({ searchParams }: Props) {
           qrCode: "asc",
         },
       })
+      assets = clientAssets as AssetWithRoom[]
 
       if (process.env.NODE_ENV !== 'production') {
         console.log('[Assets] Found', assets.length, 'assets for siteId:', siteId)
@@ -107,7 +113,7 @@ export default async function AssetsPage({ searchParams }: Props) {
   } else {
     // ADMIN: ดูทั้งหมด
     try {
-      assets = await prisma.asset.findMany({
+      const adminAssets = await prisma.asset.findMany({
         include: {
           room: {
             include: {
@@ -131,6 +137,7 @@ export default async function AssetsPage({ searchParams }: Props) {
           qrCode: "asc",
         },
       });
+      assets = adminAssets as AssetWithRoom[]
 
       if (process.env.NODE_ENV !== 'production') {
         console.log('[Assets] Admin found', assets.length, 'assets')
