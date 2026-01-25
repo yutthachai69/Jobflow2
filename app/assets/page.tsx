@@ -63,20 +63,19 @@ export default async function AssetsPage({ searchParams }: Props) {
       }
       // แสดง empty state แทน error เพื่อให้มี sidebar/header
       assets = []
-    }
-
-    // Query ตรงๆ จาก Asset โดยใช้ siteId (ไม่ต้องเช็ค site ก่อน)
-    try {
-      const clientAssets = await prisma.asset.findMany({
-        where: {
-          room: {
-            floor: {
-              building: {
-                siteId: siteId
+    } else {
+      // Query ตรงๆ จาก Asset โดยใช้ siteId (ไม่ต้องเช็ค site ก่อน)
+      try {
+        const clientAssets = await prisma.asset.findMany({
+          where: {
+            room: {
+              floor: {
+                building: {
+                  siteId: siteId
+                }
               }
             }
-          }
-        },
+          },
         include: {
           room: {
             include: {
@@ -96,19 +95,20 @@ export default async function AssetsPage({ searchParams }: Props) {
             },
           },
         },
-        orderBy: {
-          qrCode: "asc",
-        },
-      })
-      assets = clientAssets as AssetWithRoom[]
+          orderBy: {
+            qrCode: "asc",
+          },
+        })
+        assets = clientAssets as AssetWithRoom[]
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[Assets] Found', assets.length, 'assets for siteId:', siteId)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[Assets] Found', assets.length, 'assets for siteId:', siteId)
+        }
+      } catch (error) {
+        console.error('[Assets] Error fetching assets:', error)
+        // แสดง empty state แทน error เพื่อให้มี sidebar/header
+        assets = []
       }
-    } catch (error) {
-      console.error('[Assets] Error fetching assets:', error)
-      // แสดง empty state แทน error เพื่อให้มี sidebar/header
-      assets = []
     }
   } else {
     // ADMIN: ดูทั้งหมด
