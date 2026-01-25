@@ -23,7 +23,33 @@ export default async function AssetsPage({ searchParams }: Props) {
 
   // สำหรับ CLIENT: ดูเฉพาะแอร์ใน Site ของตัวเอง
   // สำหรับ ADMIN: ดูทั้งหมด
-  let assets;
+  let assets: Array<{
+    id: string
+    qrCode: string
+    assetType: string
+    brand: string | null
+    model: string | null
+    serialNo: string | null
+    btu: number | null
+    installDate: Date | null
+    status: string
+    createdAt: Date
+    room: {
+      name: string
+      floor: {
+        name: string
+        building: {
+          name: string
+          site: {
+            name: string
+            client?: {
+              name: string
+            }
+          }
+        }
+      }
+    }
+  }> = []
 
   if (user.role === 'CLIENT') {
     // ดึง siteId จาก database โดยตรง (ไม่ใช้จาก session เพราะอาจจะเก่า)
