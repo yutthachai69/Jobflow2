@@ -31,44 +31,32 @@ export default function Pagination({ currentPage, totalPages, totalItems, itemsP
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-app-muted">
         แสดง {startItem} - {endItem} จาก {totalItems} รายการ
       </div>
       <div className="flex items-center gap-2">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700"
+          className="px-3 py-2 border border-app rounded-lg hover:bg-app-card disabled:opacity-50 disabled:cursor-not-allowed text-app-body bg-app-section"
         >
           ก่อนหน้า
         </button>
-        
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((page) => {
-              // Show first page, last page, current page, and pages around current
-              return (
-                page === 1 ||
-                page === totalPages ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              )
-            })
+            .filter((page) => page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1))
             .map((page, index, array) => {
-              // Add ellipsis if there's a gap
               const prevPage = array[index - 1]
               const showEllipsis = prevPage && page - prevPage > 1
-
               return (
                 <div key={page} className="flex items-center gap-1">
-                  {showEllipsis && (
-                    <span className="px-2 text-gray-400">...</span>
-                  )}
+                  {showEllipsis && <span className="px-2 text-app-muted">...</span>}
                   <button
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-2 border rounded-lg ${
+                    className={`px-3 py-2 border rounded-lg transition-colors ${
                       currentPage === page
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'border-gray-300 hover:bg-gray-50 text-gray-700'
+                        ? 'btn-app-primary border-[var(--app-btn-primary)]'
+                        : 'border-app hover:bg-app-card text-app-body bg-app-section'
                     }`}
                     aria-label={`ไปหน้า ${page}`}
                     aria-current={currentPage === page ? 'page' : undefined}
@@ -79,11 +67,10 @@ export default function Pagination({ currentPage, totalPages, totalItems, itemsP
               )
             })}
         </div>
-
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700"
+          className="px-3 py-2 border border-app rounded-lg hover:bg-app-card disabled:opacity-50 disabled:cursor-not-allowed text-app-body bg-app-section"
           aria-label="ไปหน้าถัดไป"
         >
           ถัดไป

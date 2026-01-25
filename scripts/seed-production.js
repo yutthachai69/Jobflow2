@@ -161,19 +161,80 @@ async function main() {
       data: { name: 'Server Room', floorId: floor1.id }
     })
 
-    // 10. สร้างแอร์ (Assets) - สร้าง 5 ตัว
-    const airBrands = ['Daikin', 'Carrier', 'Mitsubishi']
+    // 10. สร้างทรัพย์สิน (Assets) - 50 รายการคละประเภท
+    const airBrands = ['Daikin', 'Carrier', 'Mitsubishi', 'LG', 'Samsung', 'Toshiba', 'Panasonic', 'Hitachi']
+    const refrigerantBrands = ['R-410A', 'R-22', 'R-32', 'R-134a', 'R-407C']
+    const sparePartTypes = ['Filter', 'Compressor', 'Fan Motor', 'Capacitor', 'Thermostat', 'Coil', 'Drain Pan']
+    const toolTypes = ['Vacuum Pump', 'Gauges Set', 'Refrigerant Scale', 'Leak Detector', 'Multimeter', 'Drill', 'Wrench Set']
     
-    for (let i = 1; i <= 5; i++) {
+    const assetTypes = ['AIR_CONDITIONER', 'REFRIGERANT', 'SPARE_PART', 'TOOL', 'OTHER']
+    const statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'BROKEN', 'RETIRED']
+    const btuRanges = [12000, 18000, 24000, 30000, 36000]
+    
+    const rooms = [roomLobby, roomServer]
+    
+    for (let i = 1; i <= 50; i++) {
+      const assetType = assetTypes[Math.floor(Math.random() * assetTypes.length)]
+      const status = statuses[Math.floor(Math.random() * statuses.length)]
+      const randomRoom = rooms[Math.floor(Math.random() * rooms.length)]
+      
+      let qrCode = ''
+      let brand = null
+      let model = null
+      let serialNo = null
+      let btu = null
+      
+      if (assetType === 'AIR_CONDITIONER') {
+        qrCode = `AC-2024-${String(i).padStart(3, '0')}`
+        brand = airBrands[Math.floor(Math.random() * airBrands.length)]
+        model = `Model-${['X', 'Y', 'Z'][Math.floor(Math.random() * 3)]}${Math.floor(Math.random() * 10) + 1}`
+        serialNo = `SN-${brand.substring(0, 3).toUpperCase()}-${String(i).padStart(5, '0')}`
+        btu = btuRanges[Math.floor(Math.random() * btuRanges.length)]
+      } else if (assetType === 'REFRIGERANT') {
+        qrCode = `REF-2024-${String(i).padStart(3, '0')}`
+        brand = refrigerantBrands[Math.floor(Math.random() * refrigerantBrands.length)]
+        model = `${brand} ${Math.floor(Math.random() * 5) + 1}kg`
+        serialNo = `REF-${String(i).padStart(5, '0')}`
+      } else if (assetType === 'SPARE_PART') {
+        qrCode = `PART-2024-${String(i).padStart(3, '0')}`
+        const partType = sparePartTypes[Math.floor(Math.random() * sparePartTypes.length)]
+        brand = partType
+        model = `Size-${['S', 'M', 'L'][Math.floor(Math.random() * 3)]}`
+        serialNo = `PART-${String(i).padStart(5, '0')}`
+      } else if (assetType === 'TOOL') {
+        qrCode = `TOOL-2024-${String(i).padStart(3, '0')}`
+        const toolType = toolTypes[Math.floor(Math.random() * toolTypes.length)]
+        brand = toolType
+        model = `Pro-${Math.floor(Math.random() * 10) + 1}`
+        serialNo = `TOOL-${String(i).padStart(5, '0')}`
+      } else {
+        qrCode = `OTHER-2024-${String(i).padStart(3, '0')}`
+        brand = 'Generic'
+        model = `Item-${i}`
+        serialNo = `OTH-${String(i).padStart(5, '0')}`
+      }
+      
+      const installDate = assetType === 'AIR_CONDITIONER' && Math.random() > 0.3
+        ? (() => {
+            const date = new Date()
+            date.setFullYear(date.getFullYear() - Math.floor(Math.random() * 3))
+            date.setMonth(Math.floor(Math.random() * 12))
+            date.setDate(Math.floor(Math.random() * 28) + 1)
+            return date
+          })()
+        : null
+      
       await prisma.asset.create({
         data: {
-          qrCode: `AC-2024-00${i}`,
-          brand: airBrands[i % 3],
-          model: `Model-X${i}`,
-          btu: 18000 + (i * 1000),
-          serialNo: `SN-0000${i}`,
-          status: 'ACTIVE',
-          roomId: i <= 2 ? roomServer.id : roomLobby.id
+          qrCode,
+          assetType: assetType,
+          brand,
+          model,
+          serialNo,
+          btu,
+          installDate,
+          status: status,
+          roomId: randomRoom.id
         }
       })
     }

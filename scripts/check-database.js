@@ -5,9 +5,18 @@
  *   node scripts/check-database.js
  */
 
-const { PrismaClient } = require('@prisma/client')
-const fs = require('fs')
 const path = require('path')
+const fs = require('fs')
+
+// โหลด .env จาก project root (ใช้เมื่อรัน node โดยตรง)
+try {
+  const dotenv = require('dotenv')
+  dotenv.config({ path: path.join(__dirname, '..', '.env') })
+} catch {
+  // dotenv ไม่ได้ติดตั้ง – ใช้ค่าจาก process.env (เช่น next dev)
+}
+
+const { PrismaClient } = require('@prisma/client')
 
 async function checkDatabase() {
   console.log('🔍 Checking database configuration...\n')

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import LoginForm from "./LoginForm";
 import SetupDatabaseButton from "./SetupDatabaseButton";
 import type { Metadata } from "next";
+import SnowfallEffect from "@/app/components/SnowfallEffect";
 
 export const metadata: Metadata = {
   title: "เข้าสู่ระบบ - AirService Enterprise",
@@ -19,104 +21,139 @@ interface Props {
 export default async function LoginPage({ searchParams }: Props) {
   const params = await searchParams;
   const { error, message, retryAfter } = params;
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Floating decorative elements */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-      <div className="absolute bottom-20 right-10 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-      
-      <div className="max-w-md w-full relative z-10">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-2">
-            AirService Enterprise
-          </h1>
-          <p className="text-gray-500">เข้าสู่ระบบ</p>
-        </div>
+  const currentYear = new Date().getFullYear();
 
-        {/* Login Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-100">
-          {/* Error Messages from URL */}
-          {error === 'locked' && message && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-sm text-red-600 font-medium">บัญชีถูกล็อก</p>
-              <p className="text-sm text-red-600 mt-1">{decodeURIComponent(message)}</p>
-            </div>
-          )}
-          {error === 'rate_limit' && (
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-              <p className="text-sm text-yellow-800 font-medium">พยายามเข้าสู่ระบบมากเกินไป</p>
-              <p className="text-sm text-yellow-700 mt-1">
-                กรุณารอ {retryAfter ? `${Math.ceil(parseInt(retryAfter) / 60)} นาที` : '15 นาที'} ก่อนลองใหม่
+  return (
+    <div className="min-h-screen flex flex-col relative overflow-hidden font-sans" style={{ backgroundColor: 'var(--app-bg)' }}>
+
+      {/* ❄️ Snowfall Effect */}
+      <SnowfallEffect />
+
+      {/* Animated gradient layer */}
+      <div
+        className="absolute inset-0 opacity-[0.3] animate-bg-gradient pointer-events-none"
+        style={{
+          background: "linear-gradient(120deg, var(--app-section) 0%, var(--app-card) 25%, var(--app-section) 50%, var(--app-card) 75%, var(--app-section) 100%)",
+        }}
+      />
+      {/* Background orbs */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse-slow" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
+      <div className="absolute top-1/4 -right-24 w-80 h-80 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-pulse-slow delay-700" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
+      <div className="absolute -bottom-24 left-1/3 w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse-slow delay-1000" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
+
+      {/* --- Main Content Area --- */}
+      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
+        <div className="max-w-md w-full">
+
+          {/* Header Section (เหลือแค่ Logo + ชื่อบริษัท) */}
+          <div className="motion-enter text-center mb-6 opacity-0 animate-fade-in-up flex flex-col items-center">
+            <Link href="/welcome" className="inline-block mb-2 transition-transform hover:scale-105 duration-300 relative group">
+              <div className="absolute inset-0 blur-3xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary-glow)' }}></div>
+              <Image
+                src="/flomac.png"
+                alt="Flomac Logo"
+                width={600}
+                height={250}
+                className="h-40 md:h-56 w-auto object-contain mx-auto relative z-10 drop-shadow-2xl filter"
+                priority
+                unoptimized
+              />
+            </Link>
+
+            <h2 className="text-xl font-bold mb-2 -mt-8 md:-mt-12 tracking-wide uppercase relative z-20" style={{ color: 'var(--app-text-heading)' }}>
+              FLOMAC CO., LTD.
+            </h2>
+            <div className="h-1 w-16 rounded-full mx-auto shadow-sm" style={{ background: 'var(--app-btn-primary)' }}></div>
+          </div>
+
+          {/* Login Form Container */}
+          <div className="motion-enter opacity-0 animate-card-enter delay-150 backdrop-blur-md rounded-2xl shadow-xl p-8 relative overflow-hidden" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', borderWidth: '1px', borderStyle: 'solid' }}>
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-20 h-20 rounded-full opacity-30" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
+
+            {/* ✅ ย้ายหัวข้อเข้ามาข้างในนี้แล้ว */}
+            <div className="text-center mb-6 relative z-10">
+              <h1 className="text-2xl font-extrabold mb-1" style={{ color: 'var(--app-text-heading)' }}>
+                เข้าสู่ระบบ
+              </h1>
+              <p className="text-sm" style={{ color: 'var(--app-text-muted)' }}>
+                ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ
               </p>
             </div>
-          )}
-          {error === 'invalid' && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-sm text-red-600">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
-            </div>
-          )}
-          {error === 'missing' && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-sm text-red-600">กรุณากรอกชื่อผู้ใช้และรหัสผ่าน</p>
-            </div>
-          )}
-          {error === 'database' && <SetupDatabaseButton />}
-          {error === 'server' && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-sm text-red-600 font-medium">⚠️ เกิดข้อผิดพลาดของเซิร์ฟเวอร์</p>
-              <p className="text-sm text-red-600 mt-1">กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
-            </div>
-          )}
-          
-          <LoginForm />
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 text-center">
-              ไม่มีบัญชี?{" "}
-              <span className="text-gray-400">
-                กรุณาติดต่อ Admin เพื่อสร้างบัญชี
-              </span>
-            </p>
-          </div>
+            {/* Error Messages */}
+            {error === 'locked' && message && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl relative z-10">
+                <p className="text-sm text-red-600 font-medium">บัญชีถูกล็อก</p>
+                <p className="text-sm text-red-600 mt-1">{decodeURIComponent(message)}</p>
+              </div>
+            )}
+            {error === 'rate_limit' && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl relative z-10">
+                <p className="text-sm text-yellow-800 font-medium">พยายามเข้าสู่ระบบมากเกินไป</p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  กรุณารอ {retryAfter ? `${Math.ceil(parseInt(retryAfter) / 60)} นาที` : '15 นาที'} ก่อนลองใหม่
+                </p>
+              </div>
+            )}
+            {error === 'invalid' && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl relative z-10">
+                <p className="text-sm text-red-600">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
+              </div>
+            )}
+            {error === 'missing' && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl relative z-10">
+                <p className="text-sm text-red-600">กรุณากรอกชื่อผู้ใช้และรหัสผ่าน</p>
+              </div>
+            )}
+            {error === 'database' && <div className="relative z-10"><SetupDatabaseButton /></div>}
+            {error === 'server' && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl relative z-10">
+                <p className="text-sm text-red-600 font-medium">⚠️ เกิดข้อผิดพลาดของเซิร์ฟเวอร์</p>
+                <p className="text-sm text-red-600 mt-1">กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
+              </div>
+            )}
 
-          <div className="mt-4 text-center">
-            <Link
-              href="/welcome"
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium hover:gap-3 transition-all duration-200"
-            >
-              <span>←</span>
-              <span>กลับหน้าแรก</span>
-            </Link>
-          </div>
-        </div>
+            <div className="relative z-10">
+              <LoginForm />
+            </div>
 
-        {/* Demo Accounts */}
-        <div className="mt-6 bg-gradient-to-br from-blue-50 to-indigo-50 backdrop-blur-sm border border-blue-200/50 rounded-2xl p-5 shadow-md">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🧪</span>
-            <p className="text-sm font-semibold text-blue-900">
-              บัญชีทดสอบ
-            </p>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-blue-800 bg-white/40 rounded-lg px-3 py-2">
-              <span className="font-semibold min-w-16">Admin:</span>
-              <span className="text-gray-700">admin / admin123</span>
+            <div className="mt-6 pt-6 relative z-10" style={{ borderTopColor: 'var(--app-border)', borderTopWidth: '1px', borderTopStyle: 'solid' }}>
+              <p className="text-sm text-center" style={{ color: 'var(--app-text-body)' }}>
+                ไม่มีบัญชี?{" "}
+                <span style={{ color: 'var(--app-text-muted)' }}>
+                  กรุณาติดต่อ Admin เพื่อสร้างบัญชี
+                </span>
+              </p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-blue-800 bg-white/40 rounded-lg px-3 py-2">
-              <span className="font-semibold min-w-16">ช่าง:</span>
-              <span className="text-gray-700">tech1 / password123</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-blue-800 bg-white/40 rounded-lg px-3 py-2">
-              <span className="font-semibold min-w-16">ลูกค้า:</span>
-              <span className="text-gray-700">client1 / client123</span>
+
+            <div className="mt-4 text-center relative z-10">
+              <Link
+                href="/welcome"
+                className="inline-flex items-center gap-2 text-sm font-medium hover:gap-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg px-2 py-1 -m-1 hover:opacity-80"
+                style={{ color: 'var(--app-btn-primary)' }}
+              >
+                <span>←</span>
+                <span>กลับหน้าแรก</span>
+              </Link>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="relative z-10 py-6 backdrop-blur-sm" style={{ borderTopColor: 'var(--app-border)', borderTopWidth: '1px', borderTopStyle: 'solid', backgroundColor: 'var(--app-section)' }}>
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--app-text-muted)' }}>
+          <div className="order-2 md:order-1">
+            &copy; {currentYear} Flomac Co., Ltd. All rights reserved.
+          </div>
+          <div className="flex gap-6 order-1 md:order-2">
+            <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Privacy Policy</span>
+            <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Terms of Service</span>
+            <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Support</span>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }

@@ -2,28 +2,32 @@
 
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+// import { isRedirectError } ... ❌ ไม่ต้อง import แล้ว
 import bcrypt from 'bcryptjs'
-import { 
-  checkRateLimit, 
-  recordFailedLogin, 
-  clearFailedLogin, 
+import {
+  checkRateLimit,
+  recordFailedLogin,
+  clearFailedLogin,
   logSecurityEvent,
 } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
 
+/* ===================== LOGIN ===================== */
+
 export async function login(formData: FormData) {
   try {
     const username = formData.get('username') as string
     const password = formData.get('password') as string
+    const callbackUrl = formData.get('callbackUrl') as string | null
 
     if (!username || !password) {
-      redirect('/login?error=missing')
+      const redirectUrl = callbackUrl 
+        ? `/login?error=missing&callbackUrl=${encodeURIComponent(callbackUrl)}`
+        : '/login?error=missing'
+      redirect(redirectUrl)
     }
 
-    // Rate limiting: Check both IP and username
-    // Note: In server actions, we need to get IP from headers
-    // For now, we'll use username as identifier (can be enhanced with request headers)
     const rateLimitResult = checkRateLimit(username)
 
     if (!rateLimitResult.allowed) {
@@ -31,18 +35,23 @@ export async function login(formData: FormData) {
         username,
         lockoutUntil: rateLimitResult.lockoutUntil,
       })
-      redirect(`/login?error=rate_limit&retryAfter=${rateLimitResult.lockoutUntil ? Math.ceil((rateLimitResult.lockoutUntil.getTime() - Date.now()) / 1000) : 900}`)
+
+      redirect(
+        `/login?error=rate_limit&retryAfter=${
+          rateLimitResult.lockoutUntil
+            ? Math.ceil((rateLimitResult.lockoutUntil.getTime() - Date.now()) / 1000)
+            : 900
+        }`
+      )
     }
 
-    // ค้นหา User - เพิ่ม error handling สำหรับ database errors
     let user
     try {
       user = await prisma.user.findUnique({
         where: { username },
       })
-    } catch (dbError: any) {
+    } catch (dbError) {
       console.error('Database error during login:', dbError)
-      // ถ้า database ยังไม่มี table หรือ connection error
       redirect('/login?error=database')
     }
 
@@ -51,11 +60,9 @@ export async function login(formData: FormData) {
       redirect('/login?error=invalid')
     }
 
-    // Auto-unlock expired accounts before checking
     const { autoUnlockExpiredAccounts } = await import('@/lib/account-lock')
     await autoUnlockExpiredAccounts()
 
-    // Refresh user data after auto-unlock
     const refreshedUser = await prisma.user.findUnique({
       where: { id: user.id },
     })
@@ -64,14 +71,16 @@ export async function login(formData: FormData) {
       redirect('/login?error=invalid')
     }
 
-    // Check if account is locked
     const now = new Date()
-    const isLocked = refreshedUser.locked || (refreshedUser.lockedUntil && refreshedUser.lockedUntil > now)
+    const isLocked =
+      refreshedUser.locked ||
+      (refreshedUser.lockedUntil && refreshedUser.lockedUntil > now)
 
     if (isLocked) {
-      const lockoutMessage = refreshedUser.lockedUntil && refreshedUser.lockedUntil > now
-        ? `บัญชีถูกล็อกจนถึง ${refreshedUser.lockedUntil.toLocaleString('th-TH')}`
-        : 'บัญชีถูกล็อก กรุณาติดต่อ Admin'
+      const lockoutMessage =
+        refreshedUser.lockedUntil && refreshedUser.lockedUntil > now
+          ? `บัญชีถูกล็อกจนถึง ${refreshedUser.lockedUntil.toLocaleString('th-TH')}`
+          : 'บัญชีถูกล็อก กรุณาติดต่อ Admin'
 
       logSecurityEvent('LOGIN_ATTEMPT_LOCKED_ACCOUNT', {
         username: refreshedUser.username,
@@ -83,15 +92,16 @@ export async function login(formData: FormData) {
       redirect(`/login?error=locked&message=${encodeURIComponent(lockoutMessage)}`)
     }
 
-    // Verify password with bcrypt
-    const isValidPassword = await bcrypt.compare(password, refreshedUser.password)
+    const isValidPassword = await bcrypt.compare(
+      password,
+      refreshedUser.password
+    )
+
     if (!isValidPassword) {
       recordFailedLogin(username)
 
-      // Check if we should lock the account after failed attempts
       const rateLimitResult = checkRateLimit(username)
       if (!rateLimitResult.allowed && rateLimitResult.lockoutUntil) {
-        // Lock the account
         await prisma.user.update({
           where: { id: refreshedUser.id },
           data: {
@@ -111,12 +121,14 @@ export async function login(formData: FormData) {
       redirect('/login?error=invalid')
     }
 
-    // Successful login: Clear failed attempts
     clearFailedLogin(username)
 
-    // ตั้ง Session
     const { setSession } = await import('@/lib/auth')
-    await setSession(refreshedUser.id)
+    await setSession(refreshedUser.id, refreshedUser.role, refreshedUser.siteId ?? null)
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Login] Session set for user:', refreshedUser.username, 'role:', refreshedUser.role, 'siteId:', refreshedUser.siteId ?? '(none)')
+    }
 
     logSecurityEvent('LOGIN_SUCCESS', {
       userId: refreshedUser.id,
@@ -124,30 +136,54 @@ export async function login(formData: FormData) {
       role: refreshedUser.role,
     })
 
-    // Redirect ตาม Role
     const role = String(refreshedUser.role)
-    if (role === 'ADMIN') {
-      redirect('/')
-    } else if (role === 'TECHNICIAN') {
-      redirect('/technician')
-    } else if (role === 'CLIENT') {
-      redirect('/')
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Login] Redirecting to home for role:', role)
     }
 
+    // ถ้ามี callbackUrl ให้ redirect ไปที่นั้น
+    if (callbackUrl) {
+      redirect(callbackUrl)
+    }
+
+    if (role === 'ADMIN') redirect('/')
+    if (role === 'TECHNICIAN') redirect('/technician')
+    if (role === 'CLIENT') redirect('/')
+
     redirect('/')
-  } catch (error) {
-    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+  } catch (error: any) {
+    // ✅ แก้ไขตรงนี้: เช็ค Error เองโดยไม่ต้องพึ่ง import
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message === 'NEXT_REDIRECT') {
+      throw error
+    }
+
+    await handleServerActionError(
+      error,
+      await getCurrentUser().catch(() => null)
+    )
     throw error
   }
 }
 
+/* ===================== LOGOUT ===================== */
+
 export async function logout() {
   try {
-    const { clearSession } = await import('@/lib/auth')
-    await clearSession()
+    const { deleteSession } = await import('@/lib/auth')
+    await deleteSession()
+
     redirect('/login')
-  } catch (error) {
-    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+  } catch (error: any) {
+    // ✅ แก้ไขตรงนี้ด้วย
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message === 'NEXT_REDIRECT') {
+      throw error
+    }
+
+    await handleServerActionError(
+      error,
+      await getCurrentUser().catch(() => null)
+    )
     throw error
   }
 }

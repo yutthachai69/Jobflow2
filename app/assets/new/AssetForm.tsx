@@ -41,6 +41,7 @@ export default function AssetForm({ sites }: Props) {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('')
   const [selectedFloorId, setSelectedFloorId] = useState<string>('')
   const [selectedRoomId, setSelectedRoomId] = useState<string>('')
+  const [assetType, setAssetType] = useState<string>('AIR_CONDITIONER')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -88,8 +89,13 @@ export default function AssetForm({ sites }: Props) {
 
     const formData = new FormData(e.currentTarget)
     const serialNo = formData.get('serialNo') as string
-    if (!serialNo || serialNo.trim() === '') {
-      newErrors.serialNo = 'กรุณากรอก Serial Number'
+    const assetTypeValue = formData.get('assetType') as string || 'AIR_CONDITIONER'
+    
+    // QR Code/Serial Number เป็น required เฉพาะเครื่องปรับอากาศ
+    if (assetTypeValue === 'AIR_CONDITIONER') {
+      if (!serialNo || serialNo.trim() === '') {
+        newErrors.serialNo = 'กรุณากรอก Serial Number / QR Code'
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -129,7 +135,7 @@ export default function AssetForm({ sites }: Props) {
             ))}
           </select>
           <p className="mt-2 text-xs text-gray-500">
-            เลือกสถานที่ที่ต้องการติดตั้งเครื่องปรับอากาศ
+            เลือกสถานที่ที่ต้องการติดตั้งทรัพย์สิน
           </p>
         </div>
 
@@ -247,7 +253,7 @@ export default function AssetForm({ sites }: Props) {
             )}
             {!errors.roomId && (
               <p className="mt-2 text-xs text-gray-500">
-                เลือกห้องที่ต้องการติดตั้งเครื่องปรับอากาศ
+                เลือกห้องที่ต้องการติดตั้งทรัพย์สิน
               </p>
             )}
           </div>
@@ -276,6 +282,28 @@ export default function AssetForm({ sites }: Props) {
             </p>
           </div>
         )}
+
+        {/* Asset Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            ประเภททรัพย์สิน <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="assetType"
+            value={assetType}
+            onChange={(e) => setAssetType(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900"
+          >
+            <option value="AIR_CONDITIONER">เครื่องปรับอากาศ</option>
+            <option value="REFRIGERANT">น้ำยาแอร์</option>
+            <option value="SPARE_PART">อะไหล่</option>
+            <option value="TOOL">เครื่องมือ</option>
+            <option value="OTHER">อื่นๆ</option>
+          </select>
+          <p className="mt-2 text-xs text-gray-500">
+            เลือกประเภทของทรัพย์สินที่ต้องการเพิ่ม
+          </p>
+        </div>
 
         {/* Brand และ Model */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,47 +334,66 @@ export default function AssetForm({ sites }: Props) {
 
         {/* Serial Number และ BTU */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div data-error={errors.serialNo ? 'true' : undefined}>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <span className="flex items-center gap-2">
-                Serial Number <span className="text-red-500">*</span>
-                <Tooltip content="Serial Number จะถูกใช้เป็น QR Code สำหรับสแกนหาเครื่องปรับอากาศ ต้องไม่ซ้ำกับเครื่องอื่น">
-                  <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
-                </Tooltip>
-              </span>
-            </label>
-            <input
-              type="text"
-              name="serialNo"
-              autoFocus
-              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${
-                errors.serialNo ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-              }`}
-              placeholder="เช่น SN-00001"
-            />
-            {errors.serialNo && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                <span>{errors.serialNo}</span>
-              </p>
-            )}
-            {!errors.serialNo && (
+          {assetType === 'AIR_CONDITIONER' ? (
+            <div data-error={errors.serialNo ? 'true' : undefined}>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <span className="flex items-center gap-2">
+                  Serial Number / QR Code <span className="text-red-500">*</span>
+                  <Tooltip content="Serial Number จะถูกใช้เป็น QR Code สำหรับสแกนหาทรัพย์สิน ต้องไม่ซ้ำกับทรัพย์สินอื่น">
+                    <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
+                  </Tooltip>
+                </span>
+              </label>
+              <input
+                type="text"
+                name="serialNo"
+                autoFocus
+                className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${
+                  errors.serialNo ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+                }`}
+                placeholder="เช่น SN-00001"
+              />
+              {errors.serialNo && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <span>{errors.serialNo}</span>
+                </p>
+              )}
+              {!errors.serialNo && (
+                <p className="mt-2 text-xs text-gray-500">
+                  🔖 Serial Number นี้จะใช้เป็น QR Code (ต้องไม่ซ้ำ)
+                </p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                รหัสทรัพย์สิน
+              </label>
+              <input
+                type="text"
+                name="serialNo"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+                placeholder="เช่น REF-001, PART-001"
+              />
               <p className="mt-2 text-xs text-gray-500">
-                🔖 Serial Number นี้จะใช้เป็น QR Code (ต้องไม่ซ้ำ)
+                รหัสสำหรับระบุทรัพย์สิน (ไม่จำเป็นต้องมี QR Code)
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              BTU
-            </label>
-            <input
-              type="number"
-              name="btu"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-              placeholder="เช่น 18000"
-            />
-          </div>
+          {assetType === 'AIR_CONDITIONER' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                BTU
+              </label>
+              <input
+                type="number"
+                name="btu"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+                placeholder="เช่น 18000"
+              />
+            </div>
+          )}
         </div>
 
         {/* วันที่ติดตั้ง */}
@@ -360,7 +407,7 @@ export default function AssetForm({ sites }: Props) {
             className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900"
           />
           <p className="mt-2 text-xs text-gray-500">
-            📅 วันที่ติดตั้งเครื่องปรับอากาศ (ไม่บังคับ)
+            📅 วันที่ติดตั้งทรัพย์สิน (ไม่บังคับ)
           </p>
         </div>
 
@@ -369,7 +416,7 @@ export default function AssetForm({ sites }: Props) {
           <button
             type="submit"
             disabled={!selectedRoomId}
-            aria-label="บันทึกข้อมูลเครื่องปรับอากาศ"
+            aria-label="บันทึกข้อมูลทรัพย์สิน"
             className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
           >
             <span>บันทึก</span>

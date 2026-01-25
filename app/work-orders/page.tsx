@@ -25,6 +25,7 @@ export default async function WorkOrdersPage({
   // สำหรับ TECHNICIAN: แสดงเฉพาะ Job Items ที่ตัวเองทำ
   let workOrders: Array<{
     id: string;
+    workOrderNumber?: string | null;
     jobType: string;
     scheduledDate: Date;
     status: string;
@@ -104,27 +105,35 @@ export default async function WorkOrdersPage({
       createdAt: Date;
     }>;
   }> | null = null; // สำหรับ TECHNICIAN
-  
+
   if (user.role === 'CLIENT') {
-    if (!user.siteId) {
+    let siteId = user.siteId;
+    if (!siteId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { siteId: true },
+      });
+      siteId = dbUser?.siteId ?? null;
+    }
+    if (!siteId) {
       return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">ไม่พบข้อมูลสถานที่</h1>
-            <p className="text-gray-600">กรุณาติดต่อผู้ดูแลระบบ</p>
+            <p className="text-gray-600">กรุณาติดต่อผู้ดูแลระบบ หรือ ล็อกเอาท์แล้วล็อกอินใหม่</p>
           </div>
         </div>
       );
     }
 
     workOrders = await prisma.workOrder.findMany({
-      where: { siteId: user.siteId },
+      where: { siteId: siteId },
       include: {
         site: {
           include: { client: true },
         },
         jobItems: {
-          include: { 
+          include: {
             asset: true,
             technician: true,
           },
@@ -132,10 +141,17 @@ export default async function WorkOrdersPage({
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // Fetch site name for header display
+    const clientSite = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: { name: true }
+    });
+    (user as any).siteName = clientSite?.name;
   } else if (user.role === 'TECHNICIAN') {
     // TECHNICIAN: ดึงเฉพาะ Job Items ที่ตัวเองทำ (technicianId = user.id)
     technicianJobItems = await prisma.jobItem.findMany({
-      where: { 
+      where: {
         technicianId: user.id,
       },
       include: {
@@ -168,7 +184,7 @@ export default async function WorkOrdersPage({
       },
       orderBy: { startTime: "desc" },
     });
-    
+
     // สำหรับ TECHNICIAN เราไม่ใช้ workOrders แต่ใช้ technicianJobItems แทน
     workOrders = [];
   } else {
@@ -188,7 +204,7 @@ export default async function WorkOrdersPage({
           include: { client: true },
         },
         jobItems: {
-          include: { 
+          include: {
             asset: true,
             technician: true,
           },
@@ -201,7 +217,7 @@ export default async function WorkOrdersPage({
   // สำหรับ TECHNICIAN: ส่งข้อมูล Job Items ไปให้ Client Component
   if (user.role === 'TECHNICIAN') {
     return (
-      <WorkOrdersClient 
+      <WorkOrdersClient
         userRole={user.role}
         technicianJobItems={technicianJobItems || []}
       />
@@ -217,12 +233,12 @@ export default async function WorkOrdersPage({
 
   // สำหรับ ADMIN และ CLIENT: ส่งข้อมูล Work Orders ไปให้ Client Component
   return (
-    <WorkOrdersClient 
+    <WorkOrdersClient
       userRole={user.role}
       workOrders={paginatedWorkOrders}
       allSites={allSites}
       selectedSiteId={selectedSiteId}
-      userSiteName={user.role === 'CLIENT' ? user.site?.name : undefined}
+      userSiteName={user.role === 'CLIENT' ? (user as any).siteName : undefined}
       currentPage={currentPage}
       totalPages={totalPages}
       totalItems={totalItems}

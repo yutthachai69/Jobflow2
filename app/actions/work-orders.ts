@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth-helpers"
 import { logSecurityEvent } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
+import { generateWorkOrderNumber, getWorkOrderDisplayNumber } from "@/lib/work-order-number"
 
 export async function createMockMaintenance(assetId: string) {
   try {
@@ -106,6 +107,9 @@ export async function createWorkOrder(formData: FormData) {
       throw new Error('Invalid date format')
     }
 
+    // สร้างเลขที่งาน
+    const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
+
     // สร้าง Work Order
     const workOrder = await prisma.workOrder.create({
       data: {
@@ -114,6 +118,7 @@ export async function createWorkOrder(formData: FormData) {
         scheduledDate,
         assignedTeam: assignedTeam || null,
         status: 'OPEN',
+        workOrderNumber,
       },
     })
 
@@ -321,6 +326,50 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
         technicianId: user.role === 'TECHNICIAN' && !jobItem.technicianId ? user.id : jobItem.technicianId,
       },
     })
+
+    // สร้าง notification สำหรับ CLIENT เมื่องานเสร็จ
+    if (status === 'DONE') {
+      const workOrder = await prisma.workOrder.findUnique({
+        where: { id: jobItem.workOrderId },
+        include: {
+          site: {
+            include: {
+              users: {
+                where: { role: 'CLIENT' },
+              },
+            },
+          },
+          jobItems: {
+            where: {
+              status: 'DONE',
+            },
+          },
+        },
+      })
+
+      if (workOrder) {
+        // ตรวจสอบว่าทุก job item เสร็จแล้วหรือยัง
+        const allJobItems = await prisma.jobItem.findMany({
+          where: { workOrderId: jobItem.workOrderId },
+        })
+        const allDone = allJobItems.every((ji) => ji.status === 'DONE')
+
+        // ถ้าทุกงานเสร็จแล้ว สร้าง notification สำหรับ CLIENT
+        if (allDone && workOrder.site.users.length > 0) {
+          for (const client of workOrder.site.users) {
+            await prisma.notification.create({
+              data: {
+                type: 'WORK_ORDER_COMPLETED',
+                title: 'งานเสร็จสมบูรณ์',
+                message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} เสร็จสมบูรณ์แล้ว กรุณาให้คะแนนความพึงพอใจ`,
+                userId: client.id,
+                relatedId: workOrder.id,
+              },
+            })
+          }
+        }
+      }
+    }
 
     revalidatePath(`/technician/job-item/${jobItemId}`)
     revalidatePath('/technician')

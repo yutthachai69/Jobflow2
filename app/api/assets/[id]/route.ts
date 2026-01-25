@@ -69,8 +69,18 @@ export async function GET(
     }
 
     // Access Control: CLIENT can only view assets within their assigned site
-    if (user.role === 'CLIENT' && user.siteId && asset.room.floor.building.siteId !== user.siteId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (user.role === 'CLIENT') {
+      let siteId = user.siteId
+      if (!siteId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.userId },
+          select: { siteId: true },
+        })
+        siteId = dbUser?.siteId ?? null
+      }
+      if (!siteId || asset.room.floor.building.siteId !== siteId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     return NextResponse.json(asset)

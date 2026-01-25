@@ -6,11 +6,11 @@ import { redirect } from "next/navigation"
 import bcrypt from 'bcryptjs'
 import { getCurrentUser } from "@/lib/auth"
 import { sanitizeString, validateUsername, validatePassword } from "@/lib/validation"
-import { 
-  checkRateLimit, 
-  recordFailedLogin, 
-  clearFailedLogin, 
-  logSecurityEvent, 
+import {
+  checkRateLimit,
+  recordFailedLogin,
+  clearFailedLogin,
+  logSecurityEvent,
   isPasswordCompromised,
   getClientIP
 } from "@/lib/security"
@@ -20,45 +20,45 @@ export async function createMockMaintenance(assetId: string) {
   try {
     // 1. สร้างใบงาน
     const wo = await prisma.workOrder.create({
-    data: {
-      jobType: 'PM',
-      scheduledDate: new Date(),
-      status: 'COMPLETED',
-      siteId: (await prisma.asset.findUnique({ where: { id: assetId }, include: { room: { include: { floor: { include: { building: true } } } } } }))?.room.floor.building.siteId!,
-    }
-  })
+      data: {
+        jobType: 'PM',
+        scheduledDate: new Date(),
+        status: 'COMPLETED',
+        siteId: (await prisma.asset.findUnique({ where: { id: assetId }, include: { room: { include: { floor: { include: { building: true } } } } } }))?.room.floor.building.siteId!,
+      }
+    })
 
-  // 2. สร้างรายการซ่อม (เก็บใส่ตัวแปร job)
-  const job = await prisma.jobItem.create({
-    data: {
-      workOrderId: wo.id,
-      assetId: assetId,
-      status: 'DONE',
-      startTime: new Date(),
-      endTime: new Date(),
-      techNote: 'ล้างทำความสะอาดแผ่นกรอง คอยล์เย็น และเช็คกระแสไฟเรียบร้อย (Demo with Photos)',
-      technicianId: (await prisma.user.findFirst())?.id,
-    }
-  })
+    // 2. สร้างรายการซ่อม (เก็บใส่ตัวแปร job)
+    const job = await prisma.jobItem.create({
+      data: {
+        workOrderId: wo.id,
+        assetId: assetId,
+        status: 'DONE',
+        startTime: new Date(),
+        endTime: new Date(),
+        techNote: 'ล้างทำความสะอาดแผ่นกรอง คอยล์เย็น และเช็คกระแสไฟเรียบร้อย (Demo with Photos)',
+        technicianId: (await prisma.user.findFirst())?.id,
+      }
+    })
 
-  // 3. (เพิ่มใหม่) สร้างรูปภาพจำลอง Before / After
-  await prisma.jobPhoto.createMany({
-    data: [
+    // 3. (เพิ่มใหม่) สร้างรูปภาพจำลอง Before / After
+    await prisma.jobPhoto.createMany({
+      data: [
         {
-            jobItemId: job.id,
-            type: 'BEFORE',
-            url: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&q=80', // รูปแอร์สกปรก (สมมติ)
+          jobItemId: job.id,
+          type: 'BEFORE',
+          url: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&q=80', // รูปแอร์สกปรก (สมมติ)
         },
         {
-            jobItemId: job.id,
-            type: 'AFTER',
-            url: 'https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?w=400&q=80', // รูปแอร์สะอาด (สมมติ)
+          jobItemId: job.id,
+          type: 'AFTER',
+          url: 'https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?w=400&q=80', // รูปแอร์สะอาด (สมมติ)
         }
-    ]
-  })
+      ]
+    })
 
-  // 4. รีเฟรชหน้า
-  revalidatePath(`/assets/${assetId}`)
+    // 4. รีเฟรชหน้า
+    revalidatePath(`/assets/${assetId}`)
   } catch (error) {
     const { handleServerActionError } = await import('@/lib/error-handler')
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
@@ -308,17 +308,17 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
   // Authorization: Only TECHNICIAN or ADMIN can update job item status
   const user = await getCurrentUser()
   if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {
-    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', { 
-      userId: user?.id, 
-      username: user?.username, 
-      action: `UPDATE_JOB_ITEM_STATUS:${jobItemId}` 
+    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', {
+      userId: user?.id,
+      username: user?.username,
+      action: `UPDATE_JOB_ITEM_STATUS:${jobItemId}`
     })
     throw new Error('Unauthorized')
   }
 
   const jobItem = await prisma.jobItem.findUnique({
     where: { id: jobItemId },
-    include: { 
+    include: {
       workOrder: true,
       photos: true,
     },
@@ -340,14 +340,14 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
   if (status === 'DONE' && user.role === 'TECHNICIAN') {
     const hasBefore = jobItem.photos.some(photo => photo.type === 'BEFORE')
     const hasAfter = jobItem.photos.some(photo => photo.type === 'AFTER')
-    
+
     if (!hasBefore || !hasAfter) {
       throw new Error('กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน')
     }
   }
 
   const updateData: any = { status }
-  
+
   if (status === 'IN_PROGRESS' && !jobItem.startTime) {
     updateData.startTime = new Date()
     // Auto-assign technician if not assigned
@@ -355,7 +355,7 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
       updateData.technicianId = user.id
     }
   }
-  
+
   if (status === 'DONE' && !jobItem.endTime) {
     updateData.endTime = new Date()
   }
@@ -423,10 +423,10 @@ export async function createJobPhoto(jobItemId: string, formData: FormData) {
   // Authorization: Only TECHNICIAN or ADMIN can upload photos
   const user = await getCurrentUser()
   if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {
-    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', { 
-      userId: user?.id, 
-      username: user?.username, 
-      action: `CREATE_JOB_PHOTO:${jobItemId}` 
+    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', {
+      userId: user?.id,
+      username: user?.username,
+      action: `CREATE_JOB_PHOTO:${jobItemId}`
     })
     throw new Error('Unauthorized')
   }
@@ -486,10 +486,10 @@ export async function updateJobItemNote(jobItemId: string, formData: FormData) {
   // Authorization: Only TECHNICIAN or ADMIN can update job item note
   const user = await getCurrentUser()
   if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {
-    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', { 
-      userId: user?.id, 
-      username: user?.username, 
-      action: `UPDATE_JOB_ITEM_NOTE:${jobItemId}` 
+    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', {
+      userId: user?.id,
+      username: user?.username,
+      action: `UPDATE_JOB_ITEM_NOTE:${jobItemId}`
     })
     throw new Error('Unauthorized')
   }
@@ -1142,6 +1142,7 @@ export async function createAsset(formData: FormData) {
 
     const roomId = sanitizeString(formData.get('roomId') as string)
     const serialNo = sanitizeString(formData.get('serialNo') as string)
+    const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
     const brand = sanitizeString(formData.get('brand') as string)
     const model = sanitizeString(formData.get('model') as string)
     const btuStr = formData.get('btu') as string
@@ -1177,6 +1178,7 @@ export async function createAsset(formData: FormData) {
       data: {
         roomId,
         qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
+        assetType: assetType as any,
         brand: brand || null,
         model: model || null,
         serialNo: serialNo || null,
@@ -1202,14 +1204,15 @@ export async function updateAsset(formData: FormData) {
     throw new Error('Unauthorized')
   }
 
-  const assetId = sanitizeString(formData.get('assetId') as string)
-  const roomId = sanitizeString(formData.get('roomId') as string)
-  const serialNo = sanitizeString(formData.get('serialNo') as string)
-  const brand = sanitizeString(formData.get('brand') as string)
-  const model = sanitizeString(formData.get('model') as string)
-  const btuStr = formData.get('btu') as string
-  const installDateStr = formData.get('installDate') as string
-  const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
+    const assetId = sanitizeString(formData.get('assetId') as string)
+    const roomId = sanitizeString(formData.get('roomId') as string)
+    const serialNo = sanitizeString(formData.get('serialNo') as string)
+    const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
+    const brand = sanitizeString(formData.get('brand') as string)
+    const model = sanitizeString(formData.get('model') as string)
+    const btuStr = formData.get('btu') as string
+    const installDateStr = formData.get('installDate') as string
+    const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
 
   // Validation
   if (!assetId) {
@@ -1255,16 +1258,17 @@ export async function updateAsset(formData: FormData) {
 
   await prisma.asset.update({
     where: { id: assetId },
-    data: {
-      roomId,
-      qrCode: serialNo,
-      brand: brand || null,
-      model: model || null,
-      serialNo: serialNo || null,
-      btu: btu || null,
-      installDate: installDate || null,
-      status,
-    },
+      data: {
+        roomId,
+        qrCode: serialNo,
+        assetType: assetType as any,
+        brand: brand || null,
+        model: model || null,
+        serialNo: serialNo || null,
+        btu: btu || null,
+        installDate: installDate || null,
+        status,
+      },
   })
 
   logSecurityEvent('ASSET_UPDATED', {
@@ -1507,7 +1511,7 @@ export async function updateContactInfo(formData: FormData) {
 
 export async function submitContactMessage(formData: FormData) {
   const user = await getCurrentUser()
-  
+
   if (!user) {
     throw new Error('Unauthorized')
   }
@@ -1515,7 +1519,7 @@ export async function submitContactMessage(formData: FormData) {
   // Rate limiting for contact form submissions
   const identifier = user.id
   const rateLimitResult = checkApiRateLimit(identifier, 'CONTACT')
-  
+
   if (!rateLimitResult.allowed) {
     logSecurityEvent('CONTACT_FORM_RATE_LIMIT_EXCEEDED', {
       userId: user.id,
@@ -1553,7 +1557,7 @@ export async function submitContactMessage(formData: FormData) {
 
 export async function markMessageAsRead(messageId: string) {
   const user = await getCurrentUser()
-  
+
   if (!user || user.role !== 'ADMIN') {
     throw new Error('Unauthorized')
   }
@@ -1579,7 +1583,7 @@ export async function login(formData: FormData) {
     // Note: In server actions, we need to get IP from headers
     // For now, we'll use username as identifier (can be enhanced with request headers)
     const rateLimitResult = checkRateLimit(username)
-    
+
     if (!rateLimitResult.allowed) {
       logSecurityEvent('LOGIN_RATE_LIMIT_EXCEEDED', {
         username,
@@ -1605,78 +1609,78 @@ export async function login(formData: FormData) {
       redirect('/login?error=invalid')
     }
 
-  // Auto-unlock expired accounts before checking
-  const { autoUnlockExpiredAccounts } = await import('@/lib/account-lock')
-  await autoUnlockExpiredAccounts()
-  
-  // Refresh user data after auto-unlock
-  const refreshedUser = await prisma.user.findUnique({
-    where: { id: user.id },
-  })
-  
-  if (!refreshedUser) {
-    redirect('/login?error=invalid')
-  }
-  
-  // Check if account is locked
-  const now = new Date()
-  const isLocked = refreshedUser.locked || (refreshedUser.lockedUntil && refreshedUser.lockedUntil > now)
-  
-  if (isLocked) {
-    const lockoutMessage = refreshedUser.lockedUntil && refreshedUser.lockedUntil > now
-      ? `บัญชีถูกล็อกจนถึง ${refreshedUser.lockedUntil.toLocaleString('th-TH')}`
-      : 'บัญชีถูกล็อก กรุณาติดต่อ Admin'
-    
-    logSecurityEvent('LOGIN_ATTEMPT_LOCKED_ACCOUNT', {
-      username: refreshedUser.username,
-      userId: refreshedUser.id,
-      lockedReason: refreshedUser.lockedReason,
-      lockedUntil: refreshedUser.lockedUntil?.toISOString(),
+    // Auto-unlock expired accounts before checking
+    const { autoUnlockExpiredAccounts } = await import('@/lib/account-lock')
+    await autoUnlockExpiredAccounts()
+
+    // Refresh user data after auto-unlock
+    const refreshedUser = await prisma.user.findUnique({
+      where: { id: user.id },
     })
-    
-    redirect(`/login?error=locked&message=${encodeURIComponent(lockoutMessage)}`)
-  }
 
-  // Verify password with bcrypt
-  const isValidPassword = await bcrypt.compare(password, refreshedUser.password)
-  if (!isValidPassword) {
-    recordFailedLogin(username)
-    
-    // Check if we should lock the account after failed attempts
-    const rateLimitResult = checkRateLimit(username)
-    if (!rateLimitResult.allowed && rateLimitResult.lockoutUntil) {
-      // Lock the account
-      await prisma.user.update({
-        where: { id: refreshedUser.id },
-        data: {
-          locked: true,
-          lockedUntil: rateLimitResult.lockoutUntil,
-          lockedReason: 'Too many failed login attempts',
-        },
-      })
-      
-      logSecurityEvent('ACCOUNT_AUTO_LOCKED', {
-        userId: refreshedUser.id,
-        username: refreshedUser.username,
-        lockoutUntil: rateLimitResult.lockoutUntil.toISOString(),
-      })
+    if (!refreshedUser) {
+      redirect('/login?error=invalid')
     }
-    
-    redirect('/login?error=invalid')
-  }
 
-  // Successful login: Clear failed attempts
-  clearFailedLogin(username)
+    // Check if account is locked
+    const now = new Date()
+    const isLocked = refreshedUser.locked || (refreshedUser.lockedUntil && refreshedUser.lockedUntil > now)
 
-  // ตั้ง Session
-  const { setSession } = await import('@/lib/auth')
-  await setSession(refreshedUser.id)
+    if (isLocked) {
+      const lockoutMessage = refreshedUser.lockedUntil && refreshedUser.lockedUntil > now
+        ? `บัญชีถูกล็อกจนถึง ${refreshedUser.lockedUntil.toLocaleString('th-TH')}`
+        : 'บัญชีถูกล็อก กรุณาติดต่อ Admin'
 
-  logSecurityEvent('LOGIN_SUCCESS', {
-    userId: refreshedUser.id,
-    username: refreshedUser.username,
-    role: refreshedUser.role,
-  })
+      logSecurityEvent('LOGIN_ATTEMPT_LOCKED_ACCOUNT', {
+        username: refreshedUser.username,
+        userId: refreshedUser.id,
+        lockedReason: refreshedUser.lockedReason,
+        lockedUntil: refreshedUser.lockedUntil?.toISOString(),
+      })
+
+      redirect(`/login?error=locked&message=${encodeURIComponent(lockoutMessage)}`)
+    }
+
+    // Verify password with bcrypt
+    const isValidPassword = await bcrypt.compare(password, refreshedUser.password)
+    if (!isValidPassword) {
+      recordFailedLogin(username)
+
+      // Check if we should lock the account after failed attempts
+      const rateLimitResult = checkRateLimit(username)
+      if (!rateLimitResult.allowed && rateLimitResult.lockoutUntil) {
+        // Lock the account
+        await prisma.user.update({
+          where: { id: refreshedUser.id },
+          data: {
+            locked: true,
+            lockedUntil: rateLimitResult.lockoutUntil,
+            lockedReason: 'Too many failed login attempts',
+          },
+        })
+
+        logSecurityEvent('ACCOUNT_AUTO_LOCKED', {
+          userId: refreshedUser.id,
+          username: refreshedUser.username,
+          lockoutUntil: rateLimitResult.lockoutUntil.toISOString(),
+        })
+      }
+
+      redirect('/login?error=invalid')
+    }
+
+    // Successful login: Clear failed attempts
+    clearFailedLogin(username)
+
+    // ตั้ง Session (ส่ง siteId ด้วย สำหรับ CLIENT ให้ Dashboard แสดงสถานที่ได้)
+    const { setSession } = await import('@/lib/auth')
+    await setSession(refreshedUser.id, refreshedUser.role, refreshedUser.siteId ?? null)
+
+    logSecurityEvent('LOGIN_SUCCESS', {
+      userId: refreshedUser.id,
+      username: refreshedUser.username,
+      role: refreshedUser.role,
+    })
 
     // Redirect ตาม Role
     const role = String(refreshedUser.role)
@@ -1692,19 +1696,19 @@ export async function login(formData: FormData) {
   } catch (error: any) {
     // Handle all errors and redirect to login page with error message
     console.error('Login error:', error)
-    
+
     // ถ้า error เป็น redirect (จาก Next.js) ให้ throw ต่อ
     if (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.includes('NEXT_REDIRECT')) {
       throw error
     }
-    
+
     // สำหรับ errors อื่นๆ redirect ไปยัง login page พร้อม error message
     redirect('/login?error=server')
   }
 }
 
 export async function logout() {
-  const { clearSession } = await import('@/lib/auth')
-  await clearSession()
+  const { deleteSession } = await import('@/lib/auth')
+  await deleteSession()
   redirect('/welcome')
 }

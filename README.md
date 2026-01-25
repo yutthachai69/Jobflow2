@@ -175,6 +175,50 @@ prisma/
 - **Location Hierarchy**: Client → Site → Building → Floor → Room
 - **ContactMessage**: ข้อความติดต่อ
 
+## 🔧 แก้ไข Error Prisma / DATABASE_URL
+
+ถ้าเจอ **"the URL must start with `postgresql://` or `postgres://`"** หรือ **"PrismaClientInitializationError"**:
+
+1. **ตรวจว่าใช้ database ตัวไหน**  
+   เปิด `prisma/schema.prisma` ดู `provider` คือ `"sqlite"` หรือ `"postgresql"`  
+   โปรเจกต์นี้ใช้ **SQLite** เป็นค่าเริ่มต้น (local dev)
+
+2. **ตั้งค่า `.env` ให้ตรงกับ provider**
+   - **SQLite**: `DATABASE_URL="file:./prisma/dev.db"`
+   - **PostgreSQL**: `DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public"`  
+   ถ้ายังไม่มี `.env` ให้ copy จาก `.env.example` แล้วแก้ค่าตามขั้นตอนด้านบน
+
+3. **สลับ schema (ถ้าต้องการเปลี่ยน database)**
+   ```bash
+   npm run db:switch:sqlite   # ใช้ SQLite (local)
+   npm run db:switch:postgres # ใช้ PostgreSQL
+   ```
+   หลังสลับ ต้องอัปเดต `DATABASE_URL` ใน `.env` ให้ตรงกับตัวที่เลือก
+
+4. **Generate + Migrate**
+   ```bash
+   npm run db:generate
+   npm run db:migrate dev
+   npm run db:seed   # ถ้าต้องการข้อมูลตัวอย่าง
+   ```
+
+5. **ตรวจว่าเชื่อมต่อได้**
+   ```bash
+   npm run db:check
+   ```
+
+### Drift detected (Redefined table `User`)
+
+ถ้าเจอ **"Drift detected"** หรือ **"Redefined table User"** หลังจากเคยรัน `apply-user-locked-migration` หรือ seed ไปแล้ว:
+
+ให้บอก Prisma ว่า migration `add_user_locked` ถือว่า apply แล้ว (ไม่ต้อง reset ไม่เสียข้อมูล):
+
+```bash
+npm run db:migrate:resolve-user-locked
+```
+
+จากนั้นรัน `npx prisma migrate dev` อีกครั้ง — drift ควรหาย
+
 ## 🚢 Deployment
 
 ### Build for production:

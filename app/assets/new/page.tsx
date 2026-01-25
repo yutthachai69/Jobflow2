@@ -50,7 +50,7 @@ export default async function NewAssetPage() {
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-3">ยังไม่มีสถานที่ในระบบ</h2>
-            <p className="text-gray-600 mb-8">ต้องมีสถานที่และห้องก่อนจึงจะสามารถเพิ่มเครื่องปรับอากาศได้</p>
+            <p className="text-gray-600 mb-8">ต้องมีสถานที่และห้องก่อนจึงจะสามารถเพิ่มทรัพย์สินได้</p>
             <Link
               href="/locations"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300"
@@ -82,10 +82,10 @@ export default async function NewAssetPage() {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
             </div>
             <h1 className="text-3xl font-bold text-gray-900">
-              เพิ่มเครื่องปรับอากาศใหม่
+              เพิ่มทรัพย์สินใหม่
             </h1>
           </div>
-          <p className="text-gray-600 ml-15">ลงทะเบียนเครื่องปรับอากาศใหม่ในระบบ</p>
+          <p className="text-gray-600 ml-15">ลงทะเบียนทรัพย์สินและอุปกรณ์ใหม่ในระบบ</p>
         </div>
 
         {/* Form */}

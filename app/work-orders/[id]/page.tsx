@@ -8,6 +8,8 @@ import CancelWorkOrderButton from "./CancelButton";
 import AssignTechnicianButton from "./AssignTechnicianButton";
 import ExportButton from "./ExportButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
+import { getWOStatus, getJobStatus } from "@/lib/status-colors";
+import { getWorkOrderDisplayNumber } from "@/lib/work-order-number";
 import type { Metadata } from "next";
 
 interface Props {
@@ -115,8 +117,16 @@ export default async function WorkOrderDetailPage({ params }: Props) {
 
   // Access Control: CLIENT สามารถดูได้เฉพาะ Work Order ใน Site ของตัวเอง
   if (user.role === 'CLIENT') {
-    if (!user.siteId || workOrder.siteId !== user.siteId) {
-      notFound();
+    let siteId = user.siteId
+    if (!siteId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { siteId: true },
+      })
+      siteId = dbUser?.siteId ?? null
+    }
+    if (!siteId || workOrder.siteId !== siteId) {
+      notFound()
     }
   }
 
@@ -136,27 +146,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
     orderBy: { username: 'asc' },
   }) : [];
 
-  const getWOStatusConfig = (status: string) => {
-    const configs = {
-      COMPLETED: { bg: "from-green-500 to-emerald-600", text: "เสร็จสิ้น", icon: "" },
-      IN_PROGRESS: { bg: "from-blue-500 to-indigo-600", text: "กำลังทำงาน", icon: "" },
-      CANCELLED: { bg: "from-red-500 to-pink-600", text: "ยกเลิก", icon: "" },
-      OPEN: { bg: "from-gray-400 to-gray-500", text: "รอดำเนินการ", icon: "" },
-    };
-    return configs[status as keyof typeof configs] || configs.OPEN;
-  };
-
-  const getJobStatusConfig = (status: string) => {
-    const configs = {
-      DONE: { bg: "from-green-500 to-emerald-600", text: "เสร็จสิ้น", icon: "" },
-      IN_PROGRESS: { bg: "from-blue-500 to-indigo-600", text: "กำลังทำ", icon: "" },
-      ISSUE_FOUND: { bg: "from-yellow-500 to-orange-600", text: "พบปัญหา", icon: "" },
-      PENDING: { bg: "from-gray-400 to-gray-500", text: "รอทำ", icon: "" },
-    };
-    return configs[status as keyof typeof configs] || configs.PENDING;
-  };
-
-  const woStatusConfig = getWOStatusConfig(workOrder.status);
+  const woStatusConfig = getWOStatus(workOrder.status);
 
   const jobTypeLabels: Record<string, string> = {
     PM: "บำรุงรักษา",
@@ -165,7 +155,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <Breadcrumbs
           items={[
@@ -175,16 +165,12 @@ export default async function WorkOrderDetailPage({ params }: Props) {
           ]}
         />
 
-        {/* Header Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-          {/* Action Buttons - Only for ADMIN */}
+        {/* Header Card - Status Card style (border-left) */}
+        <div className="bg-app-card rounded-2xl shadow-xl p-6 mb-6 border border-app border-l-4" style={{ borderLeftColor: woStatusConfig.hex }}>
           {user.role === 'ADMIN' && (
-            <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-gray-200">
+            <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-app">
               <ExportButton workOrder={workOrder} />
-              <Link
-                href={`/work-orders/${id}/edit`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
+              <Link href={`/work-orders/${id}/edit`} className="inline-flex items-center px-4 py-2 btn-app-primary rounded-lg hover:shadow-md transition-all">
                 แก้ไข
               </Link>
               <DeleteWorkOrderButton workOrderId={id} />
@@ -193,56 +179,45 @@ export default async function WorkOrderDetailPage({ params }: Props) {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6 mb-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: `${woStatusConfig.hex}30` }}>
                   <span className="text-2xl">📋</span>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {workOrder.jobType}
-                </h1>
-                <div className={`px-4 py-2 bg-gradient-to-r ${woStatusConfig.bg} text-white rounded-xl shadow-md flex items-center gap-2`}>
-                  <span>{woStatusConfig.icon}</span>
-                  <span className="font-semibold text-sm">{woStatusConfig.text}</span>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-app-heading">{workOrder.jobType}</h1>
+                  <div className="text-sm font-mono text-app-muted mt-1">เลขที่ {getWorkOrderDisplayNumber(workOrder)}</div>
                 </div>
+                <span className={`px-4 py-2 rounded-xl font-semibold text-sm ${woStatusConfig.tailwind}`}>{woStatusConfig.label}</span>
               </div>
-              
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-gray-700">
-                  <span className="font-medium text-gray-900">{workOrder.site.name}</span>
-                  <span className="text-gray-400">•</span>
-                  <span className="text-gray-600">{workOrder.site.client.name}</span>
+                <div className="flex items-center gap-2 text-app-body">
+                  <span className="font-medium text-app-heading">{workOrder.site.name}</span>
+                  <span className="text-app-muted">•</span>
+                  <span className="text-app-body">{workOrder.site.client.name}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                <div className="flex items-center gap-2 text-app-body text-sm">
                   <span>📅</span>
-                  <span>วันนัดหมาย: {new Date(workOrder.scheduledDate).toLocaleDateString("th-TH", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}</span>
+                  <span>วันนัดหมาย: {new Date(workOrder.scheduledDate).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
                 {workOrder.assignedTeam && (
-                  <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <div className="flex items-center gap-2 text-app-body text-sm">
                     <span>👥</span>
                     <span>ทีม: {workOrder.assignedTeam}</span>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Progress Section */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200 min-w-[200px]">
-              <div className="text-sm text-gray-600 mb-2">ความคืบหน้า</div>
-              <div className="text-3xl font-bold text-blue-600 mb-3">
-                {doneCount}<span className="text-xl text-gray-400">/{workOrder.jobItems.length}</span>
+            <div className="bg-app-section rounded-xl p-5 border border-app min-w-[200px]">
+              <div className="text-sm text-app-muted mb-2">ความคืบหน้า</div>
+              <div className="text-3xl font-bold mb-3" style={{ color: woStatusConfig.hex }}>
+                {doneCount}<span className="text-xl text-app-muted">/{workOrder.jobItems.length}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-app-section rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }}
+                  className="h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%`, backgroundColor: woStatusConfig.hex }}
                 />
               </div>
-              <div className="text-xs text-gray-500 mt-2 text-center">
+              <div className="text-xs text-app-muted mt-2 text-center">
                 {Math.round(progressPercent)}% เสร็จสิ้น
               </div>
             </div>
@@ -250,14 +225,10 @@ export default async function WorkOrderDetailPage({ params }: Props) {
 
           {/* Status Actions - Only for ADMIN */}
           {user.role === 'ADMIN' && workOrder.status !== "COMPLETED" && workOrder.status !== "CANCELLED" && (
-            <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-200">
-              {/* Note: การเริ่มงานควรทำโดย TECHNICIAN ที่ Job Item level */}
+            <div className="flex flex-wrap gap-3 pt-6 border-t border-app">
               {workOrder.status === "IN_PROGRESS" && (
                 <form action={updateWorkOrderStatus.bind(null, workOrder.id, "COMPLETED")}>
-                  <button
-                    type="submit"
-                    className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300 flex items-center gap-2"
-                  >
+                  <button type="submit" className="btn-app-primary px-6 py-3 rounded-xl hover:shadow-xl font-semibold transition-all flex items-center gap-2">
                     <span>เสร็จสิ้นงาน</span>
                   </button>
                 </form>
@@ -268,63 +239,51 @@ export default async function WorkOrderDetailPage({ params }: Props) {
         </div>
 
         {/* Job Items List */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
+        <div className="bg-app-card rounded-2xl shadow-xl border border-app overflow-hidden">
+          <div className="p-6 border-b border-app bg-app-section">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-gray-900">
-                รายการงาน
-              </h2>
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-bold">
+              <h2 className="text-xl font-bold text-app-heading">รายการงาน</h2>
+              <span className="px-3 py-1 rounded-lg text-sm font-bold" style={{ backgroundColor: 'rgba(91,124,153,0.2)', color: '#5B7C99' }}>
                 {workOrder.jobItems.length} รายการ
               </span>
             </div>
           </div>
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-app">
             {workOrder.jobItems.map((jobItem) => {
-              const jobStatusConfig = getJobStatusConfig(jobItem.status);
+              const jobSt = getJobStatus(jobItem.status);
               return (
-                <div key={jobItem.id} className="p-6 hover:bg-blue-50/50 transition-all duration-200">
+                <div key={jobItem.id} className="p-6 hover:bg-app-section/50 transition-all border-l-4 border-app" style={{ borderLeftColor: jobSt.hex }}>
                   <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <Link
-                          href={`/assets/${jobItem.asset.id}`}
-                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-lg"
-                        >
+                        <Link href={`/assets/${jobItem.asset.id}`} className="font-bold hover:underline text-lg" style={{ color: '#C2A66A' }}>
                           {jobItem.asset.brand} {jobItem.asset.model}
                         </Link>
-                        <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg text-gray-600">
-                          {jobItem.asset.qrCode}
-                        </span>
+                        <span className="font-mono text-sm bg-app-section px-3 py-1 rounded-lg text-app-muted">{jobItem.asset.qrCode}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-3 flex-wrap">
+                      <div className="flex items-center gap-2 text-sm text-app-body mb-3 flex-wrap">
                         <span>{jobItem.asset.room.floor.building.site.name}</span>
-                        <span className="text-gray-400">→</span>
+                        <span className="text-app-muted">→</span>
                         <span>{jobItem.asset.room.floor.building.name}</span>
-                        <span className="text-gray-400">→</span>
+                        <span className="text-app-muted">→</span>
                         <span>{jobItem.asset.room.floor.name}</span>
-                        <span className="text-gray-400">→</span>
+                        <span className="text-app-muted">→</span>
                         <span>{jobItem.asset.room.name}</span>
                       </div>
                       {jobItem.techNote && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-3">
-                          <div className="flex items-start gap-2">
-                            <p className="text-gray-700 text-sm flex-1">{jobItem.techNote}</p>
-                          </div>
+                        <div className="rounded-xl p-3 mt-3 border border-app" style={{ backgroundColor: 'rgba(194,166,106,0.1)' }}>
+                          <p className="text-app-body text-sm flex-1">{jobItem.techNote}</p>
                         </div>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <div className={`px-4 py-2 bg-gradient-to-r ${jobStatusConfig.bg} text-white rounded-xl shadow-md flex items-center gap-2`}>
-                        <span>{jobStatusConfig.icon}</span>
-                        <span className="font-semibold text-sm">{jobStatusConfig.text}</span>
-                      </div>
+                      <span className={`px-4 py-2 rounded-xl font-semibold text-sm ${jobSt.tailwind}`}>{jobSt.label}</span>
                       {jobItem.technician ? (
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                        <div className="text-xs text-app-muted flex items-center gap-1">
                           <span>ช่าง: {jobItem.technician.fullName || jobItem.technician.username}</span>
                         </div>
                       ) : (
-                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                        <div className="text-xs text-app-muted flex items-center gap-1">
                           <span>ยังไม่ได้มอบหมาย</span>
                         </div>
                       )}
@@ -338,7 +297,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                         </div>
                       )}
                       {jobItem.startTime && (
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                        <div className="text-xs text-app-muted flex items-center gap-1">
                           <span>🕐</span>
                           <span>{new Date(jobItem.startTime).toLocaleString("th-TH")}</span>
                         </div>
@@ -352,7 +311,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                           <img
                             src={photo.url}
                             alt={photo.type}
-                            className="w-32 h-32 object-cover rounded-xl border-2 border-gray-200 group-hover:border-blue-300 transition-all duration-200"
+                            className="w-32 h-32 object-cover rounded-xl border-2 border-app group-hover:border-app-muted transition-all duration-200"
                           />
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white text-xs px-2 py-1.5 rounded-b-xl font-semibold">
                             {photo.type === "BEFORE" && "ก่อน"}

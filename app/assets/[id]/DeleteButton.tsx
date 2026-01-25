@@ -23,7 +23,7 @@ export default function DeleteAssetButton({ assetId }: Props) {
       })
 
       if (response.ok) {
-        toast.success('ลบข้อมูลแอร์เรียบร้อยแล้ว')
+        toast.success('ลบข้อมูลทรัพย์สินเรียบร้อยแล้ว')
         setShowConfirm(false)
         router.push('/assets')
         router.refresh()
@@ -31,7 +31,7 @@ export default function DeleteAssetButton({ assetId }: Props) {
         const data = await response.json()
         const errorMessage = data.error || 'เกิดข้อผิดพลาดในการลบข้อมูล'
         if (errorMessage.includes('work history') || errorMessage.includes('job items')) {
-          toast.error('ไม่สามารถลบแอร์ที่มีประวัติการซ่อมบำรุงได้')
+          toast.error('ไม่สามารถลบทรัพย์สินที่มีประวัติการซ่อมบำรุงได้')
         } else {
           toast.error(errorMessage)
         }
@@ -56,8 +56,8 @@ export default function DeleteAssetButton({ assetId }: Props) {
 
       <ConfirmDialog
         isOpen={showConfirm}
-        title="ลบข้อมูลแอร์"
-        message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลแอร์นี้? การกระทำนี้ไม่สามารถยกเลิกได้"
+        title="ลบข้อมูลทรัพย์สิน"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทรัพย์สินนี้? การกระทำนี้ไม่สามารถยกเลิกได้"
         confirmText="ลบ"
         cancelText="ยกเลิก"
         confirmColor="red"

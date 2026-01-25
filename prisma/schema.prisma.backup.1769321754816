@@ -1,0 +1,294 @@
+// Prisma Schema สำหรับ PostgreSQL
+// 
+// วิธีใช้:
+// 1. Copy ไฟล์นี้ไปแทนที่ schema.prisma
+// 2. หรือใช้: cp prisma/schema.postgresql.prisma prisma/schema.prisma
+// 3. รัน: npx prisma generate && npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. User & Role (ระบบผู้ใช้งาน)
+// ==========================================
+
+enum UserRole {
+  ADMIN // ผู้ดูแลระบบ (คนสร้างเว็บ)
+  TECHNICIAN // ช่าง
+  CLIENT // ลูกค้า
+}
+
+model User {
+  id          String    @id @default(cuid())
+  username    String    @unique
+  password    String
+  fullName    String?
+  role        UserRole  @default(TECHNICIAN)
+  locked      Boolean   @default(false)
+  lockedUntil DateTime?
+  lockedReason String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  siteId String? // สำหรับ CLIENT role: 1 User = 1 Site
+  site   Site?   @relation(fields: [siteId], references: [id])
+
+  jobItems        JobItem[]
+  contactMessages ContactMessage[]
+
+  @@index([role])
+  @@index([locked, lockedUntil])
+  @@index([siteId])
+}
+
+// ==========================================
+// 2. Location Hierarchy (สถานที่)
+// ==========================================
+
+model Client {
+  id          String   @id @default(cuid())
+  name        String
+  contactInfo String?
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+
+  sites Site[]
+}
+
+model Site {
+  id        String  @id @default(cuid())
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id])
+
+  users      User[] // User ที่ดูแล Site นี้ (CLIENT role)
+  buildings  Building[]
+  workOrders WorkOrder[]
+}
+
+model Building {
+  id     String @id @default(cuid())
+  name   String
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id])
+
+  floors Floor[]
+}
+
+model Floor {
+  id         String   @id @default(cuid())
+  name       String
+  buildingId String
+  building   Building @relation(fields: [buildingId], references: [id])
+
+  rooms Room[]
+}
+
+model Room {
+  id      String @id @default(cuid())
+  name    String
+  floorId String
+  floor   Floor  @relation(fields: [floorId], references: [id])
+
+  assets Asset[]
+}
+
+// ==========================================
+// 3. Asset Inventory (ทะเบียนแอร์)
+// ==========================================
+
+enum AssetStatus {
+  ACTIVE
+  BROKEN
+  RETIRED
+}
+
+model Asset {
+  id          String      @id @default(cuid())
+  qrCode      String      @unique
+  brand       String?
+  model       String?
+  serialNo    String?
+  btu         Int?
+  installDate DateTime?
+  status      AssetStatus @default(ACTIVE)
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  jobItems JobItem[]
+
+  @@index([status])
+  @@index([roomId])
+}
+
+// ==========================================
+// 4. Operations (การทำงาน)
+// ==========================================
+
+enum JobType {
+  PM
+  CM
+  INSTALL
+}
+
+enum OrderStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model WorkOrder {
+  id            String      @id @default(cuid())
+  jobType       JobType
+  scheduledDate DateTime
+  status        OrderStatus @default(OPEN)
+
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id])
+
+  assignedTeam String?
+
+  jobItems  JobItem[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([siteId])
+}
+
+enum JobItemStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  ISSUE_FOUND
+}
+
+model JobItem {
+  id     String        @id @default(cuid())
+  status JobItemStatus @default(PENDING)
+
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
+
+  technicianId String?
+  technician   User?   @relation(fields: [technicianId], references: [id])
+
+  techNote  String?
+  startTime DateTime?
+  endTime   DateTime?
+
+  photos JobPhoto[]
+
+  @@index([technicianId])
+  @@index([status])
+  @@index([workOrderId])
+  @@index([assetId])
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+  DEFECT
+  METER
+}
+
+model JobPhoto {
+  id        String    @id @default(cuid())
+  url       String
+  type      PhotoType
+  createdAt DateTime  @default(now())
+
+  jobItemId String
+  jobItem   JobItem @relation(fields: [jobItemId], references: [id])
+}
+
+// ==========================================
+// 5. Contact Information (ข้อมูลการติดต่อ)
+// ==========================================
+
+model ContactInfo {
+  id        String   @id @default(cuid())
+  email     String   @default("support@airservice.com")
+  phone     String   @default("02-XXX-XXXX")
+  hours     String   @default("จันทร์-ศุกร์ 08:00-17:00 น.")
+  updatedAt DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  phone     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+// ==========================================
+// 6. Security Incident Tracking (การติดตามเหตุการณ์ด้านความปลอดภัย)
+// ==========================================
+
+enum IncidentType {
+  FAILED_LOGIN
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  ACCOUNT_AUTO_LOCKED
+  LOGIN_ATTEMPT_LOCKED_ACCOUNT
+  LOGIN_RATE_LIMIT_EXCEEDED
+  LOGIN_SUCCESS
+  SECURITY_BREACH
+  UNAUTHORIZED_ACCESS
+  SUSPICIOUS_ACTIVITY
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model SecurityIncident {
+  id          String         @id @default(cuid())
+  type        IncidentType
+  severity    IncidentSeverity @default(MEDIUM)
+  description String
+  metadata    String?        // JSON string for additional data
+  userId      String?        // User ID if related to a user
+  username    String?        // Username if related to a user
+  ipAddress   String?        // IP address of the request
+  userAgent   String?        // User agent string
+  resolved    Boolean        @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?        // Admin user ID who resolved it
+  createdAt   DateTime       @default(now())
+
+  @@index([type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+
+
+ 

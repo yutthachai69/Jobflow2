@@ -1,8 +1,60 @@
 @import "tailwindcss";
 
+/* ========== ชุดสีระบบติดตามสถานะล้าง/ซ่อมแอร์ (Dark + Warm Neutral) ========== */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-geist-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-geist-mono: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  /* App theme – Dark (ค่าเริ่มต้น) - Enhanced with depth and visual interest */
+  --app-bg: #0a0a0a;
+  --app-bg-gradient: linear-gradient(135deg, #0a0a0a 0%, #121212 25%, #0f0f0f 50%, #121212 75%, #0a0a0a 100%);
+  --app-section: #151515;
+  --app-section-gradient: linear-gradient(135deg, #151515 0%, #1a1a1a 100%);
+  --app-card: #1e1e1e;
+  --app-card-gradient: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
+  --app-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --app-card-hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(194, 166, 106, 0.1);
+  --app-text-heading: #F5F5F5;
+  --app-text-body: #D4D4D4;
+  --app-text-muted: #A3A3A3;
+  --app-btn-primary: #C2A66A;
+  --app-btn-primary-hover: #D4B87A;
+  --app-btn-primary-glow: rgba(194, 166, 106, 0.3);
+  --app-btn-primary-text: #121212;
+  --app-border: #2a2a2a;
+  --app-border-glow: rgba(194, 166, 106, 0.1);
+  --app-accent: rgba(194, 166, 106, 0.15);
+  --app-accent-glow: rgba(194, 166, 106, 0.2);
+  --app-scrollbar-thumb: rgba(158, 158, 158, 0.3);
+  --app-scrollbar-thumb-hover: rgba(194, 166, 106, 0.5);
+  --app-pattern: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+}
+
+/* โหมดสว่าง (Light) – Enhanced with depth and visual interest */
+[data-theme="light"] {
+  --app-bg: #f8f9fa;
+  --app-bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #ffffff 25%, #f5f7fa 50%, #ffffff 75%, #f8f9fa 100%);
+  --app-section: #ffffff;
+  --app-section-gradient: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  --app-card: #ffffff;
+  --app-card-gradient: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  --app-card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --app-card-hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(194, 166, 106, 0.2);
+  --app-text-heading: #0f172a;
+  --app-text-body: #334155;
+  --app-text-muted: #64748b;
+  --app-btn-primary: #C2A66A;
+  --app-btn-primary-hover: #B89A5A;
+  --app-btn-primary-glow: rgba(194, 166, 106, 0.2);
+  --app-btn-primary-text: #ffffff;
+  --app-border: #e2e8f0;
+  --app-border-glow: rgba(194, 166, 106, 0.15);
+  --app-accent: rgba(194, 166, 106, 0.08);
+  --app-accent-glow: rgba(194, 166, 106, 0.12);
+  --app-scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --app-scrollbar-thumb-hover: rgba(194, 166, 106, 0.3);
+  --app-pattern: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.02) 1px, transparent 0);
 }
 
 @theme inline {
@@ -10,19 +62,151 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-app-bg: var(--app-bg);
+  --color-app-section: var(--app-section);
+  --color-app-card: var(--app-card);
+  --color-app-text-heading: var(--app-text-heading);
+  --color-app-text-body: var(--app-text-body);
+  --color-app-text-muted: var(--app-text-muted);
+  --color-app-btn-primary: var(--app-btn-primary);
+  --color-app-btn-primary-hover: var(--app-btn-primary-hover);
+  --color-app-border: var(--app-border);
 }
 
 body {
-  background: var(--background);
+  background: var(--app-bg);
+  background-image: var(--app-bg-gradient), var(--app-pattern);
+  background-size: 100% 100%, 20px 20px;
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Enhanced body for theme transitions */
+[data-theme="dark"] body {
+  background: var(--app-bg);
+  background-image: var(--app-bg-gradient), var(--app-pattern);
+  background-size: 100% 100%, 20px 20px;
+}
+
+[data-theme="light"] body {
+  background: var(--app-bg);
+  background-image: var(--app-bg-gradient), var(--app-pattern);
+  background-size: 100% 100%, 20px 20px;
+}
+
+/* Utility classes สำหรับ App theme - Enhanced */
+.bg-app-bg { 
+  background: var(--app-bg);
+  background-image: var(--app-bg-gradient);
+  background-size: 100% 100%;
+  background-attachment: fixed;
+}
+
+.bg-app-section { 
+  background: var(--app-section);
+  background-image: var(--app-section-gradient);
+  background-size: 100% 100%;
+  position: relative;
+}
+
+.bg-app-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.bg-app-card { 
+  background: var(--app-card);
+  background-image: var(--app-card-gradient);
+  background-size: 100% 100%;
+  box-shadow: var(--app-card-shadow);
+  border: 1px solid var(--app-border);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bg-app-card:hover {
+  box-shadow: var(--app-card-hover-shadow);
+  transform: translateY(-2px);
+  border-color: var(--app-border-glow);
+}
+
+.bg-app-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.text-app-heading { color: var(--app-text-heading); }
+.text-app-body { color: var(--app-text-body); }
+.text-app-muted { color: var(--app-text-muted); }
+.border-app { 
+  border-color: var(--app-border);
+  transition: border-color 0.3s ease;
+}
+
+.border-app:hover {
+  border-color: var(--app-border-glow);
+}
+
+.btn-app-primary {
+  background: linear-gradient(135deg, var(--app-btn-primary) 0%, var(--app-btn-primary-hover) 100%);
+  color: var(--app-btn-primary-text);
+  box-shadow: 0 4px 6px -1px var(--app-btn-primary-glow), 0 2px 4px -1px var(--app-btn-primary-glow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-app-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.btn-app-primary:hover {
+  background: linear-gradient(135deg, var(--app-btn-primary-hover) 0%, var(--app-btn-primary) 100%);
+  box-shadow: 0 10px 15px -3px var(--app-btn-primary-glow), 0 4px 6px -2px var(--app-btn-primary-glow);
+  transform: translateY(-1px);
+}
+
+.btn-app-primary:hover::before {
+  transform: translateX(100%);
+}
+
+/* Custom Scrollbar สำหรับ Sidebar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--app-scrollbar-thumb);
+  border-radius: 3px;
+}
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background-color: var(--app-scrollbar-thumb-hover);
+}
+.scrollbar-thumb-app-muted\/30::-webkit-scrollbar-thumb {
+  background-color: var(--app-scrollbar-thumb);
+}
+.hover\:scrollbar-thumb-app-muted\/50:hover::-webkit-scrollbar-thumb {
+  background-color: var(--app-scrollbar-thumb-hover);
 }
 
 /* Animation utilities for modals */
@@ -104,4 +288,572 @@ body {
 
 .zoom-in {
   animation: zoomIn 0.2s ease-out;
+}
+
+/* ========== Welcome & Login – Motion Design (รองรับ prefers-reduced-motion) ========== */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float-soft {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0, -8px);
+  }
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in-up {
+    animation: fade-in-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .animate-pulse-slow {
+    animation: pulse-slow 8s ease-in-out infinite;
+  }
+  .animate-pulse-slow.delay-700 {
+    animation-delay: 0.7s;
+  }
+  .animate-pulse-slow.delay-1000 {
+    animation-delay: 1s;
+  }
+  .animate-card-enter {
+    animation: card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .animate-bg-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 12s ease infinite;
+  }
+  .animate-float-soft {
+    animation: float-soft 6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-pulse-slow,
+  .animate-card-enter,
+  .animate-bg-gradient,
+  .animate-float-soft {
+    animation: none !important;
+  }
+  /* แสดงเนื้อหาทันทีเมื่อปิด motion (ไม่ให้ค้าง opacity-0) */
+  .motion-enter {
+    opacity: 1 !important;
+  }
+}
+
+/* Stagger delays สำหรับ scroll-free reveal (โหลดทีเดียว) */
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-1000 { animation-delay: 1000ms; }
+
+/* ========== Page Transitions (แก้ปัญหา Flicker) ========== */
+/* View Transitions API สำหรับเปลี่ยนหน้าแบบไหลลื่น */
+@supports (view-transition-name: none) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.15s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+  
+  ::view-transition-new(root) {
+    z-index: 2;
+  }
+}
+
+/* Fallback: CSS transitions สำหรับเบราว์เซอร์ที่ไม่รองรับ View Transitions */
+.page-transition {
+  animation: pageFadeIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ป้องกัน FOUC (Flash of Unstyled Content) */
+html {
+  visibility: visible;
+}
+
+/* Optimize rendering performance */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions สำหรับ sidebar collapse */
+.sidebar-expanded:has(+ *) {
+  transition: margin-left 0.3s ease-in-out;
+}
+
+/* Sidebar width classes */
+:root {
+  --sidebar-width: 256px; /* Default: expanded */
+}
+
+.sidebar-content {
+  /* No margin needed - sidebar is now part of flex container */
+}
+
+/* ========== Enhanced Visual Effects ========== */
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 20px var(--app-btn-primary-glow);
+}
+
+.glow-accent {
+  box-shadow: 0 0 15px var(--app-accent-glow);
+}
+
+/* Subtle shine effect */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  transform: rotate(45deg);
+  transition: all 0.6s;
+  pointer-events: none;
+}
+
+.shine-effect:hover::after {
+  left: 100%;
+  top: 100%;
+}
+
+/* Enhanced card with depth */
+.card-enhanced {
+  background: var(--app-card);
+  background-image: var(--app-card-gradient);
+  box-shadow: var(--app-card-shadow);
+  border: 1px solid var(--app-border);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.card-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.card-enhanced:hover {
+  box-shadow: var(--app-card-hover-shadow);
+  transform: translateY(-2px);
+  border-color: var(--app-border-glow);
+}
+
+/* Section with subtle gradient */
+.section-enhanced {
+  background: var(--app-section);
+  background-image: var(--app-section-gradient);
+  position: relative;
+}
+
+.section-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Border glow on hover */
+.border-glow {
+  border: 1px solid var(--app-border);
+  transition: all 0.3s ease;
+}
+
+.border-glow:hover {
+  border-color: var(--app-border-glow);
+  box-shadow: 0 0 10px var(--app-accent-glow);
+}
+
+/* Accent background */
+.bg-accent {
+  background: var(--app-accent);
+  position: relative;
+}
+
+.bg-accent::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--app-accent) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Disable transitions for performance-critical elements */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* Enhanced input fields */
+input, textarea, select {
+  transition: all 0.3s ease;
+  border: 1px solid var(--app-border);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--app-border-glow);
+  box-shadow: 0 0 0 3px var(--app-accent-glow);
+  outline: none;
+}
+
+/* Enhanced table rows */
+tr {
+  transition: background-color 0.2s ease;
+}
+
+tr:hover {
+  background-color: var(--app-accent);
+}
+
+/* Sidebar enhancements */
+.sidebar-enhanced {
+  background: var(--app-section);
+  background-image: var(--app-section-gradient);
+  border-right: 1px solid var(--app-border);
+  position: relative;
+}
+
+.sidebar-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Header enhancements */
+.header-enhanced {
+  background: var(--app-section);
+  background-image: var(--app-section-gradient);
+  border-bottom: 1px solid var(--app-border);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.header-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Navigation link enhancements */
+.nav-link-enhanced {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link-enhanced::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: linear-gradient(180deg, var(--app-btn-primary) 0%, var(--app-btn-primary-hover) 100%);
+  border-radius: 0 2px 2px 0;
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link-enhanced:hover::before,
+.nav-link-enhanced.active::before {
+  height: 60%;
+}
+
+.nav-link-enhanced.active {
+  background: var(--app-accent);
+  box-shadow: inset 0 0 20px var(--app-accent-glow);
+}
+
+/* Button enhancements */
+.btn-enhanced {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-enhanced:hover::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Input field enhancements */
+.input-enhanced {
+  background: var(--app-card);
+  background-image: var(--app-card-gradient);
+  border: 1px solid var(--app-border);
+  transition: all 0.3s ease;
+}
+
+.input-enhanced:focus {
+  background: var(--app-section);
+  border-color: var(--app-border-glow);
+  box-shadow: 0 0 0 3px var(--app-accent-glow), var(--app-card-shadow);
+}
+
+/* Dropdown enhancements */
+.dropdown-enhanced {
+  background: var(--app-card);
+  background-image: var(--app-card-gradient);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-card-shadow);
+  backdrop-filter: blur(10px);
+}
+
+/* Badge/Pill enhancements */
+.badge-enhanced {
+  background: var(--app-accent);
+  border: 1px solid var(--app-border-glow);
+  box-shadow: 0 2px 4px var(--app-accent-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Main content area enhancements */
+.main-content-enhanced {
+  background: var(--app-bg);
+  background-image: var(--app-bg-gradient), var(--app-pattern);
+  background-size: 100% 100%, 20px 20px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Table enhancements */
+.table-enhanced {
+  background: var(--app-card);
+  background-image: var(--app-card-gradient);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-card-shadow);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-enhanced thead {
+  background: var(--app-section);
+  background-image: var(--app-section-gradient);
+  border-bottom: 2px solid var(--app-border);
+}
+
+.table-enhanced tbody tr {
+  border-bottom: 1px solid var(--app-border);
+  transition: all 0.2s ease;
+}
+
+.table-enhanced tbody tr:hover {
+  background: var(--app-accent);
+  transform: scale(1.01);
+}
+
+/* Modal/Dialog enhancements */
+.modal-enhanced {
+  background: var(--app-card);
+  background-image: var(--app-card-gradient);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-card-hover-shadow), 0 0 40px var(--app-accent-glow);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Loading spinner enhancements */
+.spinner-enhanced {
+  border: 3px solid var(--app-border);
+  border-top-color: var(--app-btn-primary);
+  box-shadow: 0 0 10px var(--app-btn-primary-glow);
+}
+
+/* Progress bar enhancements */
+.progress-enhanced {
+  background: var(--app-section);
+  border: 1px solid var(--app-border);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--app-pattern);
+  background-size: 10px 10px;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.progress-enhanced-fill {
+  background: linear-gradient(90deg, var(--app-btn-primary) 0%, var(--app-btn-primary-hover) 100%);
+  box-shadow: 0 0 10px var(--app-btn-primary-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-enhanced-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Divider enhancements */
+.divider-enhanced {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--app-border) 50%, transparent 100%);
+  position: relative;
+}
+
+.divider-enhanced::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: var(--app-btn-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--app-btn-primary-glow);
 }

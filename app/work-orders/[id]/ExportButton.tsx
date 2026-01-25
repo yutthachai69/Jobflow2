@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import AlertDialog from '@/app/components/AlertDialog'
+import { getWorkOrderDisplayNumber } from '@/lib/work-order-number'
 
 interface WorkOrder {
   id: string
+  workOrderNumber?: string | null
   jobType: string
   scheduledDate: Date
   status: string
@@ -68,13 +70,18 @@ export default function ExportButton({ workOrder }: Props) {
         ISSUE_FOUND: 'พบปัญหา',
       }
 
+      const workOrderNumber = getWorkOrderDisplayNumber(workOrder)
+
       const htmlContent = `
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ใบสั่งงาน - ${workOrder.id}</title>
+  <title>ใบสั่งงาน - ${workOrderNumber}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     @media print {
       @page {
@@ -144,7 +151,7 @@ export default function ExportButton({ workOrder }: Props) {
   <h1>ใบสั่งงาน</h1>
   
   <div class="info-section">
-    <p><strong>ID:</strong> ${workOrder.id}</p>
+    <p><strong>เลขที่งาน:</strong> ${workOrderNumber}</p>
     <p><strong>ชนิดงาน:</strong> ${jobTypeLabels[workOrder.jobType] || workOrder.jobType}</p>
     <p><strong>สถานที่:</strong> ${workOrder.site.name}</p>
     <p><strong>ลูกค้า:</strong> ${workOrder.site.client.name}</p>
@@ -230,7 +237,7 @@ export default function ExportButton({ workOrder }: Props) {
       // Prepare data
       const worksheetData = [
         ['ใบสั่งงาน'],
-        ['ID', workOrder.id],
+        ['เลขที่งาน', getWorkOrderDisplayNumber(workOrder)],
         ['ชนิดงาน', workOrder.jobType],
         ['สถานที่', workOrder.site.name],
         ['ลูกค้า', workOrder.site.client.name],
@@ -251,7 +258,7 @@ export default function ExportButton({ workOrder }: Props) {
       const ws = XLSX.utils.aoa_to_sheet(worksheetData)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Work Order')
-      XLSX.writeFile(wb, `work-order-${workOrder.id}.xlsx`)
+      XLSX.writeFile(wb, `work-order-${getWorkOrderDisplayNumber(workOrder)}.xlsx`)
       setAlert({
         isOpen: true,
         title: 'ส่งออกสำเร็จ',

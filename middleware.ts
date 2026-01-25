@@ -1,72 +1,82 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const IDLE_TIMEOUT_MINUTES = 30 // Idle timeout 30 นาที
-const IDLE_TIMEOUT_MS = IDLE_TIMEOUT_MINUTES * 60 * 1000
+// 1. นำโค้ด CSP มาวางตรงนี้ (ปรับให้เป็น String บรรทัดเดียว)
+// ใน development mode ใช้ CSP ที่ผ่อนปรนกว่าเพื่อให้ debug ง่าย
+const isDev = process.env.NODE_ENV !== 'production'
+const csp = isDev
+  ? [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob:",
+      "connect-src 'self' ws: wss: http://localhost:* https://localhost:*",
+      "frame-ancestors 'none'",
+    ].join('; ')
+  : [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+    ].join('; ')
 
-/**
- * Security middleware for adding security headers and session management
- */
+const LOGIN_URL = '/login'
+
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+  const { pathname } = request.nextUrl
   
-  const userId = request.cookies.get('user_id')?.value
-  const lastActivity = request.cookies.get('session_last_activity')?.value
+  // Skip middleware สำหรับ static files (images, fonts, etc.)
+  if (pathname.match(/\.(png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot)$/)) {
+    return NextResponse.next()
+  }
+  
+  const token = request.cookies.get('auth_token')?.value
+  const hasSession = !!token
 
-  // Session Management: เช็ค idle timeout
-  if (userId && lastActivity) {
-    const lastActivityTime = parseInt(lastActivity, 10)
-    const now = Date.now()
-    const timeSinceLastActivity = now - lastActivityTime
+  const isApiRoute = pathname.startsWith('/api')
+  const isPublicRoute = ['/login', '/welcome', '/register'].includes(pathname)
+  // /scan และ /scan/[qrCode] เป็น protected route แต่ถ้ายังไม่ login จะ redirect ไป login พร้อม callbackUrl
+  const isScanRoute = pathname.startsWith('/scan')
+  const isProtectedRoute = !isPublicRoute && !pathname.startsWith('/_next')
 
-    if (timeSinceLastActivity > IDLE_TIMEOUT_MS) {
-      // Session หมดอายุเนื่องจาก idle timeout - clear cookies
-      response.cookies.delete('user_id')
-      response.cookies.delete('session_last_activity')
-    } else {
-      // Session ยัง active - อัพเดท lastActivity
-      response.cookies.set('session_last_activity', now.toString(), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      })
+  // --- ส่วน Logic การ Login (เหมือนเดิม) ---
+  if (!hasSession) {
+    if (isApiRoute) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
-  } else if (userId && !lastActivity) {
-    // มี user_id แต่ไม่มี lastActivity - set lastActivity (สำหรับ session เก่า)
-    response.cookies.set('session_last_activity', Date.now().toString(), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    })
+    // ถ้าเข้า root path ให้ไป welcome
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/welcome', request.url))
+    }
+    // ถ้าเป็น scan route ให้ redirect ไป login พร้อม callbackUrl
+    if (isScanRoute) {
+      const url = new URL(LOGIN_URL, request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url)
+    }
+    if (isProtectedRoute) {
+      const url = new URL(LOGIN_URL, request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url)
+    }
   }
 
-  // Security Headers
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  
-  // Content Security Policy (CSP)
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline and unsafe-eval
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    "connect-src 'self'",
-    "frame-ancestors 'none'",
-  ].join('; ')
-  
+  if (hasSession && pathname === LOGIN_URL) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+  // ------------------------------------
+
+  // 2. สร้าง Response Object ขึ้นมาก่อน
+  const response = NextResponse.next()
+
+  // 3. ยัด CSP Header เข้าไปใน Response
   response.headers.set('Content-Security-Policy', csp)
 
-  // Strict Transport Security (HSTS) - only in production
-  if (process.env.NODE_ENV === 'production') {
-    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
-  }
-
+  // 4. ส่ง Response กลับไป
   return response
 }
 
@@ -78,9 +88,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - *.png, *.jpg, *.jpeg, *.gif, *.svg, *.webp (image files)
+     * - *.ico, *.woff, *.woff2, *.ttf, *.eot (font files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot)).*)',
   ],
 }
-
-

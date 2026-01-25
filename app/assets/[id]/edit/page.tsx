@@ -77,8 +77,8 @@ export default async function EditAssetPage({ params }: Props) {
         </Link>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">แก้ไขข้อมูลแอร์</h1>
-          <p className="text-gray-600">อัพเดทข้อมูลเครื่องปรับอากาศ</p>
+          <h1 className="text-3xl font-bold text-app-heading mb-2">แก้ไขข้อมูลทรัพย์สิน</h1>
+          <p className="text-app-body">อัพเดทข้อมูลทรัพย์สินและอุปกรณ์</p>
         </div>
 
         <EditAssetForm asset={asset} sites={sites} />

@@ -50,6 +50,7 @@ export async function createAsset(formData: FormData) {
       data: {
         roomId,
         qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
+        assetType: assetType as any,
         brand: brand || null,
         model: model || null,
         serialNo: serialNo || null,
@@ -74,6 +75,7 @@ export async function updateAsset(formData: FormData) {
     const assetId = sanitizeString(formData.get('assetId') as string)
     const roomId = sanitizeString(formData.get('roomId') as string)
     const serialNo = sanitizeString(formData.get('serialNo') as string)
+    const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
     const brand = sanitizeString(formData.get('brand') as string)
     const model = sanitizeString(formData.get('model') as string)
     const btuStr = formData.get('btu') as string
@@ -127,6 +129,7 @@ export async function updateAsset(formData: FormData) {
       data: {
         roomId,
         qrCode: serialNo,
+        assetType: assetType as any,
         brand: brand || null,
         model: model || null,
         serialNo: serialNo || null,

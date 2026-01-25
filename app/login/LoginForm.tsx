@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { login } from '@/app/actions'
 import Link from 'next/link'
@@ -14,6 +14,17 @@ export default function LoginForm() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // ดึง callbackUrl จาก URL search params
+  const [callbackUrl, setCallbackUrl] = useState<string | null>(null)
+  
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const callback = params.get('callbackUrl')
+    if (callback) {
+      setCallbackUrl(callback)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -42,6 +53,9 @@ export default function LoginForm() {
     const formDataObj = new FormData()
     formDataObj.append('username', formData.username)
     formDataObj.append('password', formData.password)
+    if (callbackUrl) {
+      formDataObj.append('callbackUrl', callbackUrl)
+    }
 
     try {
       await login(formDataObj)
@@ -71,11 +85,11 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div data-error={errors.username ? 'true' : undefined}>
-        <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="username" className="block text-sm font-semibold mb-2" style={{ color: 'var(--app-text-heading)' }}>
           <span className="flex items-center gap-2">
             Username
             <Tooltip content="กรอกชื่อผู้ใช้ที่ใช้เข้าสู่ระบบ">
-              <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
+              <span className="cursor-help text-xs hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>ℹ️</span>
             </Tooltip>
           </span>
         </label>
@@ -97,10 +111,16 @@ export default function LoginForm() {
               passwordInput?.focus()
             }
           }}
-          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${
-            errors.username ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 transition-all duration-200 backdrop-blur-sm hover:bg-app-card focus:border-[var(--app-btn-primary)] focus:ring-[var(--app-btn-primary-glow)] ${
+            errors.username ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
           }`}
+          style={{
+            backgroundColor: 'var(--app-section)',
+            borderColor: errors.username ? undefined : 'var(--app-border)',
+            color: 'var(--app-text-heading)',
+          }}
           placeholder="กรอก username"
+          style={{ '--placeholder-color': 'var(--app-text-muted)' } as React.CSSProperties}
         />
         {errors.username && (
           <p id="username-error" className="mt-2 text-sm text-red-600 flex items-center gap-1" role="alert">
@@ -110,11 +130,11 @@ export default function LoginForm() {
       </div>
 
       <div data-error={errors.password ? 'true' : undefined}>
-        <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="password" className="block text-sm font-semibold mb-2" style={{ color: 'var(--app-text-heading)' }}>
           <span className="flex items-center gap-2">
             Password
             <Tooltip content="กรอกรหัสผ่านที่ใช้เข้าสู่ระบบ">
-              <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
+              <span className="cursor-help text-xs hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>ℹ️</span>
             </Tooltip>
           </span>
         </label>
@@ -135,10 +155,16 @@ export default function LoginForm() {
               form?.requestSubmit()
             }
           }}
-          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${
-            errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 transition-all duration-200 backdrop-blur-sm hover:bg-app-card focus:border-[var(--app-btn-primary)] focus:ring-[var(--app-btn-primary-glow)] ${
+            errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
           }`}
+          style={{
+            backgroundColor: 'var(--app-section)',
+            borderColor: errors.password ? undefined : 'var(--app-border)',
+            color: 'var(--app-text-heading)',
+          }}
           placeholder="กรอก password"
+          style={{ '--placeholder-color': 'var(--app-text-muted)' } as React.CSSProperties}
         />
         {errors.password && (
           <p id="password-error" className="mt-2 text-sm text-red-600 flex items-center gap-1" role="alert">
@@ -173,7 +199,12 @@ export default function LoginForm() {
         type="submit"
         disabled={isSubmitting}
         aria-label="เข้าสู่ระบบ"
-        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold text-lg transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
+        className="w-full text-white py-3 rounded-xl hover:shadow-xl hover:scale-[1.02] font-semibold text-lg transition-all duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 hover:brightness-110"
+        style={{
+          backgroundColor: 'var(--app-btn-primary)',
+          color: 'var(--app-btn-primary-text)',
+          boxShadow: '0 0 20px var(--app-btn-primary-glow)',
+        }}
       >
         {isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
       </button>

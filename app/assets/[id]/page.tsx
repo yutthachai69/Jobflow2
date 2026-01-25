@@ -103,8 +103,18 @@ export default async function AssetDetailPage({ params }: Props) {
   }
 
   // Access Control: CLIENT can only view assets within their assigned site
-  if (user.role === 'CLIENT' && user.siteId !== asset.room.floor.building.siteId) {
-    notFound();
+  if (user.role === 'CLIENT') {
+    let siteId = user.siteId
+    if (!siteId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { siteId: true },
+      })
+      siteId = dbUser?.siteId ?? null
+    }
+    if (!siteId || siteId !== asset.room.floor.building.siteId) {
+      notFound()
+    }
   }
 
   // สำหรับช่าง: ค้นหางานที่รอทำ (PENDING/IN_PROGRESS)
@@ -117,7 +127,7 @@ export default async function AssetDetailPage({ params }: Props) {
       <Breadcrumbs
         items={[
           { label: 'Dashboard', href: '/' },
-          { label: 'ทะเบียนแอร์', href: '/assets' },
+          { label: 'ทรัพย์สินและอุปกรณ์', href: '/assets' },
           { label: `${asset.brand} ${asset.model}`, href: undefined },
         ]}
       />
@@ -176,13 +186,15 @@ export default async function AssetDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* QR Code Display */}
-        <div className="mt-6">
-          <QRCodeDisplay 
-            qrCode={asset.qrCode} 
-            assetName={`${asset.brand || ''} ${asset.model || ''}`.trim() || asset.qrCode}
-          />
-        </div>
+        {/* QR Code Display - แสดงเฉพาะเครื่องปรับอากาศ */}
+        {asset.assetType === 'AIR_CONDITIONER' && (
+          <div className="mt-6">
+            <QRCodeDisplay 
+              qrCode={asset.qrCode} 
+              assetName={`${asset.brand || ''} ${asset.model || ''}`.trim() || asset.qrCode}
+            />
+          </div>
+        )}
       </div>
 
       {/* สำหรับช่าง: แสดงงานที่รอทำ */}

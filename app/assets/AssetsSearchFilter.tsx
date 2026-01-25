@@ -21,10 +21,10 @@ export default function AssetsSearchFilter({
       <div className="flex-1">
         <input
           type="text"
-          placeholder="ค้นหาตาม QR Code, ยี่ห้อ, รุ่น..."
+          placeholder="ค้นหาตาม QR Code, ยี่ห้อ, รุ่น, Serial No., สถานที่..."
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+          className="w-full px-4 py-2 border border-app rounded-lg bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] transition-all"
         />
       </div>
 
@@ -33,7 +33,7 @@ export default function AssetsSearchFilter({
         <select
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+          className="w-full px-4 py-2 border border-app rounded-lg bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] transition-all"
         >
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งาน</option>

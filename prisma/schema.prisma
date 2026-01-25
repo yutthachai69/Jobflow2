@@ -1,16 +1,13 @@
-// Prisma Schema สำหรับ PostgreSQL
-// 
-// วิธีใช้:
-// 1. Copy ไฟล์นี้ไปแทนที่ schema.prisma
-// 2. หรือใช้: cp prisma/schema.postgresql.prisma prisma/schema.prisma
-// 3. รัน: npx prisma generate && npx prisma migrate dev
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
+  // แนะนำให้ลบบรรทัด output ออกเพื่อให้ Next.js หาเจออัตโนมัติครับ
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -41,6 +38,8 @@ model User {
 
   jobItems        JobItem[]
   contactMessages ContactMessage[]
+  feedbacks       Feedback[]
+  notifications   Notification[]
 
   @@index([role])
   @@index([locked, lockedUntil])
@@ -103,7 +102,7 @@ model Room {
 }
 
 // ==========================================
-// 3. Asset Inventory (ทะเบียนแอร์)
+// 3. Asset Inventory (ทรัพย์สินและอุปกรณ์)
 // ==========================================
 
 enum AssetStatus {
@@ -112,9 +111,18 @@ enum AssetStatus {
   RETIRED
 }
 
+enum AssetType {
+  AIR_CONDITIONER
+  REFRIGERANT
+  SPARE_PART
+  TOOL
+  OTHER
+}
+
 model Asset {
   id          String      @id @default(cuid())
   qrCode      String      @unique
+  assetType   AssetType   @default(AIR_CONDITIONER)
   brand       String?
   model       String?
   serialNo    String?
@@ -129,6 +137,7 @@ model Asset {
 
   @@index([status])
   @@index([roomId])
+  @@index([assetType])
 }
 
 // ==========================================
@@ -150,6 +159,7 @@ enum OrderStatus {
 
 model WorkOrder {
   id            String      @id @default(cuid())
+  workOrderNumber String?   @unique // เลขที่งานรูปแบบ YYMMDD####
   jobType       JobType
   scheduledDate DateTime
   status        OrderStatus @default(OPEN)
@@ -160,12 +170,14 @@ model WorkOrder {
   assignedTeam String?
 
   jobItems  JobItem[]
+  feedbacks  Feedback[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   @@index([status])
   @@index([scheduledDate])
   @@index([siteId])
+  @@index([workOrderNumber])
 }
 
 enum JobItemStatus {
@@ -289,5 +301,50 @@ model SecurityIncident {
   @@index([userId])
 }
 
+// ==========================================
+// 7. Feedback & Survey (แบบสำรวจความพึงพอใจ)
+// ==========================================
 
+model Feedback {
+  id          String   @id @default(cuid())
+  rating      Int      // 1-5 stars
+  comment     String?
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  clientId    String
+  client      User     @relation(fields: [clientId], references: [id])
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
+  @@index([workOrderId])
+  @@index([clientId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ==========================================
+// 8. Notifications (การแจ้งเตือน)
+// ==========================================
+
+enum NotificationType {
+  WORK_ORDER_COMPLETED
+  FEEDBACK_RECEIVED
+  MESSAGE_RECEIVED
+}
+
+model Notification {
+  id        String          @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  isRead    Boolean         @default(false)
+  relatedId String?         // ID ของ workOrder, feedback, etc.
+  createdAt DateTime        @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([type])
+}

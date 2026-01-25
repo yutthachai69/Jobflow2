@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface QRCodeDisplayProps {
   qrCode: string
@@ -9,10 +9,21 @@ interface QRCodeDisplayProps {
 
 export default function QRCodeDisplay({ qrCode, assetName }: QRCodeDisplayProps) {
   const [isPrinting, setIsPrinting] = useState(false)
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
 
-  const qrCodeImageUrl = `/api/qrcode?text=${encodeURIComponent(qrCode)}`
+  // สร้าง URL สำหรับ QR Code ที่จะพาไปหน้า detail
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setQrCodeUrl(`${window.location.origin}/scan/${encodeURIComponent(qrCode)}`)
+    } else {
+      setQrCodeUrl(`/scan/${encodeURIComponent(qrCode)}`)
+    }
+  }, [qrCode])
+  
+  const qrCodeImageUrl = qrCodeUrl ? `/api/qrcode?text=${encodeURIComponent(qrCodeUrl)}` : ''
 
   const handlePrint = () => {
+    if (!qrCodeImageUrl) return
     setIsPrinting(true)
     const printWindow = window.open('', '_blank')
     if (printWindow) {
@@ -86,6 +97,7 @@ export default function QRCodeDisplay({ qrCode, assetName }: QRCodeDisplayProps)
   }
 
   const handleDownload = () => {
+    if (!qrCodeImageUrl) return
     const link = document.createElement('a')
     link.href = qrCodeImageUrl
     link.download = `QRCode-${qrCode}.png`
@@ -101,30 +113,38 @@ export default function QRCodeDisplay({ qrCode, assetName }: QRCodeDisplayProps)
         <div className="flex gap-2">
           <button
             onClick={handleDownload}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            disabled={!qrCodeImageUrl}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ดาวน์โหลด
           </button>
           <button
             onClick={handlePrint}
-            disabled={isPrinting}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={isPrinting || !qrCodeImageUrl}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPrinting ? 'กำลังพิมพ์...' : 'พิมพ์'}
           </button>
         </div>
       </div>
       <div className="flex flex-col items-center gap-4">
-        <div className="border-2 border-gray-300 p-4 bg-white rounded-lg">
-          <img
-            src={qrCodeImageUrl}
-            alt={`QR Code for ${qrCode}`}
-            className="w-64 h-64"
-          />
-        </div>
-        <p className="text-sm font-mono text-gray-700 font-medium">{qrCode}</p>
+        {qrCodeImageUrl && (
+          <div className="flex flex-col items-center gap-2">
+            <div className="border-2 border-gray-300 p-4 bg-white rounded-lg">
+              <img
+                src={qrCodeImageUrl}
+                alt={`QR Code for ${qrCode}`}
+                className="w-64 h-64"
+              />
+            </div>
+            <p className="text-sm font-mono text-gray-700 font-medium">{qrCode}</p>
+          </div>
+        )}
+        {!qrCodeImageUrl && (
+          <p className="text-sm font-mono text-gray-700 font-medium">{qrCode}</p>
+        )}
         <p className="text-xs text-gray-500 text-center">
-          สแกน QR Code นี้เพื่อค้นหาเครื่องปรับอากาศ
+          สแกน QR Code นี้เพื่อดูรายละเอียดทรัพย์สิน
         </p>
       </div>
     </div>
