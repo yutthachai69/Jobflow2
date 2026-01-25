@@ -47,7 +47,9 @@ export async function setSession(
 
   cookieStore.set('auth_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    // ตั้ง secure: false ชั่วคราว เพราะยังใช้ HTTP (ไม่ใช่ HTTPS)
+    // เมื่อมี HTTPS แล้ว ให้เปลี่ยนเป็น: secure: process.env.USE_HTTPS === 'true'
+    secure: false,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7 วัน
