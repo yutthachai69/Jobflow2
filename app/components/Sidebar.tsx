@@ -161,15 +161,15 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[55] lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-black/50 z-[55] lg:hidden transition-opacity"
           onClick={handleToggle}
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 left-0 h-screen bg-app-section border-r border-app z-[60] transition-all duration-300 ease-in-out hidden lg:flex flex-shrink-0 flex-col
-          ${isMobileOpen ? 'flex translate-x-0 shadow-2xl' : '-translate-x-full'} 
+        className={`fixed top-0 left-0 h-screen bg-app-section border-r border-app z-[60] transition-all duration-300 ease-in-out flex-shrink-0 flex-col
+          ${isMobileOpen ? 'flex translate-x-0 shadow-2xl' : 'hidden -translate-x-full lg:flex lg:translate-x-0'} 
           ${mounted && isCollapsed ? 'w-20' : 'w-64'}
         `}
       >
