@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AssetsClient from "./AssetsClient";
 import Pagination from "@/app/components/Pagination";
+import type { Prisma } from "@prisma/client";
 
 interface Props {
   searchParams: Promise<{ page?: string }>;
@@ -23,33 +24,28 @@ export default async function AssetsPage({ searchParams }: Props) {
 
   // สำหรับ CLIENT: ดูเฉพาะแอร์ใน Site ของตัวเอง
   // สำหรับ ADMIN: ดูทั้งหมด
-  let assets: Array<{
-    id: string
-    qrCode: string
-    assetType: string
-    brand: string | null
-    model: string | null
-    serialNo: string | null
-    btu: number | null
-    installDate: Date | null
-    status: string
-    createdAt: Date
-    room: {
-      name: string
-      floor: {
-        name: string
-        building: {
-          name: string
-          site: {
-            name: string
-            client?: {
-              name: string
+  type AssetWithRoom = Prisma.AssetGetPayload<{
+    include: {
+      room: {
+        include: {
+          floor: {
+            include: {
+              building: {
+                include: {
+                  site: {
+                    include: {
+                      client?: true
+                    }
+                  }
+                }
+              }
             }
           }
         }
       }
     }
-  }> = []
+  }>
+  let assets: AssetWithRoom[] = []
 
   if (user.role === 'CLIENT') {
     // ดึง siteId จาก database โดยตรง (ไม่ใช้จาก session เพราะอาจจะเก่า)
