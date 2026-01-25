@@ -15,6 +15,7 @@ export async function createAsset(formData: FormData) {
 
     const roomId = sanitizeString(formData.get('roomId') as string)
     const serialNo = sanitizeString(formData.get('serialNo') as string)
+    const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
     const brand = sanitizeString(formData.get('brand') as string)
     const model = sanitizeString(formData.get('model') as string)
     const btuStr = formData.get('btu') as string
