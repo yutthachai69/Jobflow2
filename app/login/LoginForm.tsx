@@ -118,9 +118,9 @@ export default function LoginForm() {
             backgroundColor: 'var(--app-section)',
             borderColor: errors.username ? undefined : 'var(--app-border)',
             color: 'var(--app-text-heading)',
-          }}
+            '--placeholder-color': 'var(--app-text-muted)',
+          } as React.CSSProperties}
           placeholder="กรอก username"
-          style={{ '--placeholder-color': 'var(--app-text-muted)' } as React.CSSProperties}
         />
         {errors.username && (
           <p id="username-error" className="mt-2 text-sm text-red-600 flex items-center gap-1" role="alert">
@@ -162,9 +162,9 @@ export default function LoginForm() {
             backgroundColor: 'var(--app-section)',
             borderColor: errors.password ? undefined : 'var(--app-border)',
             color: 'var(--app-text-heading)',
-          }}
+            '--placeholder-color': 'var(--app-text-muted)',
+          } as React.CSSProperties}
           placeholder="กรอก password"
-          style={{ '--placeholder-color': 'var(--app-text-muted)' } as React.CSSProperties}
         />
         {errors.password && (
           <p id="password-error" className="mt-2 text-sm text-red-600 flex items-center gap-1" role="alert">
