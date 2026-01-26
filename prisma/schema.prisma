@@ -2,8 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
-  // แนะนำให้ลบบรรทัด output ออกเพื่อให้ Next.js หาเจออัตโนมัติครับ
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"] // รองรับทั้ง Debian (native) และ Alpine (linux-musl)
 }
 
 datasource db {
