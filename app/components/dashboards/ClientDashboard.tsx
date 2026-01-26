@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { getWOStatus } from '@/lib/status-colors'
 import ClientDashboardCharts from './ClientDashboardCharts'
+import DateTimeDisplay from '@/app/components/DateTimeDisplay'
 
 interface ClientDashboardProps {
   siteId: string | null
@@ -159,6 +160,11 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
           <p className="text-sm text-app-muted max-w-2xl">
             ภาพรวมงานล้างแอร์ บำรุงรักษา และซ่อมแซมในสถานที่ของคุณ — ดูสถานะล่าสุด สถิติ และงานที่กำลังดำเนินการได้ด้านล่าง
           </p>
+        </div>
+
+        {/* ปฏิทินและเวลา */}
+        <div className="mb-6">
+          <DateTimeDisplay />
         </div>
 
         {/* สถิติการ์ด */}

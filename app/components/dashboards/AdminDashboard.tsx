@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import EmptyState from "@/app/components/EmptyState"
 import { getWOStatus } from "@/lib/status-colors"
+import DateTimeDisplay from "@/app/components/DateTimeDisplay"
 
 export default async function AdminDashboard() {
   const [
@@ -56,7 +57,12 @@ export default async function AdminDashboard() {
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-semibold text-app-heading mb-2">Dashboard</h1>
-        <p className="text-sm text-app-muted mb-8">ภาพรวมระบบ</p>
+        <p className="text-sm text-app-muted mb-6">ภาพรวมระบบ</p>
+
+        {/* ปฏิทินและเวลา */}
+        <div className="mb-6">
+          <DateTimeDisplay />
+        </div>
 
         {/* สถิติการ์ด */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

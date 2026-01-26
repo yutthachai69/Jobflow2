@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 // import { isRedirectError } ... ❌ ไม่ต้อง import แล้ว
 import bcrypt from 'bcryptjs'
 import {
@@ -9,6 +10,7 @@ import {
   recordFailedLogin,
   clearFailedLogin,
   logSecurityEvent,
+  getClientIP,
 } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
@@ -28,7 +30,14 @@ export async function login(formData: FormData) {
       redirect(redirectUrl)
     }
 
-    const rateLimitResult = checkRateLimit(username)
+    // Get client IP for rate limiting
+    const headersList = await headers()
+    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                     headersList.get('x-real-ip') ||
+                     'unknown'
+
+    // Check rate limit with both username and IP
+    const rateLimitResult = checkRateLimit(username, ipAddress)
 
     if (!rateLimitResult.allowed) {
       logSecurityEvent('LOGIN_RATE_LIMIT_EXCEEDED', {
@@ -56,7 +65,7 @@ export async function login(formData: FormData) {
     }
 
     if (!user) {
-      recordFailedLogin(username)
+      recordFailedLogin(username, ipAddress)
       redirect('/login?error=invalid')
     }
 
@@ -98,9 +107,9 @@ export async function login(formData: FormData) {
     )
 
     if (!isValidPassword) {
-      recordFailedLogin(username)
+      recordFailedLogin(username, ipAddress)
 
-      const rateLimitResult = checkRateLimit(username)
+      const rateLimitResult = checkRateLimit(username, ipAddress)
       if (!rateLimitResult.allowed && rateLimitResult.lockoutUntil) {
         await prisma.user.update({
           where: { id: refreshedUser.id },
@@ -121,14 +130,16 @@ export async function login(formData: FormData) {
       redirect('/login?error=invalid')
     }
 
-    clearFailedLogin(username)
+    clearFailedLogin(username, ipAddress)
 
     const { setSession } = await import('@/lib/auth')
     await setSession(refreshedUser.id, refreshedUser.role, refreshedUser.siteId ?? null)
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Login] Session set for user:', refreshedUser.username, 'role:', refreshedUser.role, 'siteId:', refreshedUser.siteId ?? '(none)')
-    }
+    // Log login success (important security event, but reduce verbosity)
+    // Uncomment if you need to debug login:
+    // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_AUTH === 'true') {
+    //   console.log('[Login] Session set for user:', refreshedUser.username, 'role:', refreshedUser.role, 'siteId:', refreshedUser.siteId ?? '(none)')
+    // }
 
     logSecurityEvent('LOGIN_SUCCESS', {
       userId: refreshedUser.id,
@@ -138,9 +149,10 @@ export async function login(formData: FormData) {
 
     const role = String(refreshedUser.role)
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Login] Redirecting to home for role:', role)
-    }
+    // Log redirect (uncomment if debugging):
+    // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_AUTH === 'true') {
+    //   console.log('[Login] Redirecting to home for role:', role)
+    // }
 
     // ถ้ามี callbackUrl ให้ redirect ไปที่นั้น
     if (callbackUrl) {

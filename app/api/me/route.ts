@@ -17,10 +17,11 @@ export async function GET() {
       }
     }
 
-    // Debug log
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[API /me] User:', user)
-    }
+    // Debug log - commented out to reduce console noise
+    // Uncomment if you need to debug /api/me endpoint:
+    // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_API === 'true') {
+    //   console.log('[API /me] User:', user)
+    // }
 
     const response = NextResponse.json({
       role: user?.role || null,
@@ -33,7 +34,12 @@ export async function GET() {
     
     return response
   } catch (error) {
-    console.error('[API /me] Error:', error)
+    // Log errors (important for debugging)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('[API /me] Error:', errorMessage)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[API /me] Error details:', error)
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

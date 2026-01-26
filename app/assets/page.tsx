@@ -105,7 +105,11 @@ export default async function AssetsPage({ searchParams }: Props) {
           console.log('[Assets] Found', assets.length, 'assets for siteId:', siteId)
         }
       } catch (error) {
-        console.error('[Assets] Error fetching assets:', error)
+        // Log errors (important for debugging)
+        console.error('[Assets] Error fetching assets:', error instanceof Error ? error.message : String(error))
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('[Assets] Error details:', error)
+        }
         // แสดง empty state แทน error เพื่อให้มี sidebar/header
         assets = []
       }

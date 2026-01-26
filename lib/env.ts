@@ -8,6 +8,7 @@
 const requiredEnvVars = {
   DATABASE_URL: process.env.DATABASE_URL,
   NODE_ENV: process.env.NODE_ENV || 'development',
+  JWT_SECRET: process.env.JWT_SECRET,
 } as const
 
 // Optional environment variables (with defaults)
@@ -16,6 +17,7 @@ const optionalEnvVars = {
   SESSION_SECRET: process.env.SESSION_SECRET,
   SENTRY_DSN: process.env.SENTRY_DSN,
   NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
+  USE_HTTPS: process.env.USE_HTTPS === 'true',
 } as const
 
 /**
@@ -28,6 +30,17 @@ export function validateEnvVars() {
   // Check required variables
   if (!requiredEnvVars.DATABASE_URL) {
     missing.push('DATABASE_URL')
+  }
+
+  // In production, JWT_SECRET is required
+  if (process.env.NODE_ENV === 'production') {
+    if (!requiredEnvVars.JWT_SECRET) {
+      missing.push('JWT_SECRET')
+    } else if (requiredEnvVars.JWT_SECRET.length < 32) {
+      throw new Error('❌ JWT_SECRET must be at least 32 characters long for security')
+    } else if (requiredEnvVars.JWT_SECRET === 'my-super-secret-key-change-it-now') {
+      throw new Error('❌ JWT_SECRET cannot use the default value in production!')
+    }
   }
 
   // In production, check for additional required vars
@@ -58,12 +71,14 @@ export const env = {
   // Required
   DATABASE_URL: requiredEnvVars.DATABASE_URL!,
   NODE_ENV: requiredEnvVars.NODE_ENV as 'development' | 'production' | 'test',
+  JWT_SECRET: requiredEnvVars.JWT_SECRET || 'my-super-secret-key-change-it-now', // Only for dev
   
   // Optional
   BLOB_READ_WRITE_TOKEN: optionalEnvVars.BLOB_READ_WRITE_TOKEN,
   SESSION_SECRET: optionalEnvVars.SESSION_SECRET,
   SENTRY_DSN: optionalEnvVars.SENTRY_DSN,
   NEXT_PUBLIC_GA_ID: optionalEnvVars.NEXT_PUBLIC_GA_ID,
+  USE_HTTPS: optionalEnvVars.USE_HTTPS,
   
   // Helpers
   isDevelopment: requiredEnvVars.NODE_ENV === 'development',

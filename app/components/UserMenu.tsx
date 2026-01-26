@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { logout } from '@/app/actions'
+import { logout } from '@/app/actions/index'
 import ConfirmDialog from './ConfirmDialog'
 
 interface UserMenuProps {

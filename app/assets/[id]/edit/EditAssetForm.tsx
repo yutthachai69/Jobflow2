@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateAsset } from '@/app/actions'
+import { updateAsset } from '@/app/actions/index'
 
 interface Site {
   id: string

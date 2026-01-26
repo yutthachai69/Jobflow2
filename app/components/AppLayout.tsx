@@ -36,7 +36,7 @@ export default function AppLayout({ role, username, fullName, siteName, children
       />
 
       {/* Content Area: ส่วนขวามือ - เต็มหน้าจอในมือถือ */}
-      <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300 w-full lg:w-auto">
+      <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300 w-full lg:w-auto" style={{ overflow: 'visible' }}>
         {/* Header: ส่ง User Data ไปแสดงผล */}
         <Header 
           role={role}
@@ -47,8 +47,8 @@ export default function AppLayout({ role, username, fullName, siteName, children
         />
 
         {/* 🔥 Main Scroll Area: ให้ Scroll เฉพาะเนื้อหาตรงนี้ */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth" key={pathname}>
-          <div className="max-w-7xl mx-auto min-h-full page-transition">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth" key={pathname} style={{ viewTransitionName: 'main-content' }}>
+          <div className="max-w-7xl mx-auto min-h-full">
             {/* Breadcrumb Navigation - แสดงในทุกหน้า */}
             <AutoBreadcrumbs />
             {children}

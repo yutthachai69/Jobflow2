@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createAsset } from '@/app/actions'
+import { createAsset } from '@/app/actions/index'
 import Tooltip from '@/app/components/Tooltip'
 
 interface Site {

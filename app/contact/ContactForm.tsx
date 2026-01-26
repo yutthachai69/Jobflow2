@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { submitContactMessage } from '@/app/actions'
+import { submitContactMessage } from '@/app/actions/index'
 
 interface ContactFormProps {
   userName: string // fullName หรือ username

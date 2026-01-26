@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateContactInfo } from '@/app/actions'
+import { updateContactInfo } from '@/app/actions/index'
 import Link from 'next/link'
 
 interface ContactInfo {

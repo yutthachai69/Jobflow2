@@ -136,6 +136,9 @@ export default async function WorkOrdersPage({
           include: {
             asset: true,
             technician: true,
+            photos: {
+              orderBy: { createdAt: 'asc' },
+            },
           },
         },
       },
@@ -207,6 +210,9 @@ export default async function WorkOrdersPage({
           include: {
             asset: true,
             technician: true,
+            photos: {
+              orderBy: { createdAt: 'asc' },
+            },
           },
         },
       },

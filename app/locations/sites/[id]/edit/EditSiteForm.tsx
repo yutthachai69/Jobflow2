@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateSite } from '@/app/actions'
+import { updateSite } from '@/app/actions/index'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 

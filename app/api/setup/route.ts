@@ -24,7 +24,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  console.log('🔧 Starting complete database setup...')
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔧 Starting complete database setup...')
+  }
   
   const results: string[] = []
   let schemaCreated = false
@@ -33,7 +35,9 @@ export async function POST(request: NextRequest) {
 
   try {
       // Step 1: เช็คว่า schema มีอยู่แล้วหรือยัง
-      console.log('🔍 Step 1: Checking database schema...')
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🔍 Step 1: Checking database schema...')
+      }
       try {
         await setupPrisma.$connect()
         await setupPrisma.user.findFirst({ take: 1 })
@@ -42,7 +46,9 @@ export async function POST(request: NextRequest) {
       } catch (schemaError: any) {
         // Schema ยังไม่มี = ต้องสร้าง
         if (schemaError.code === 'P2021' || schemaError.message?.includes('does not exist') || schemaError.message?.includes('no such table')) {
-          console.log('📝 Step 2: Creating database schema from SQL...')
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('📝 Step 2: Creating database schema from SQL...')
+          }
           
           // อ่าน consolidated SQL file
           const sqlPath = join(process.cwd(), 'prisma', 'migrations', 'consolidated.sql')
@@ -69,7 +75,9 @@ export async function POST(request: NextRequest) {
               } catch (execError: any) {
                 // Ignore "already exists" errors
                 if (!execError.message?.includes('already exists') && !execError.message?.includes('duplicate')) {
-                  console.warn(`⚠️  SQL execution warning: ${execError.message}`)
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.warn(`⚠️  SQL execution warning: ${execError.message}`)
+                  }
                   // Continue anyway
                 }
               }
@@ -86,7 +94,9 @@ export async function POST(request: NextRequest) {
       // Step 2: Seed Database (ถ้า schema พร้อมแล้ว)
       if (schemaCreated) {
         try {
-          console.log('🌱 Step 2: Seeding database...')
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('🌱 Step 2: Seeding database...')
+          }
 
           // Clear existing data (if any) - ใช้ setupPrisma instance เดียว
           await setupPrisma.jobPhoto.deleteMany().catch(() => {})
@@ -205,7 +215,11 @@ export async function POST(request: NextRequest) {
           seedCompleted = true
 
         } catch (seedError: any) {
+          // Log errors (important for debugging)
           console.error('❌ Seed failed:', seedError.message)
+          if (process.env.NODE_ENV !== 'production') {
+            console.error('Seed error details:', seedError)
+          }
           results.push(`❌ Seed failed: ${seedError.message}`)
           
           await setupPrisma.$disconnect()
@@ -237,7 +251,12 @@ export async function POST(request: NextRequest) {
         }
       })
     } catch (error: any) {
-      console.error('❌ Setup error:', error)
+      // Log errors (important for debugging)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('❌ Setup error:', errorMessage)
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Setup error details:', error)
+      }
       if (setupPrisma) {
         await setupPrisma.$disconnect().catch(() => {})
       }

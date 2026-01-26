@@ -83,6 +83,21 @@ export function handleApiError(
 }
 
 /**
+ * Check if error is a Next.js redirect error
+ * Next.js uses redirect() which throws an error with NEXT_REDIRECT digest
+ */
+export function isRedirectError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  
+  const err = error as any
+  return (
+    err?.digest?.startsWith('NEXT_REDIRECT') ||
+    err?.message === 'NEXT_REDIRECT' ||
+    (typeof err?.digest === 'string' && err.digest.includes('NEXT_REDIRECT'))
+  )
+}
+
+/**
  * Handle server action error
  */
 export async function handleServerActionError(
@@ -90,6 +105,11 @@ export async function handleServerActionError(
   user?: { id?: string; username?: string; role?: string } | null,
   additionalContext?: Record<string, any>
 ) {
+  // If it's a redirect error, re-throw it (don't handle it)
+  if (isRedirectError(error)) {
+    throw error
+  }
+
   const context: LogContext = {
     ...additionalContext,
   }

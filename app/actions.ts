@@ -18,13 +18,40 @@ import { checkRateLimit as checkApiRateLimit, recordRequest, resetRateLimit } fr
 
 export async function createMockMaintenance(assetId: string) {
   try {
+    // Import generateWorkOrderNumber
+    const { generateWorkOrderNumber } = await import('@/lib/work-order-number')
+    
     // 1. สร้างใบงาน
+    const asset = await prisma.asset.findUnique({
+      where: { id: assetId },
+      include: {
+        room: {
+          include: {
+            floor: {
+              include: {
+                building: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!asset) {
+      throw new Error('Asset not found')
+    }
+
+    // สร้างเลขที่งานแบบใหม่ (8vxgpup####)
+    const scheduledDate = new Date()
+    const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
+
     const wo = await prisma.workOrder.create({
       data: {
         jobType: 'PM',
-        scheduledDate: new Date(),
+        scheduledDate,
         status: 'COMPLETED',
-        siteId: (await prisma.asset.findUnique({ where: { id: assetId }, include: { room: { include: { floor: { include: { building: true } } } } } }))?.room.floor.building.siteId!,
+        siteId: asset.room.floor.building.siteId,
+        workOrderNumber, // เพิ่ม workOrderNumber
       }
     })
 
@@ -1570,145 +1597,5 @@ export async function markMessageAsRead(messageId: string) {
   revalidatePath('/messages')
 }
 
-export async function login(formData: FormData) {
-  try {
-    const username = formData.get('username') as string
-    const password = formData.get('password') as string
-
-    if (!username || !password) {
-      redirect('/login?error=missing')
-    }
-
-    // Rate limiting: Check both IP and username
-    // Note: In server actions, we need to get IP from headers
-    // For now, we'll use username as identifier (can be enhanced with request headers)
-    const rateLimitResult = checkRateLimit(username)
-
-    if (!rateLimitResult.allowed) {
-      logSecurityEvent('LOGIN_RATE_LIMIT_EXCEEDED', {
-        username,
-        lockoutUntil: rateLimitResult.lockoutUntil,
-      })
-      redirect(`/login?error=rate_limit&retryAfter=${rateLimitResult.lockoutUntil ? Math.ceil((rateLimitResult.lockoutUntil.getTime() - Date.now()) / 1000) : 900}`)
-    }
-
-    // ค้นหา User - เพิ่ม error handling สำหรับ database errors
-    let user
-    try {
-      user = await prisma.user.findUnique({
-        where: { username },
-      })
-    } catch (dbError: any) {
-      console.error('Database error during login:', dbError)
-      // ถ้า database ยังไม่มี table หรือ connection error
-      redirect('/login?error=database')
-    }
-
-    if (!user) {
-      recordFailedLogin(username)
-      redirect('/login?error=invalid')
-    }
-
-    // Auto-unlock expired accounts before checking
-    const { autoUnlockExpiredAccounts } = await import('@/lib/account-lock')
-    await autoUnlockExpiredAccounts()
-
-    // Refresh user data after auto-unlock
-    const refreshedUser = await prisma.user.findUnique({
-      where: { id: user.id },
-    })
-
-    if (!refreshedUser) {
-      redirect('/login?error=invalid')
-    }
-
-    // Check if account is locked
-    const now = new Date()
-    const isLocked = refreshedUser.locked || (refreshedUser.lockedUntil && refreshedUser.lockedUntil > now)
-
-    if (isLocked) {
-      const lockoutMessage = refreshedUser.lockedUntil && refreshedUser.lockedUntil > now
-        ? `บัญชีถูกล็อกจนถึง ${refreshedUser.lockedUntil.toLocaleString('th-TH')}`
-        : 'บัญชีถูกล็อก กรุณาติดต่อ Admin'
-
-      logSecurityEvent('LOGIN_ATTEMPT_LOCKED_ACCOUNT', {
-        username: refreshedUser.username,
-        userId: refreshedUser.id,
-        lockedReason: refreshedUser.lockedReason,
-        lockedUntil: refreshedUser.lockedUntil?.toISOString(),
-      })
-
-      redirect(`/login?error=locked&message=${encodeURIComponent(lockoutMessage)}`)
-    }
-
-    // Verify password with bcrypt
-    const isValidPassword = await bcrypt.compare(password, refreshedUser.password)
-    if (!isValidPassword) {
-      recordFailedLogin(username)
-
-      // Check if we should lock the account after failed attempts
-      const rateLimitResult = checkRateLimit(username)
-      if (!rateLimitResult.allowed && rateLimitResult.lockoutUntil) {
-        // Lock the account
-        await prisma.user.update({
-          where: { id: refreshedUser.id },
-          data: {
-            locked: true,
-            lockedUntil: rateLimitResult.lockoutUntil,
-            lockedReason: 'Too many failed login attempts',
-          },
-        })
-
-        logSecurityEvent('ACCOUNT_AUTO_LOCKED', {
-          userId: refreshedUser.id,
-          username: refreshedUser.username,
-          lockoutUntil: rateLimitResult.lockoutUntil.toISOString(),
-        })
-      }
-
-      redirect('/login?error=invalid')
-    }
-
-    // Successful login: Clear failed attempts
-    clearFailedLogin(username)
-
-    // ตั้ง Session (ส่ง siteId ด้วย สำหรับ CLIENT ให้ Dashboard แสดงสถานที่ได้)
-    const { setSession } = await import('@/lib/auth')
-    await setSession(refreshedUser.id, refreshedUser.role, refreshedUser.siteId ?? null)
-
-    logSecurityEvent('LOGIN_SUCCESS', {
-      userId: refreshedUser.id,
-      username: refreshedUser.username,
-      role: refreshedUser.role,
-    })
-
-    // Redirect ตาม Role
-    const role = String(refreshedUser.role)
-    if (role === 'ADMIN') {
-      redirect('/')
-    } else if (role === 'TECHNICIAN') {
-      redirect('/technician')
-    } else if (role === 'CLIENT') {
-      redirect('/')
-    }
-
-    redirect('/')
-  } catch (error: any) {
-    // Handle all errors and redirect to login page with error message
-    console.error('Login error:', error)
-
-    // ถ้า error เป็น redirect (จาก Next.js) ให้ throw ต่อ
-    if (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.includes('NEXT_REDIRECT')) {
-      throw error
-    }
-
-    // สำหรับ errors อื่นๆ redirect ไปยัง login page พร้อม error message
-    redirect('/login?error=server')
-  }
-}
-
-export async function logout() {
-  const { deleteSession } = await import('@/lib/auth')
-  await deleteSession()
-  redirect('/welcome')
-}
+// NOTE: login() and logout() are exported from app/actions/index.ts
+// Please import from '@/app/actions/index' or '@/app/actions/auth' directly

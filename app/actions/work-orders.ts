@@ -32,12 +32,17 @@ export async function createMockMaintenance(assetId: string) {
       throw new Error('Asset not found')
     }
 
+    // สร้างเลขที่งานแบบใหม่ (8vxgpup####)
+    const scheduledDate = new Date()
+    const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
+
     const wo = await prisma.workOrder.create({
       data: {
         jobType: 'PM',
-        scheduledDate: new Date(),
+        scheduledDate,
         status: 'COMPLETED',
         siteId: asset.room.floor.building.siteId,
+        workOrderNumber, // เพิ่ม workOrderNumber
       },
     })
 

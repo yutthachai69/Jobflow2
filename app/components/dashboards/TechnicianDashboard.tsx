@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { getJobStatus } from "@/lib/status-colors"
+import DateTimeDisplay from "@/app/components/DateTimeDisplay"
 
 interface TechnicianDashboardProps {
   userId: string
@@ -66,9 +67,14 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold text-app-heading mb-1">Dashboard</h1>
           <p className="text-sm text-app-muted">ภาพรวมงานของช่าง</p>
+        </div>
+
+        {/* ปฏิทินและเวลา */}
+        <div className="mb-6">
+          <DateTimeDisplay />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

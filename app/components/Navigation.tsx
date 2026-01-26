@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { logout } from '@/app/actions'
+import { logout } from '@/app/actions/index'
 import AdminNavLinks from './navigation/AdminNavLinks'
 import TechnicianNavLinks from './navigation/TechnicianNavLinks'
 import ClientNavLinks from './navigation/ClientNavLinks'

@@ -4,17 +4,31 @@ import type { NextRequest } from 'next/server'
 // 1. Config CSP
 const isDev = process.env.NODE_ENV !== 'production'
 
-// รวม CSP เป็นชุดเดียวที่รองรับ Next.js ทั้ง Dev และ Prod
-// เพิ่ม 'unsafe-inline' 'unsafe-eval' เพื่อแก้ปัญหา Script blocked
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'", 
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob:",
-  "connect-src 'self' ws: wss: http://localhost:* https://localhost:* http://18.142.112.163:*", // เพิ่ม IP Server เผื่อไว้
-  "frame-ancestors 'none'",
-].join('; ')
+// CSP Policy - ปรับปรุงเพื่อความปลอดภัยมากขึ้น
+// ใน production: ลด unsafe-inline/unsafe-eval
+// ใน development: อนุญาตเพื่อความสะดวกในการพัฒนา
+const csp = isDev
+  ? [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // อนุญาตใน dev เท่านั้น
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob:",
+      "connect-src 'self' ws: wss: http://localhost:* https://localhost:*",
+      "frame-ancestors 'none'",
+    ].join('; ')
+  : [
+      "default-src 'self'",
+      "script-src 'self'", // ไม่มี unsafe-inline/unsafe-eval ใน production
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // จำเป็นสำหรับ Next.js
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join('; ')
 
 const LOGIN_URL = '/login'
 
@@ -62,8 +76,17 @@ export function middleware(request: NextRequest) {
   // 2. สร้าง Response
   const response = NextResponse.next()
 
-  // 3. ยัด CSP Header
+  // 3. Security Headers
   response.headers.set('Content-Security-Policy', csp)
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  
+  // HSTS - ใช้เฉพาะใน production และ HTTPS
+  if (!isDev && request.nextUrl.protocol === 'https:') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
 
   return response
 }

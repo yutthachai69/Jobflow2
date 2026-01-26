@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateWorkOrder } from '@/app/actions'
+import { updateWorkOrder } from '@/app/actions/index'
 
 interface Site {
   id: string

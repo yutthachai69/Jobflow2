@@ -14,11 +14,29 @@ const RATE_LIMIT_CONFIG = {
 
 /**
  * Check if IP/username is rate limited
+ * @param identifier - Username or IP address
+ * @param useIP - If true, also check IP-based rate limiting
  */
-export function checkRateLimit(identifier: string): { allowed: boolean; remainingAttempts?: number; lockoutUntil?: Date } {
+export function checkRateLimit(
+  identifier: string, 
+  ipAddress?: string
+): { allowed: boolean; remainingAttempts?: number; lockoutUntil?: Date } {
+  // Check username-based rate limit
   const record = loginAttempts.get(identifier)
   
   if (!record) {
+    // Also check IP-based rate limit if IP is provided
+    if (ipAddress) {
+      const ipRecord = loginAttempts.get(`ip:${ipAddress}`)
+      if (ipRecord && ipRecord.count >= RATE_LIMIT_CONFIG.MAX_LOGIN_ATTEMPTS) {
+        if (ipRecord.lockedUntil && ipRecord.lockedUntil > new Date()) {
+          return { 
+            allowed: false, 
+            lockoutUntil: ipRecord.lockedUntil 
+          }
+        }
+      }
+    }
     return { allowed: true }
   }
 
@@ -61,17 +79,27 @@ export function checkRateLimit(identifier: string): { allowed: boolean; remainin
 
 /**
  * Record a failed login attempt
+ * @param identifier - Username
+ * @param ipAddress - IP address (optional, for IP-based rate limiting)
  */
-export function recordFailedLogin(identifier: string) {
+export function recordFailedLogin(identifier: string, ipAddress?: string) {
+  // Record username-based attempt
   const record = loginAttempts.get(identifier) || { count: 0, lastAttempt: new Date() }
-  
   record.count += 1
   record.lastAttempt = new Date()
-  
   loginAttempts.set(identifier, record)
   
+  // Also record IP-based attempt if IP is provided
+  if (ipAddress) {
+    const ipKey = `ip:${ipAddress}`
+    const ipRecord = loginAttempts.get(ipKey) || { count: 0, lastAttempt: new Date() }
+    ipRecord.count += 1
+    ipRecord.lastAttempt = new Date()
+    loginAttempts.set(ipKey, ipRecord)
+  }
+  
   // Log security event
-  logSecurityEvent('FAILED_LOGIN', { identifier, attemptCount: record.count })
+  logSecurityEvent('FAILED_LOGIN', { identifier, ipAddress, attemptCount: record.count })
   
   // Clean up old records (older than 24 hours)
   cleanupOldRecords()
@@ -79,9 +107,16 @@ export function recordFailedLogin(identifier: string) {
 
 /**
  * Clear failed login attempts (on successful login)
+ * @param identifier - Username
+ * @param ipAddress - IP address (optional, to clear IP-based rate limiting)
  */
-export function clearFailedLogin(identifier: string) {
+export function clearFailedLogin(identifier: string, ipAddress?: string) {
   loginAttempts.delete(identifier)
+  
+  // Also clear IP-based rate limit if IP is provided
+  if (ipAddress) {
+    loginAttempts.delete(`ip:${ipAddress}`)
+  }
 }
 
 /**

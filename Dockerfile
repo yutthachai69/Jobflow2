@@ -18,8 +18,9 @@ COPY . .
 # Generate Prisma Client (สร้างที่นี่ครั้งเดียวพอ)
 RUN npx prisma generate
 
-# Set dummy DATABASE_URL for build
-ENV DATABASE_URL="file:./dev.db"
+# Set dummy DATABASE_URL for build (PostgreSQL)
+# ใช้ connection string ปลอมสำหรับ build เท่านั้น (จะ override ด้วย .env ใน runtime)
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/temp_db"
 
 # Build Next.js
 RUN npm run build

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Validate file type
+    // Validate file type by MIME type
     if (!file.type.startsWith('image/')) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
     }
@@ -62,10 +62,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 })
     }
 
-    // Generate unique filename
+    // Validate file size (min 1 byte)
+    if (file.size === 0) {
+      return NextResponse.json({ error: 'File is empty' }, { status: 400 })
+    }
+
+    // Validate file extension
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    const fileExtension = file.name.split('.').pop()?.toLowerCase()
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      return NextResponse.json({ 
+        error: `Invalid file extension. Allowed: ${allowedExtensions.join(', ')}` 
+      }, { status: 400 })
+    }
+
+    // Validate filename (prevent path traversal)
+    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    if (sanitizedFilename !== file.name) {
+      return NextResponse.json({ error: 'Invalid filename characters' }, { status: 400 })
+    }
+
+    // Read file header to validate file signature (magic bytes)
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer.slice(0, 12))
+    
+    // Check file signatures (magic bytes)
+    const isValidImage = 
+      // JPEG: FF D8 FF
+      (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8 && uint8Array[2] === 0xFF) ||
+      // PNG: 89 50 4E 47 0D 0A 1A 0A
+      (uint8Array[0] === 0x89 && uint8Array[1] === 0x50 && uint8Array[2] === 0x4E && uint8Array[3] === 0x47) ||
+      // GIF: 47 49 46 38 (GIF8)
+      (uint8Array[0] === 0x47 && uint8Array[1] === 0x49 && uint8Array[2] === 0x46 && uint8Array[3] === 0x38) ||
+      // WebP: RIFF...WEBP
+      (uint8Array[0] === 0x52 && uint8Array[1] === 0x49 && uint8Array[2] === 0x46 && uint8Array[3] === 0x46 &&
+       uint8Array[8] === 0x57 && uint8Array[9] === 0x45 && uint8Array[10] === 0x42 && uint8Array[11] === 0x50)
+
+    if (!isValidImage) {
+      return NextResponse.json({ 
+        error: 'Invalid file format. File signature does not match image type.' 
+      }, { status: 400 })
+    }
+
+    // Generate unique filename (sanitized)
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(2, 15)
-    const extension = file.name.split('.').pop() || 'jpg'
+    const extension = fileExtension || 'jpg'
     const filename = `job-photos/${photoType}/${timestamp}-${randomStr}.${extension}`
 
     // Upload to Vercel Blob

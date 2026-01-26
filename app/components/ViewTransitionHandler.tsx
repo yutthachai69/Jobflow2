@@ -43,15 +43,20 @@ export default function ViewTransitionHandler() {
       // Prevent default navigation
       e.preventDefault()
 
-      // Use View Transition API
-      const transition = (document as any).startViewTransition(() => {
-        router.push(href)
-      })
+      // Use View Transition API for smooth transitions
+      if ((document as any).startViewTransition) {
+        const transition = (document as any).startViewTransition(() => {
+          router.push(href)
+        })
 
-      // Fallback if transition fails
-      transition.finished.catch(() => {
+        // Fallback if transition fails
+        transition.finished.catch(() => {
+          router.push(href)
+        })
+      } else {
+        // Fallback for browsers without View Transitions API
         router.push(href)
-      })
+      }
     }
 
     document.addEventListener('click', handleClick, true)

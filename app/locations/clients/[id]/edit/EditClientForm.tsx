@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateClient } from '@/app/actions'
+import { updateClient } from '@/app/actions/index'
 import Link from 'next/link'
 
 interface Client {

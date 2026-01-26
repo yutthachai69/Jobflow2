@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateWorkOrderStatus } from '@/app/actions'
+import { updateWorkOrderStatus } from '@/app/actions/index'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
 

@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ใช้ seed function จาก prisma/seed.ts โดยตรง
-    console.log('🌱 Starting database seed via API...')
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🌱 Starting database seed via API...')
+    }
     
     const { PrismaClient } = await import('@prisma/client')
     const bcrypt = (await import('bcryptjs')).default
@@ -81,9 +83,13 @@ export async function POST(request: NextRequest) {
         await seedPrisma.site.deleteMany().catch(() => {})
         await seedPrisma.client.deleteMany().catch(() => {})
         await seedPrisma.user.deleteMany().catch(() => {})
-        console.log('✅ Cleared existing data (if any)')
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('✅ Cleared existing data (if any)')
+        }
       } catch (clearError) {
-        console.warn('⚠️  Clear data warning (some tables may not exist)')
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('⚠️  Clear data warning (some tables may not exist)')
+        }
         // Continue anyway
       }
 
@@ -265,7 +271,12 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Seed error:', error)
+    // Log errors (important for debugging)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Seed error:', errorMessage)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Seed error details:', error)
+    }
     
     // Check if it's a schema error
     if (error.code === 'P2021' || error.message?.includes('does not exist') || error.message?.includes('no such table')) {

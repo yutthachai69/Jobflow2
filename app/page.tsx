@@ -31,15 +31,18 @@ export default async function DashboardPage() {
 
   // ถ้ายังไม่ได้ login ให้ไปหน้า welcome
   if (!user) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Dashboard] No user found, redirecting to welcome')
-    }
+    // Log only if debugging dashboard issues
+    // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_DASHBOARD === 'true') {
+    //   console.log('[Dashboard] No user found, redirecting to welcome')
+    // }
     redirect('/welcome');
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[Dashboard] User:', { userId: user.userId, role: user.role, siteId: user.siteId })
-  }
+  // Log only in development and only for debugging
+  // Uncomment below if you need to debug dashboard issues:
+  // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_DASHBOARD === 'true') {
+  //   console.log('[Dashboard] User:', { userId: user.userId, role: user.role, siteId: user.siteId })
+  // }
 
   // TECHNICIAN
   if (user.role === 'TECHNICIAN') {

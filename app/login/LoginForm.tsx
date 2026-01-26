@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { login } from '@/app/actions'
+import { login } from '@/app/actions/index'
 import Link from 'next/link'
 import Tooltip from '@/app/components/Tooltip'
+import { isRedirectError } from '@/lib/error-handler'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -59,8 +60,17 @@ export default function LoginForm() {
 
     try {
       await login(formDataObj)
-    } catch (error) {
-      // Handle error if needed
+      // ถ้า login สำเร็จ จะ redirect ไปที่อื่น ไม่มาถึงบรรทัดนี้
+    } catch (error: unknown) {
+      // เช็คว่าเป็น Next.js redirect error หรือไม่
+      // Next.js ใช้ redirect() จะ throw error ที่มี digest ขึ้นต้นด้วย 'NEXT_REDIRECT'
+      // ถ้าเป็น redirect error แสดงว่า login สำเร็จ ไม่ต้องแสดง error
+      if (isRedirectError(error)) {
+        // Login สำเร็จ จะ redirect ไปที่อื่น ไม่ต้องทำอะไร
+        return
+      }
+      
+      // ถ้าไม่ใช่ redirect error แสดงว่าเกิด error จริงๆ
       setErrors({ submit: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' })
       setIsSubmitting(false)
     }

@@ -90,6 +90,12 @@ interface WorkOrder {
       qrCode: string
     }
     technician: Technician | null
+    photos: Array<{
+      id: string
+      type: string
+      url: string
+      createdAt: Date
+    }>
   }>
 }
 
