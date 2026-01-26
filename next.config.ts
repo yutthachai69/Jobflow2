@@ -3,6 +3,7 @@ import type { NextConfig } from 'next'
 const isDev = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
+  output: 'standalone', // เปิด Standalone mode สำหรับ Docker deployment
   images: {
     unoptimized: true, // แนะนำให้เปิด true ไว้ก่อนสำหรับ Deploy บน EC2 เพื่อลดปัญหา Image Optimization กิน CPU
     remotePatterns: [],

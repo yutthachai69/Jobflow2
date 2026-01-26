@@ -1,26 +1,51 @@
-# 1. ใช้ Node v20
-FROM node:20
+# ============================================
+# Stage 1: Build (สร้าง Standalone output)
+# ============================================
+FROM node:20 AS builder
 
-# 2. ตั้งโฟลเดอร์ทำงาน
 WORKDIR /app
 
-# 3. ก๊อปปี้ไฟล์ทั้งหมดเข้าไป (สำคัญมาก! ต้องทำก่อน install)
+# Copy package files
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
 COPY . .
 
-# 4. ลงโปรแกรม
-RUN npm install
-
-# 5. สร้าง Prisma Client
+# Generate Prisma Client
 RUN npx prisma generate
 
-# ---------------------------------------------------
-# 👇 บรรทัดเวทมนตร์ (ที่หายไป): ใส่ลิงก์ปลอมๆ เพื่อให้ Build ผ่าน
-ENV DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
-# ---------------------------------------------------
+# Set dummy DATABASE_URL for build (ถ้าใช้ SQLite)
+ENV DATABASE_URL="file:./dev.db"
 
-# 6. สร้าง Build (รอบนี้ผ่านชัวร์ 100%)
+# Build Next.js (จะสร้าง .next/standalone)
 RUN npm run build
 
-# 7. เปิดพอร์ตและเริ่มทำงาน
+# ============================================
+# Stage 2: Production (ใช้ Standalone output)
+# ============================================
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy standalone output จาก builder
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+
+# Generate Prisma Client อีกครั้ง (สำหรับ runtime)
+RUN npx prisma generate
+
 EXPOSE 3000
-CMD ["npm", "start"]
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# ใช้ standalone server
+CMD ["node", "server.js"]
