@@ -15,13 +15,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client (สร้างที่นี่ครั้งเดียวพอ)
 RUN npx prisma generate
 
-# Set dummy DATABASE_URL for build (ถ้าใช้ SQLite)
+# Set dummy DATABASE_URL for build
 ENV DATABASE_URL="file:./dev.db"
 
-# Build Next.js (จะสร้าง .next/standalone)
+# Build Next.js
 RUN npm run build
 
 # ============================================
@@ -39,8 +39,10 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Generate Prisma Client อีกครั้ง (สำหรับ runtime)
-RUN npx prisma generate
+# --- แก้ไขตรงนี้: ห้ามรัน generate ใหม่ แต่ให้ COPY ตัวที่เสร็จแล้วมาใช้ ---
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# -------------------------------------------------------------------
 
 EXPOSE 3000
 
