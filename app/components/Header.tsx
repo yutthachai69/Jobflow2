@@ -62,7 +62,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
   }, [role])
 
   return (
-    <header className="sticky top-0 z-40 bg-app-section border-b border-app h-16 flex items-center justify-between gap-4 px-4 lg:pl-4 overflow-visible">
+    <header className="sticky top-0 z-40 bg-app-section border-b border-app h-16 flex items-center justify-between gap-4 px-4 lg:pl-4" style={{ overflow: 'visible' }}>
       {/* Left: Mobile menu + Logo (mobile) + Location (CLIENT) */}
       <div className="flex items-center gap-3 min-w-0 flex-1 lg:flex-initial">
         {onMenuToggle && (
@@ -106,7 +106,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
       </div>
 
       {/* Right: Theme toggle + Notification + User Menu */}
-      <div className="flex items-center gap-3 ml-auto relative">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 ml-auto relative z-50 flex-shrink-0">
         <ThemeToggle />
         {(role === 'ADMIN' || role === 'CLIENT') && (
           <div className="hidden sm:block">
