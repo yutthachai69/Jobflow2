@@ -29,13 +29,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
-  // ถ้ายังไม่ได้ login ให้ไปหน้า welcome
+  // ถ้ายังไม่ได้ login หรือ token หมดอายุ ให้ไปหน้า login
   if (!user) {
     // Log only if debugging dashboard issues
     // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_DASHBOARD === 'true') {
-    //   console.log('[Dashboard] No user found, redirecting to welcome')
+    //   console.log('[Dashboard] No user found, redirecting to login')
     // }
-    redirect('/welcome');
+    redirect('/login?error=session_expired');
   }
 
   // Log only in development and only for debugging

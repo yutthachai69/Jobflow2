@@ -60,6 +60,10 @@ export default async function RootLayout({
 }>) {
   const user = await getCurrentUser();
   
+  // ถ้าไม่มี user และไม่ใช่ public route ให้ redirect ไป login
+  // (แต่ให้ middleware จัดการก่อน เพราะ middleware จะทำงานก่อน)
+  // ตรงนี้เป็น fallback สำหรับกรณีที่ middleware ไม่ได้ทำงาน
+  
   // ดึงข้อมูล user เพิ่มเติมจาก DB (username, fullName, siteName)
   let userData = null;
   if (user) {

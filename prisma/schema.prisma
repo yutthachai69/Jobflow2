@@ -135,6 +135,9 @@ model Asset {
 
   jobItems JobItem[]
 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
   @@index([status])
   @@index([roomId])
   @@index([assetType])
