@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   creator: "Flomac Service",
   publisher: "Flomac Service",
   icons: {
-    icon: '/ddd.png',
-    apple: '/ddd.png',
+    icon: '/logo-final.png',
+    apple: '/logo-final.png',
   },
   formatDetection: {
     email: false,
