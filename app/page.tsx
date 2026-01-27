@@ -17,8 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: user
-      ? `${roleTitles[user.role] || "Dashboard"} - AirService Enterprise`
-      : "Dashboard - AirService Enterprise",
+      ? `${roleTitles[user.role] || "Dashboard"} - Flomac Service`
+      : "Dashboard - Flomac Service",
     robots: {
       index: false,
       follow: false,

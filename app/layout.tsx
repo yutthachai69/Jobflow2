@@ -15,12 +15,16 @@ if (typeof window === 'undefined') {
 }
 
 export const metadata: Metadata = {
-  title: "AirService Enterprise - ระบบบริหารจัดการงานบริการแอร์",
-  description: "Enterprise Air Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร สำหรับองค์กร",
-  keywords: ["Air Service", "เครื่องปรับอากาศ", "Maintenance", "Work Order", "Asset Management"],
-  authors: [{ name: "AirService Enterprise Team" }],
-  creator: "AirService Enterprise",
-  publisher: "AirService Enterprise",
+  title: "Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
+  description: "Flomac Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร สำหรับองค์กร",
+  keywords: ["Flomac Service", "เครื่องปรับอากาศ", "Maintenance", "Work Order", "Asset Management"],
+  authors: [{ name: "Flomac Service Team" }],
+  creator: "Flomac Service",
+  publisher: "Flomac Service",
+  icons: {
+    icon: '/ddd.png',
+    apple: '/ddd.png',
+  },
   formatDetection: {
     email: false,
     address: false,
@@ -28,17 +32,17 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   openGraph: {
-    title: "AirService Enterprise - ระบบบริหารจัดการงานบริการแอร์",
-    description: "Enterprise Air Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
+    title: "Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
+    description: "Flomac Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
     url: "/",
-    siteName: "AirService Enterprise",
+    siteName: "Flomac Service",
     locale: "th_TH",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AirService Enterprise - ระบบบริหารจัดการงานบริการแอร์",
-    description: "Enterprise Air Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
+    title: "Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
+    description: "Flomac Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
   },
   robots: {
     index: true,

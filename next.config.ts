@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   env: {
     // ดึง version จาก package.json มาใช้ (เปลี่ยนที่เดียว ใช้ได้ทุกที่)
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
-    NEXT_PUBLIC_APP_NAME: 'AirService Enterprise',
+    NEXT_PUBLIC_APP_NAME: 'Flomac Service',
   },
   async headers() {
     return [

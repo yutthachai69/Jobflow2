@@ -532,8 +532,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
         <div className={`p-4 border-t border-app text-xs text-app-muted text-center transition-all duration-300 ${isCollapsed ? 'px-2' : ''}`}>
           {!isCollapsed ? (
             <>
-              <p className="font-semibold text-app-heading">{process.env.NEXT_PUBLIC_APP_NAME || 'AirService Enterprise'}</p>
-              <p className="opacity-75">v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}</p>
+              <p className="font-semibold text-app-heading">{process.env.NEXT_PUBLIC_APP_NAME || 'Flomac Service'}</p>
+              <p className="opacity-75">v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.2'}</p>
             </>
           ) : (
             <p className="font-bold">v{process.env.NEXT_PUBLIC_APP_VERSION?.split('.').slice(0, 2).join('.') || '1.0'}</p>

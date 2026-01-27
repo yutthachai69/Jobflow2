@@ -6,8 +6,8 @@ import type { Metadata } from "next";
 import SnowfallEffect from "@/app/components/SnowfallEffect";
 
 export const metadata: Metadata = {
-  title: "เข้าสู่ระบบ - AirService Enterprise",
-  description: "เข้าสู่ระบบ AirService Enterprise - ระบบบริหารจัดการงานบริการแอร์",
+  title: "เข้าสู่ระบบ - Flomac Service",
+  description: "เข้าสู่ระบบ Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
   robots: {
     index: false,
     follow: false,
