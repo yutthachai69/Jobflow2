@@ -29,9 +29,13 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/jobflow
       - NODE_ENV=production
-      # 👇 JWT_SECRET ต้องยาวอย่างน้อย 32 ตัวอักษร
       - JWT_SECRET=flomac_service_super_secret_jwt_key_2026_production_secure_1234567890
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      
+      # 👇 แก้บรรทัดนี้ (ใส่ IP แทน localhost)
+      - NEXT_PUBLIC_APP_URL=http://18.142.112.163:3000
+      
+      # 👇 เพิ่มบรรทัดนี้เข้าไปด้วย (สำคัญมากสำหรับ Login)
+      - NEXTAUTH_URL=http://18.142.112.163:3000
     depends_on:
       db:
         condition: service_healthy
