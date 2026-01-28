@@ -9,13 +9,12 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 👉 แก้ไขตรงนี้: เพิ่มบรรทัดนี้ เพื่อเอา script เข้าไปก่อน npm ci
-COPY scripts ./scripts/
+# ❌ ลบบรรทัด COPY scripts ออกแล้ว
 
 # Install dependencies
 RUN npm ci
 
-# Copy source code (ส่วนที่เหลือค่อยตามมาทีหลัง)
+# Copy source code
 COPY . .
 
 # Generate Prisma Client
@@ -43,24 +42,16 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Copy prisma client ที่สร้างเสร็จแล้วมาด้วย
+# Copy prisma client
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Install Prisma CLI globally ใน runner stage (สำหรับ migration)
-RUN npm install -g prisma@latest
-
-# Copy entrypoint script
-COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
-RUN chmod +x ./scripts/docker-entrypoint.sh
-
-# Install netcat-openbsd for healthcheck
-RUN apk add --no-cache netcat-openbsd
+# ❌ ลบส่วน docker-entrypoint และ chmod ออกหมดแล้ว
 
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# ใช้ entrypoint script เพื่อรัน migration ก่อน start server
-ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
+# ✅ ใช้คำสั่งมาตรฐานในการรัน Server แทน
+CMD ["node", "server.js"]
