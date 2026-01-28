@@ -9,17 +9,19 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# 👉 แก้ไขตรงนี้: เพิ่มบรรทัดนี้ เพื่อเอา script เข้าไปก่อน npm ci
+COPY scripts ./scripts/
+
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy source code (ส่วนที่เหลือค่อยตามมาทีหลัง)
 COPY . .
 
-# Generate Prisma Client (สร้างที่นี่ครั้งเดียวพอ)
+# Generate Prisma Client
 RUN npx prisma generate
 
-# Set dummy DATABASE_URL for build (PostgreSQL)
-# ใช้ connection string ปลอมสำหรับ build เท่านั้น (จะ override ด้วย .env ใน runtime)
+# Set dummy DATABASE_URL for build
 ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/temp_db"
 
 # Build Next.js
@@ -40,10 +42,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# --- แก้ไขตรงนี้: ห้ามรัน generate ใหม่ แต่ให้ COPY ตัวที่เสร็จแล้วมาใช้ ---
+# Copy prisma client ที่สร้างเสร็จแล้วมาด้วย
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-# -------------------------------------------------------------------
 
 EXPOSE 3000
 
