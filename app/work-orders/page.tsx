@@ -48,6 +48,13 @@ export default async function WorkOrdersPage({
         fullName: string | null;
         username: string;
       } | null;
+      // ✅ เพิ่มส่วนนี้เข้าไปครับ
+      photos: Array<{
+        id: string;
+        type: string;
+        url: string;
+        createdAt: Date;
+      }>;
     }>;
   }> = [];
   let allSites: Array<{
