@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "start:prod": "npm run build && npm start",
-    "postinstall": "node scripts/postinstall.js",
+    "postinstall": "prisma generate",
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
