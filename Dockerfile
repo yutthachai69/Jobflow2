@@ -47,11 +47,20 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Install Prisma CLI globally ใน runner stage (สำหรับ migration)
+RUN npm install -g prisma@latest
+
+# Copy entrypoint script
+COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
+RUN chmod +x ./scripts/docker-entrypoint.sh
+
+# Install netcat-openbsd for healthcheck
+RUN apk add --no-cache netcat-openbsd
+
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-
-# ใช้ standalone server
-CMD ["node", "server.js"]
+# ใช้ entrypoint script เพื่อรัน migration ก่อน start server
+ENTRYPOINT ["./scripts/docker-entrypoint.sh"]

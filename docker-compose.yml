@@ -13,6 +13,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
 
   # ส่วนของเว็บ (Next.js)
@@ -23,11 +28,13 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/jobflow
-      # 👇 พระเอกของเรา แก้บรรทัดนี้ได้เลยครับ
-      - JWT_SECRET=super_secret_password_change_me_12345
-      # - NEXTAUTH_SECRET=... (ถ้าใช้ NextAuth ก็เปิดบรรทัดนี้แล้วใส่รหัสด้วย)
+      - NODE_ENV=production
+      # 👇 JWT_SECRET ต้องยาวอย่างน้อย 32 ตัวอักษร
+      - JWT_SECRET=flomac_service_super_secret_jwt_key_2026_production_secure_1234567890
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: always
 
 volumes:

@@ -59,9 +59,23 @@ export async function login(formData: FormData) {
       user = await prisma.user.findUnique({
         where: { username },
       })
-    } catch (dbError) {
+    } catch (dbError: any) {
       console.error('Database error during login:', dbError)
-      redirect('/login?error=database')
+      
+      // ตรวจสอบว่าเป็น connection error หรือ schema error
+      const isConnectionError = 
+        dbError.message?.includes('Can\'t reach database server') ||
+        dbError.message?.includes('connect ECONNREFUSED') ||
+        dbError.message?.includes('P1001') || // Prisma connection error
+        dbError.code === 'P1001'
+      
+      if (isConnectionError) {
+        // Connection error - แสดง error message แทน setup button
+        redirect('/login?error=server&message=' + encodeURIComponent('ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาติดต่อผู้ดูแลระบบ'))
+      } else {
+        // Schema error - แสดง setup button
+        redirect('/login?error=database')
+      }
     }
 
     if (!user) {

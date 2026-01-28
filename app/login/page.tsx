@@ -109,7 +109,12 @@ export default async function LoginPage({ searchParams }: Props) {
             {error === 'server' && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl relative z-10">
                 <p className="text-sm text-red-600 font-medium">⚠️ เกิดข้อผิดพลาดของเซิร์ฟเวอร์</p>
-                <p className="text-sm text-red-600 mt-1">กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {message ? decodeURIComponent(message) : 'กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ'}
+                </p>
+                <p className="text-xs text-red-500 mt-2">
+                  💡 ตรวจสอบว่า database server รันอยู่และสามารถเข้าถึงได้
+                </p>
               </div>
             )}
 
