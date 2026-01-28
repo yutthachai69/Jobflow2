@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # ส่วนของ Database
+  db:
+    image: postgres:15-alpine
+    container_name: jobflow-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  # ส่วนของเว็บ (Next.js)
+  web:
+    build: .
+    container_name: jobflow-app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/jobflow
+      # 👇 พระเอกของเรา แก้บรรทัดนี้ได้เลยครับ
+      - JWT_SECRET=super_secret_password_change_me_12345
+      # - NEXTAUTH_SECRET=... (ถ้าใช้ NextAuth ก็เปิดบรรทัดนี้แล้วใส่รหัสด้วย)
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  pgdata:
