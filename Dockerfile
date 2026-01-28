@@ -23,6 +23,7 @@ RUN npx prisma generate
 
 # Set dummy DATABASE_URL for build
 ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/temp_db"
+ENV JWT_SECRET="complex_temporary_secret_for_build_only_12345"
 
 # Build Next.js
 RUN npm run build
@@ -50,6 +51,7 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
 
 # ใช้ standalone server
 CMD ["node", "server.js"]
