@@ -5,16 +5,14 @@ FROM node:20 AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (exclude package-lock.json - lock file from Windows skips Linux optional deps)
+COPY package.json ./
 COPY prisma ./prisma/
 
-# ❌ ลบบรรทัด COPY scripts ออกแล้ว
-
-# Install dependencies (use npm install - npm ci fails with lightningcss optional deps in Docker)
+# Install deps fresh for Linux - ensures lightningcss-linux-x64-gnu is installed
 RUN npm install
 
-# Copy source code
+# Copy source code (and lock file for reproducibility - but install already done)
 COPY . .
 
 # Generate Prisma Client
