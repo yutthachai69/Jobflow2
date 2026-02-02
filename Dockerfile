@@ -14,6 +14,10 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN npm ci
 
+# Fix: Ensure lightningcss Linux binary is installed (Tailwind v4 uses it)
+# Prevents "Cannot find module lightningcss.linux-x64-gnu.node" in Docker/Linux
+RUN npm install lightningcss-linux-x64-gnu --save-optional --no-audit --no-fund
+
 # Copy source code
 COPY . .
 
