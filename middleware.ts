@@ -20,7 +20,7 @@ const csp = isDev
     ].join('; ')
   : [
       "default-src 'self'",
-      "script-src 'self'", // ไม่มี unsafe-inline/unsafe-eval ใน production
+      "script-src 'self' 'unsafe-inline'", // Next.js hydration ต้องใช้ inline scripts
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // จำเป็นสำหรับ Next.js
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob:",
