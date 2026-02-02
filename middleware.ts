@@ -28,7 +28,7 @@ const csp = isDev
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "upgrade-insecure-requests",
+      // ไม่ใช้ upgrade-insecure-requests เมื่อรันผ่าน HTTP (ทำให้ CSS/JS โหลดไม่ได้)
     ].join('; ')
 
 const LOGIN_URL = '/login'
