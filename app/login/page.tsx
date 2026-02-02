@@ -6,8 +6,10 @@ import type { Metadata } from "next";
 import SnowfallEffect from "@/app/components/SnowfallEffect";
 
 export const metadata: Metadata = {
-  title: "เข้าสู่ระบบ - Flomac Service",
-  description: "เข้าสู่ระบบ Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
+  // title: "เข้าสู่ระบบ - Flomac Service",
+  // description: "เข้าสู่ระบบ Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
+  title: "เข้าสู่ระบบ - L.M.T. Engineering",
+  description: "เข้าสู่ระบบ L.M.T. Engineering - ระบบบริหารจัดการงานบริการแอร์",
   robots: {
     index: false,
     follow: false,
@@ -46,12 +48,12 @@ export default async function LoginPage({ searchParams }: Props) {
         <div className="max-w-md w-full">
 
           {/* Header Section (เหลือแค่ Logo + ชื่อบริษัท) */}
-          <div className="motion-enter text-center mb-6 opacity-0 animate-fade-in-up flex flex-col items-center">
-            <Link href="/welcome" className="inline-block mb-2 transition-transform hover:scale-105 duration-300 relative group">
+          <div className="motion-enter text-center mb-10 opacity-0 animate-fade-in-up flex flex-col items-center">
+            <Link href="/welcome" className="inline-block mb-6 transition-transform hover:scale-105 duration-300 relative group">
               <div className="absolute inset-0 blur-3xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary-glow)' }}></div>
               <Image
-                src="/flomac.png"
-                alt="Flomac Logo"
+                src="/L.M.T.png"
+                alt="L.M.T Logo"
                 width={600}
                 height={250}
                 className="h-40 md:h-56 w-auto object-contain mx-auto relative z-10 drop-shadow-2xl filter"
@@ -60,10 +62,13 @@ export default async function LoginPage({ searchParams }: Props) {
               />
             </Link>
 
-            <h2 className="text-xl font-bold mb-2 -mt-8 md:-mt-12 tracking-wide uppercase relative z-20" style={{ color: 'var(--app-text-heading)' }}>
-              FLOMAC CO., LTD.
-            </h2>
-            <div className="h-1 w-16 rounded-full mx-auto shadow-sm" style={{ background: 'var(--app-btn-primary)' }}></div>
+            {/* แก้ไขตรงนี้: เอา -mt ออก และเพิ่มระยะห่างแทน */}
+            <div className="relative z-18 mt-4 md:mt-6">
+              <h2 className="text-xl md:text-2xl font-black tracking-wide uppercase mb-3" style={{ color: 'var(--app-text-heading)' }}>
+                L.M.T. Engineering Limited Partnership
+              </h2>
+              <div className="h-1 w-20 rounded-full mx-auto shadow-sm" style={{ background: 'var(--app-btn-primary)' }}></div>
+            </div>
           </div>
 
           {/* Login Form Container */}
@@ -149,7 +154,8 @@ export default async function LoginPage({ searchParams }: Props) {
       <footer className="relative z-10 py-6 backdrop-blur-sm" style={{ borderTopColor: 'var(--app-border)', borderTopWidth: '1px', borderTopStyle: 'solid', backgroundColor: 'var(--app-section)' }}>
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--app-text-muted)' }}>
           <div className="order-2 md:order-1">
-            &copy; {currentYear} Flomac Co., Ltd. All rights reserved.
+            {/* © {currentYear} Flomac Co., Ltd. All rights reserved. */}
+            © {currentYear} L.M.T. Engineering Limited Partnership. All rights reserved.
           </div>
           <div className="flex gap-6 order-1 md:order-2">
             <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Privacy Policy</span>

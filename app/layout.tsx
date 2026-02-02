@@ -15,15 +15,15 @@ if (typeof window === 'undefined') {
 }
 
 export const metadata: Metadata = {
-  title: "Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
-  description: "Flomac Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร สำหรับองค์กร",
-  keywords: ["Flomac Service", "เครื่องปรับอากาศ", "Maintenance", "Work Order", "Asset Management"],
-  authors: [{ name: "Flomac Service Team" }],
-  creator: "Flomac Service",
-  publisher: "Flomac Service",
+  title: "L.M.T. Enigneering Limited Partnership - ระบบบริหารจัดการงานบริการแอร์",
+  description: "L.M.T. Enigneering Limited Partnership Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร สำหรับองค์กร",
+  keywords: ["L.M.T. Enigneering Limited Partnership", "เครื่องปรับอากาศ", "Maintenance", "Work Order", "Asset Management"],
+  authors: [{ name: "L.M.T. Enigneering Limited Partnership Team" }],
+  creator: "L.M.T. Enigneering Limited Partnership",
+  publisher: "L.M.T. Enigneering Limited Partnership",
   icons: {
-    icon: '/logo-final.png',
-    apple: '/logo-final.png',
+    icon: '/L.M.T.png',
+    apple: '/L.M.T.png',
   },
   formatDetection: {
     email: false,
@@ -32,10 +32,10 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   openGraph: {
-    title: "Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
-    description: "Flomac Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
+    title: "L.M.T. Enigneering Limited Partnership - ระบบบริหารจัดการงานบริการแอร์",
+    description: "L.M.T. Enigneering Limited Partnership Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
     url: "/",
-    siteName: "Flomac Service",
+    siteName: "L.M.T. Enigneering Limited Partnership",
     locale: "th_TH",
     type: "website",
   },
@@ -63,25 +63,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
-  
+
   // ถ้าไม่มี user และไม่ใช่ public route ให้ redirect ไป login
   // (แต่ให้ middleware จัดการก่อน เพราะ middleware จะทำงานก่อน)
   // ตรงนี้เป็น fallback สำหรับกรณีที่ middleware ไม่ได้ทำงาน
-  
+
   // ดึงข้อมูล user เพิ่มเติมจาก DB (username, fullName, siteName)
   let userData = null;
   if (user) {
     try {
-      // ดึง siteId จาก DB ถ้า JWT ไม่มี (รองรับ session เก่า)
-      let siteId = user.siteId;
-      if (!siteId && user.role === 'CLIENT') {
-        const siteIdCheck = await prisma.user.findUnique({
-          where: { id: user.userId },
-          select: { siteId: true },
-        });
-        siteId = siteIdCheck?.siteId ?? null;
-      }
-      
+      // [Performance] Optimized: dbUser query already includes siteId and site data.
       const dbUser = await prisma.user.findUnique({
         where: { id: user.userId },
         select: {
@@ -96,12 +87,15 @@ export default async function RootLayout({
           },
         },
       });
-      
+
+      const siteId = dbUser?.siteId ?? user.siteId;
+
       if (dbUser) {
         // ใช้ siteId จาก DB ถ้ามี (ใหม่กว่า JWT)
         const finalSiteId = dbUser.siteId || siteId;
+        // siteName จาก relation หรือ query เพิ่มถ้าจำเป็น
         let siteName = dbUser.site?.name || null;
-        
+
         // ถ้ายังไม่มี siteName แต่มี siteId ให้ query ใหม่
         if (!siteName && finalSiteId) {
           const site = await prisma.site.findUnique({
@@ -110,7 +104,7 @@ export default async function RootLayout({
           });
           siteName = site?.name || null;
         }
-        
+
         userData = {
           role: dbUser.role as "ADMIN" | "TECHNICIAN" | "CLIENT",
           username: dbUser.username,
@@ -129,6 +123,7 @@ export default async function RootLayout({
       };
     }
   }
+
 
   return (
     <html lang="th" suppressHydrationWarning>

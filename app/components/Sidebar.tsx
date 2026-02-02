@@ -48,13 +48,68 @@ interface SidebarProps {
 
 const SIDEBAR_COLLAPSED_KEY = 'airservice-sidebar-collapsed'
 
+const adminItems: NavItem[] = [
+  { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
+  { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
+  { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
+  { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
+  { type: 'link', href: '/locations', label: 'สถานที่', icon: 'locations' },
+  { type: 'link', href: '/security-incidents', label: 'ความปลอดภัย', icon: 'security' },
+  { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
+]
+
+// เมนูหลักสำหรับ CLIENT
+const clientMainMenuItems: NavItem[] = [
+  { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
+  { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
+  { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
+  {
+    type: 'group',
+    label: 'รายงาน',
+    icon: 'reports',
+    subItems: [
+      { href: '/reports/maintenance', label: 'การบำรุงรักษา' },
+      { href: '/reports/repair', label: 'การซ่อม' },
+    ],
+  },
+]
+
+// เมนูเสริมสำหรับ CLIENT
+const clientSupplementaryMenuItems: NavItem[] = [
+  { type: 'link', href: '/survey', label: 'แบบสำรวจ', icon: 'survey' },
+  { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
+]
+
+const technicianItems: NavItem[] = [
+  { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
+  { type: 'link', href: '/technician', label: 'หน้างาน', icon: 'wrench' },
+  { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
+]
+
+// Mobile Menu Button (Fixed Position)
+const MobileMenuButton = ({ onClick, isMobileOpen }: { onClick: () => void; isMobileOpen: boolean }) => (
+  <button
+    onClick={onClick}
+    className={`lg:hidden fixed top-4 left-4 z-[60] p-2.5 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all shadow-md ${isMobileOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
+    aria-label="เปิดเมนู"
+  >
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+)
+
 export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileToggle }: SidebarProps) {
   const pathname = usePathname()
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [reportsExpanded, setReportsExpanded] = useState(false)
-  
+
   // ใช้ state จาก props ถ้ามี หรือใช้ internal state
   const isMobileOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
   const handleToggle = onMobileToggle || (() => setInternalIsOpen(!internalIsOpen))
@@ -86,47 +141,6 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
     return null
   }
 
-  const adminItems: NavItem[] = [
-    { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
-    { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
-    { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
-    { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
-    { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
-    { type: 'link', href: '/locations', label: 'สถานที่', icon: 'locations' },
-    { type: 'link', href: '/security-incidents', label: 'ความปลอดภัย', icon: 'security' },
-    { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
-  ]
-
-  // เมนูหลักสำหรับ CLIENT
-  const clientMainMenuItems: NavItem[] = [
-    { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
-    { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
-    { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
-    { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
-    {
-      type: 'group',
-      label: 'รายงาน',
-      icon: 'reports',
-      subItems: [
-        { href: '/reports/maintenance', label: 'การบำรุงรักษา' },
-        { href: '/reports/repair', label: 'การซ่อม' },
-      ],
-    },
-  ]
-
-  // เมนูเสริมสำหรับ CLIENT
-  const clientSupplementaryMenuItems: NavItem[] = [
-    { type: 'link', href: '/survey', label: 'แบบสำรวจ', icon: 'survey' },
-    { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
-  ]
-
-  const technicianItems: NavItem[] = [
-    { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
-    { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
-    { type: 'link', href: '/technician', label: 'หน้างาน', icon: 'wrench' },
-    { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
-  ]
-
   const items = role === 'ADMIN' ? adminItems : role === 'CLIENT' ? [] : technicianItems
 
   useEffect(() => {
@@ -138,25 +152,10 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
     return pathname?.startsWith(href)
   }
 
-  // Mobile Menu Button (Fixed Position)
-  const MobileMenuButton = () => (
-    <button
-      onClick={handleToggle}
-      className={`lg:hidden fixed top-4 left-4 z-[60] p-2.5 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all shadow-md ${
-        isMobileOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
-      aria-label="เปิดเมนู"
-    >
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
-  )
-
   return (
     <>
       {/* Mobile Menu Toggle Button */}
-      <MobileMenuButton />
+      <MobileMenuButton onClick={handleToggle} isMobileOpen={isMobileOpen} />
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
@@ -175,10 +174,10 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
       >
         {/* Header: Logo & Collapse Button */}
         <div className={`flex items-center justify-between border-b border-app ${isCollapsed ? 'p-3 flex-col gap-4' : 'p-5'}`}>
-          
+
           {/* Logo */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-3'} group/logo transition-all`}
             onClick={() => isMobileOpen && handleToggle()} // ปิดเมนูเมื่อคลิกโลโก้บนมือถือ
           >
@@ -187,22 +186,25 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
               {!isCollapsed && (
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full blur-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-500" />
               )}
-              
-              <Image
+
+              {/* <Image
                 src="/flomac.png"
-                alt="Flomac"
+                alt="Flomac" */}
+              <Image
+                src="/L.M.T.png"
+                alt="L.M.T."
                 width={220}
                 height={70}
-                className={`object-contain object-left transition-all duration-300 relative z-10 drop-shadow-md dark:brightness-125 dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] ${
-                  isCollapsed ? 'h-8 w-auto' : 'h-16 md:h-[4.25rem] w-auto'
-                }`}
+                className={`object-contain object-left transition-all duration-300 relative z-10 drop-shadow-md dark:brightness-125 dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] ${isCollapsed ? 'h-8 w-auto' : 'h-16 md:h-[4.25rem] w-auto'
+                  }`}
                 priority
               />
             </div>
-            
+
             {!isCollapsed && (
               <span className="text-2xl font-serif font-bold whitespace-nowrap transition-opacity duration-300 text-slate-800 dark:text-white tracking-tight drop-shadow-sm">
-                Flomac
+                {/* Flomac */}
+                L.M.T.
               </span>
             )}
           </Link>
@@ -260,8 +262,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                       onClick={() => isMobileOpen && handleToggle()}
                       className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                         ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
-                        ${active 
-                          ? 'bg-[var(--app-btn-primary)] text-white shadow-md' 
+                        ${active
+                          ? 'bg-[var(--app-btn-primary)] text-white shadow-md'
                           : 'text-app-body hover:bg-app-card hover:text-app-heading'
                         }
                       `}
@@ -271,7 +273,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                         const Icon = iconMap[item.icon]
                         return Icon ? <Icon active={active} /> : null
                       })()}
-                      
+
                       {!isCollapsed && (
                         <span className="whitespace-nowrap transition-all duration-300">
                           {item.label}
@@ -334,7 +336,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    
+
                     {reportsExpanded && (
                       <div className="ml-4 pl-3 border-l-2 border-app space-y-1 mt-1">
                         {group.subItems.map((sub) => {
@@ -345,8 +347,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                               href={sub.href}
                               onClick={() => isMobileOpen && handleToggle()}
                               className={`block px-3 py-2 text-sm rounded-lg transition-all
-                                ${subActive 
-                                  ? 'text-[var(--app-btn-primary)] font-semibold bg-[var(--app-btn-primary)]/5' 
+                                ${subActive
+                                  ? 'text-[var(--app-btn-primary)] font-semibold bg-[var(--app-btn-primary)]/5'
                                   : 'text-app-muted hover:text-app-heading hover:bg-app-card'
                                 }
                               `}
@@ -385,8 +387,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                     onClick={() => isMobileOpen && handleToggle()}
                     className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                       ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
-                      ${active 
-                        ? 'bg-[var(--app-btn-primary)] text-white shadow-md' 
+                      ${active
+                        ? 'bg-[var(--app-btn-primary)] text-white shadow-md'
                         : 'text-app-body hover:bg-app-card hover:text-app-heading'
                       }
                     `}
@@ -396,7 +398,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                       const Icon = iconMap[item.icon]
                       return Icon ? <Icon active={active} /> : null
                     })()}
-                    
+
                     {!isCollapsed && (
                       <span className="whitespace-nowrap transition-all duration-300">
                         {item.label}
@@ -425,8 +427,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                     onClick={() => isMobileOpen && handleToggle()}
                     className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                       ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
-                      ${active 
-                        ? 'bg-[var(--app-btn-primary)] text-white shadow-md' 
+                      ${active
+                        ? 'bg-[var(--app-btn-primary)] text-white shadow-md'
                         : 'text-app-body hover:bg-app-card hover:text-app-heading'
                       }
                     `}
@@ -436,7 +438,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                       const Icon = iconMap[item.icon]
                       return Icon ? <Icon active={active} /> : null
                     })()}
-                    
+
                     {!isCollapsed && (
                       <span className="whitespace-nowrap transition-all duration-300">
                         {item.label}
@@ -499,7 +501,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  
+
                   {reportsExpanded && (
                     <div className="ml-4 pl-3 border-l-2 border-app space-y-1 mt-1">
                       {group.subItems.map((sub) => {
@@ -510,8 +512,8 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                             href={sub.href}
                             onClick={() => isMobileOpen && handleToggle()}
                             className={`block px-3 py-2 text-sm rounded-lg transition-all
-                              ${subActive 
-                                ? 'text-[var(--app-btn-primary)] font-semibold bg-[var(--app-btn-primary)]/5' 
+                              ${subActive
+                                ? 'text-[var(--app-btn-primary)] font-semibold bg-[var(--app-btn-primary)]/5'
                                 : 'text-app-muted hover:text-app-heading hover:bg-app-card'
                               }
                             `}

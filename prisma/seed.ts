@@ -8,7 +8,6 @@ async function main() {
   console.log('🌱 Start seeding...')
 
   // 1. ล้างข้อมูลเก่าทิ้งก่อน (เรียงตามลำดับเพื่อไม่ให้ติด Relation)
-  // ลบตารางที่ reference User ก่อน (ContactMessage, JobItem)
   await prisma.jobPhoto.deleteMany()
   await prisma.jobItem.deleteMany()
   await prisma.workOrder.deleteMany()

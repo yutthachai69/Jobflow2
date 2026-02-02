@@ -15,12 +15,11 @@ import {
   getClientIP
 } from "@/lib/security"
 import { checkRateLimit as checkApiRateLimit, recordRequest, resetRateLimit } from "@/lib/rate-limit"
+import { generateWorkOrderNumber } from '@/lib/work-order-number'
+import { handleServerActionError } from '@/lib/error-handler'
 
 export async function createMockMaintenance(assetId: string) {
   try {
-    // Import generateWorkOrderNumber
-    const { generateWorkOrderNumber } = await import('@/lib/work-order-number')
-    
     // 1. สร้างใบงาน
     const asset = await prisma.asset.findUnique({
       where: { id: assetId },
@@ -87,7 +86,6 @@ export async function createMockMaintenance(assetId: string) {
     // 4. รีเฟรชหน้า
     revalidatePath(`/assets/${assetId}`)
   } catch (error) {
-    const { handleServerActionError } = await import('@/lib/error-handler')
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
@@ -149,7 +147,6 @@ export async function createWorkOrder(formData: FormData) {
     revalidatePath('/work-orders')
     redirect(`/work-orders/${workOrder.id}`)
   } catch (error) {
-    const { handleServerActionError } = await import('@/lib/error-handler')
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
@@ -1218,7 +1215,6 @@ export async function createAsset(formData: FormData) {
     revalidatePath('/assets')
     redirect('/assets')
   } catch (error) {
-    const { handleServerActionError } = await import('@/lib/error-handler')
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
@@ -1231,15 +1227,15 @@ export async function updateAsset(formData: FormData) {
     throw new Error('Unauthorized')
   }
 
-    const assetId = sanitizeString(formData.get('assetId') as string)
-    const roomId = sanitizeString(formData.get('roomId') as string)
-    const serialNo = sanitizeString(formData.get('serialNo') as string)
-    const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
-    const brand = sanitizeString(formData.get('brand') as string)
-    const model = sanitizeString(formData.get('model') as string)
-    const btuStr = formData.get('btu') as string
-    const installDateStr = formData.get('installDate') as string
-    const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
+  const assetId = sanitizeString(formData.get('assetId') as string)
+  const roomId = sanitizeString(formData.get('roomId') as string)
+  const serialNo = sanitizeString(formData.get('serialNo') as string)
+  const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
+  const brand = sanitizeString(formData.get('brand') as string)
+  const model = sanitizeString(formData.get('model') as string)
+  const btuStr = formData.get('btu') as string
+  const installDateStr = formData.get('installDate') as string
+  const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
 
   // Validation
   if (!assetId) {
@@ -1285,17 +1281,17 @@ export async function updateAsset(formData: FormData) {
 
   await prisma.asset.update({
     where: { id: assetId },
-      data: {
-        roomId,
-        qrCode: serialNo,
-        assetType: assetType as any,
-        brand: brand || null,
-        model: model || null,
-        serialNo: serialNo || null,
-        btu: btu || null,
-        installDate: installDate || null,
-        status,
-      },
+    data: {
+      roomId,
+      qrCode: serialNo,
+      assetType: assetType as any,
+      brand: brand || null,
+      model: model || null,
+      serialNo: serialNo || null,
+      btu: btu || null,
+      installDate: installDate || null,
+      status,
+    },
   })
 
   logSecurityEvent('ASSET_UPDATED', {

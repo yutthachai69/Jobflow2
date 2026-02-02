@@ -4,10 +4,12 @@ import type { Metadata } from "next";
 import SnowfallEffect from "@/app/components/SnowfallEffect";
 
 export const metadata: Metadata = {
-  title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by Flomac",
+  // title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by Flomac",
+  title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by L.M.T.",
   description: "เชื่อมต่อข้อมูลลูกค้า ทีมช่าง และงานซ่อมบำรุงไว้ในที่เดียว ควบคุมทุกขั้นตอนได้อย่างแม่นยำ",
   openGraph: {
-    title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by Flomac",
+    // title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by Flomac",
+    title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by L.M.T.",
     description: "เชื่อมต่อข้อมูลลูกค้า ทีมช่าง และงานซ่อมบำรุงไว้ในที่เดียว",
     type: "website",
   },
@@ -20,7 +22,7 @@ export default function WelcomePage() {
     <div className="min-h-screen relative flex flex-col overflow-hidden font-sans" style={{ backgroundColor: 'var(--app-bg)' }}>
       {/* ❄️ Snowfall Effect */}
       <SnowfallEffect />
-      
+
       {/* Animated gradient layer */}
       <div
         className="absolute inset-0 opacity-[0.3] animate-bg-gradient pointer-events-none"
@@ -37,20 +39,22 @@ export default function WelcomePage() {
       <div className="flex-1 flex items-center justify-center py-12 z-10">
         <div className="relative max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 w-full">
           <div className="text-center w-full">
-            
+
             {/* Hero Section */}
             <div className="mb-16 opacity-0 animate-fade-in-up flex flex-col items-center">
-              
+
               {/* 1. โลโก้ขนาดใหญ่พิเศษ */}
-              <Link href="/" className="inline-block mb-0 transition-transform hover:scale-105 duration-300 relative group">
+              <Link href="/" className="inline-block mb-8 transition-transform hover:scale-105 duration-300 relative group">
+                {/* Glow Effect ด้านหลังโลโก้ */}
                 <div className="absolute inset-0 blur-3xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary-glow)' }}></div>
-                
+
                 <Image
-                  src="/flomac.png"
-                  alt="Flomac Logo"
+                  src="/L.M.T.png"
+                  alt="L.M.T. Logo"
                   width={700}
                   height={300}
-                  className="h-48 md:h-72 w-auto object-contain object-top mx-auto relative z-10 drop-shadow-2xl filter -mb-4 md:-mb-6" 
+                  /* ปรับปรุง: เอา -mb-4 และ -mb-6 ออก เพื่อไม่ให้โลโก้เหินลงไปทับข้อความ */
+                  className="h-48 md:h-72 w-auto object-contain object-top mx-auto relative z-10 drop-shadow-2xl filter"
                   priority
                   unoptimized
                 />
@@ -58,7 +62,7 @@ export default function WelcomePage() {
 
               {/* 2. ชื่อบริษัท */}
               <h2 className="text-xl md:text-2xl font-bold mb-2 tracking-wide uppercase -mt-4 md:-mt-6" style={{ color: 'var(--app-text-heading)' }}>
-                FLOMAC CO., LTD.
+                L.M.T. Enigneering Limited Partnership
               </h2>
               <div className="h-1 w-20 rounded-full mb-8 mx-auto shadow-sm" style={{ background: 'var(--app-btn-primary)' }}></div>
 
@@ -66,7 +70,7 @@ export default function WelcomePage() {
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 tracking-tight leading-tight drop-shadow-sm" style={{ color: 'var(--app-text-heading)' }}>
                 ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ
               </h1>
-              
+
               {/* 4. คำบรรยาย */}
               <p className="text-base md:text-lg mb-4 max-w-4xl mx-auto leading-relaxed font-medium" style={{ color: 'var(--app-text-body)' }}>
                 เชื่อมต่อข้อมูลลูกค้า ทีมช่าง และงานซ่อมบำรุงไว้ในที่เดียว
@@ -104,7 +108,7 @@ export default function WelcomePage() {
 
               {/* Feature 3 */}
               <div className="motion-enter group opacity-0 backdrop-blur-md rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative overflow-hidden animate-card-enter delay-500" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', borderWidth: '1px', borderStyle: 'solid' }}>
-                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full opacity-30 group-hover:scale-150 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full opacity-30 group-hover:scale-150 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg relative z-10 group-hover:rotate-6 transition-transform duration-300" style={{ backgroundColor: 'var(--app-btn-primary)' }}>
                   <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-1a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -120,7 +124,7 @@ export default function WelcomePage() {
               <Link
                 href="/login"
                 className="group relative px-12 py-5 text-white rounded-full hover:shadow-2xl hover:scale-[1.02] font-bold text-xl transition-all duration-300 overflow-hidden"
-                style={{ 
+                style={{
                   backgroundColor: 'var(--app-btn-primary)',
                   boxShadow: '0 0 20px var(--app-btn-primary-glow)',
                 }}
@@ -155,7 +159,8 @@ export default function WelcomePage() {
             </div>
             <div className="mt-8 md:mt-0 md:order-1">
               <p className="text-center md:text-left text-sm" style={{ color: 'var(--app-text-muted)' }}>
-                &copy; {currentYear} Flomac Co., Ltd. All rights reserved.
+                {/* © {currentYear} Flomac Co., Ltd. All rights reserved. */}
+                © {currentYear} L.M.T. Engineering Limited Partnership. All rights reserved.
               </p>
             </div>
           </div>
