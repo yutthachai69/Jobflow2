@@ -62,12 +62,12 @@ export async function setSession(
     .sign(SECRET_KEY)
 
   // Secure cookie settings
-  // ใน production หรือเมื่อ USE_HTTPS=true ให้ใช้ secure: true
-  const isSecure = env.isProduction || env.USE_HTTPS
+  // ใช้ secure: true เฉพาะเมื่อรัน HTTPS เท่านั้น (ถ้า HTTP จะทำให้ browser ไม่ส่ง cookie!)
+  const isSecure = env.USE_HTTPS === true
 
   cookieStore.set('auth_token', token, {
     httpOnly: true,
-    secure: isSecure, // true ใน production หรือเมื่อ USE_HTTPS=true
+    secure: isSecure, // ต้องเป็น false เมื่อเข้าผ่าน http:// (เช่น IP:3000)
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7 วัน (absolute timeout)
