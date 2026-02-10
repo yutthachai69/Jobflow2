@@ -79,7 +79,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
 
         <Link href="/" className="lg:hidden flex items-center gap-2 flex-shrink-0 group">
           <img
-            src="/flomac.png"
+            src="/L.M.T.png"
             alt="L.M.T."
             width={120}
             height={36}

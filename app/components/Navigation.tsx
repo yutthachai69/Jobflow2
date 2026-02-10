@@ -58,7 +58,7 @@ export default function Navigation({ initialUser = null }: NavigationProps) {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center gap-2" aria-label="กลับหน้าแรก">
                 <img
-                  src="/flomac.png"
+                  src="/L.M.T.png"
                   alt="L.M.T."
                   width={120}
                   height={36}
