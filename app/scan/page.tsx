@@ -23,8 +23,8 @@ export default function ScanQRPage() {
     return () => {
       // Cleanup when component unmounts
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {})
-        html5QrCodeRef.current.clear().catch(() => {})
+        html5QrCodeRef.current.stop().catch(() => { })
+        html5QrCodeRef.current.clear().catch(() => { })
       }
     }
   }, [])
@@ -36,16 +36,43 @@ export default function ScanQRPage() {
       return
     }
 
+    // 2. Check if getUserMedia is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError('อุปกรณ์นี้ไม่รองรับการใช้กล้อง กรุณาใช้ Browser ล่าสุด')
+      return
+    }
+
     try {
       setError(null)
       setScanning(true)
       scannedRef.current = false
 
-      // Dynamic import html5-qrcode
+      // 3. Request camera permission explicitly first (forces browser to ask)
+      let stream: MediaStream | null = null
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        // Got permission, stop the stream immediately (QR library will open its own)
+        stream.getTracks().forEach(track => track.stop())
+      } catch (permErr: any) {
+        console.error('Camera permission error:', permErr)
+        if (permErr?.name === 'NotAllowedError' || permErr?.name === 'PermissionDeniedError') {
+          setError('กรุณาอนุญาตให้ใช้งานกล้อง: กดที่ 🔒 ข้างๆ URL > การตั้งค่าเว็บไซต์ > กล้อง > อนุญาต')
+        } else if (permErr?.name === 'NotFoundError') {
+          setError('ไม่พบกล้องในอุปกรณ์นี้')
+        } else if (permErr?.name === 'NotReadableError') {
+          setError('กล้องถูกใช้งานโดยแอปอื่นอยู่ กรุณาปิดแอปอื่นแล้วลองใหม่')
+        } else {
+          setError(`ไม่สามารถเข้าถึงกล้องได้: ${permErr?.message || permErr}`)
+        }
+        setScanning(false)
+        return
+      }
+
+      // 4. Dynamic import html5-qrcode
       const { Html5Qrcode } = await import('html5-qrcode')
       const qrCode = new Html5Qrcode('qr-reader')
       html5QrCodeRef.current = qrCode
-      
+
       await qrCode.start(
         { facingMode: 'environment' }, // ใช้กล้องหลัง
         {
@@ -56,13 +83,13 @@ export default function ScanQRPage() {
           // สแกนสำเร็จ!
           if (scannedRef.current) return // ป้องกันการสแกนซ้ำ
           scannedRef.current = true
-          
+
           try {
             await qrCode.stop()
             await qrCode.clear()
             setScanning(false)
             html5QrCodeRef.current = null
-            
+
             // ตรวจสอบว่าเป็น URL ของเราเองหรือไม่
             try {
               const url = new URL(decodedText)
@@ -74,7 +101,7 @@ export default function ScanQRPage() {
             } catch {
               // ไม่ใช่ URL ให้ค้นหาจาก QR Code text
             }
-            
+
             // ถ้าไม่ใช่ URL หรือไม่ใช่ URL ของเรา ให้ค้นหา Asset จาก QR Code
             const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(decodedText)}`)
             const data = await response.json()
@@ -95,18 +122,8 @@ export default function ScanQRPage() {
         }
       )
     } catch (err: any) {
-      console.error('Error starting camera:', err)
-      let errorMessage = 'ไม่สามารถเปิดกล้องได้'
-      
-      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
-         errorMessage = 'กรุณาอนุญาตให้ใช้งานกล้องในตั้งค่าของ Browser'
-      } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
-         errorMessage = 'ไม่พบกล้องในอุปกรณ์นี้'
-      } else if (err?.name === 'NotReadableError' || err?.name === 'TrackStartError') {
-         errorMessage = 'กล้องถูกใช้งานโดยโปรแกรมอื่น หรือมีปัญหาในการเข้าถึง'
-      }
-
-      setError(errorMessage)
+      console.error('Error starting QR scanner:', err)
+      setError(`ไม่สามารถเปิดกล้องสแกนได้: ${err?.message || err}`)
       setScanning(false)
       html5QrCodeRef.current = null
     }
@@ -130,17 +147,17 @@ export default function ScanQRPage() {
     const form = e.currentTarget
     const qrCodeInput = form.querySelector('input[name="qrCode"]') as HTMLInputElement
     const qrCodeUrlInput = form.querySelector('input[name="qrCodeUrl"]') as HTMLInputElement
-    
+
     const qrCodeValue = qrCodeInput?.value.trim()
     const qrCodeUrlValue = qrCodeUrlInput?.value.trim()
-    
+
     if (!qrCodeValue && !qrCodeUrlValue) {
       setError('กรุณากรอกรหัสทรัพย์สินหรือ URL')
       return
     }
 
     setError(null)
-    
+
     try {
       // ถ้ามี URL ให้ตรวจสอบก่อน
       if (qrCodeUrlValue) {
@@ -154,7 +171,7 @@ export default function ScanQRPage() {
           // ไม่ใช่ URL ที่ถูกต้อง
         }
       }
-      
+
       // ถ้ามีรหัสทรัพย์สิน ให้ค้นหาจาก QR Code
       if (qrCodeValue) {
         const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(qrCodeValue)}`)
@@ -164,7 +181,7 @@ export default function ScanQRPage() {
           return
         }
       }
-      
+
       setError('ไม่พบทรัพย์สินที่ระบุ')
     } catch (err) {
       setError('เกิดข้อผิดพลาด กรุณาลองอีกครั้ง')
@@ -187,7 +204,7 @@ export default function ScanQRPage() {
         {/* Scanner Area */}
         <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
           <div id="qr-reader" className="w-full mb-4"></div>
-          
+
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
               <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>
@@ -218,7 +235,7 @@ export default function ScanQRPage() {
           <h2 className="text-lg font-bold text-app-heading mb-4">
             หรือกรอกรหัสทรัพย์สินโดยตรง
           </h2>
-          <form 
+          <form
             className="space-y-4"
             onSubmit={handleManualSubmit}
           >
