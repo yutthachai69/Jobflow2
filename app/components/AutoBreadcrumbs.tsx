@@ -71,6 +71,13 @@ export default function AutoBreadcrumbs() {
     return null
   }
 
+  // ไม่แสดง AutoBreadcrumbs บนหน้าที่จัดการ breadcrumb เอง (Duplicate Issue)
+  // - Asset Detail: /assets/[id] (ยกเว้น /assets/new)
+  // - Work Order Detail: /work-orders/[id] (ยกเว้น /work-orders/new)
+  if (/^\/(assets|work-orders)\/(?!new$)[^/]+$/.test(pathname)) {
+    return null
+  }
+
   // สร้าง breadcrumb items จาก pathname
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = []
@@ -90,20 +97,20 @@ export default function AutoBreadcrumbs() {
       const segment = pathSegments[i]
       currentPath += `/${segment}`
 
-      // ตรวจสอบว่าเป็น dynamic route (ID) หรือไม่
-      const isDynamicId = /^[a-f0-9-]{20,}$/i.test(segment) // CUID format
+      // ตรวจสอบว่าเป็น dynamic route (ID) หรือไม่ (รองรับ UUID และ CUID - 20+ chars, alphanumeric)
+      const isDynamicId = /^[a-zA-Z0-9-]{20,}$/.test(segment)
       const isLast = i === pathSegments.length - 1
 
       if (isDynamicId) {
         // สำหรับ dynamic routes (เช่น [id]) ให้ใช้ parent route label
         const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/'
         const parentLabel = routeLabels[parentPath] || segmentLabels[pathSegments[i - 1]] || 'รายละเอียด'
-        
+
         // เพิ่ม parent route ถ้ายังไม่มี
         if (i > 0 && !items.some(item => item.href === parentPath)) {
           items.push({ label: parentLabel, href: parentPath })
         }
-        
+
         // สำหรับ detail page ไม่แสดง link และใช้ label "รายละเอียด"
         if (!isLast) {
           // ถ้ายังมี segment ต่อมา (เช่น /edit)
@@ -119,12 +126,12 @@ export default function AutoBreadcrumbs() {
       } else {
         // สำหรับ static routes
         const label = routeLabels[currentPath] || segmentLabels[segment] || segment
-        
+
         // ตรวจสอบว่ามี parent route หรือไม่ (เช่น /reports/maintenance -> /reports)
         if (i > 0) {
           const parentPath = `/${pathSegments[i - 1]}`
           const parentLabel = routeLabels[parentPath]
-          
+
           // เพิ่ม parent route ถ้ายังไม่มีและเป็น child route
           if (parentLabel && !items.some(item => item.href === parentPath)) {
             // ตรวจสอบว่าเป็น child route จริงๆ (เช่น /reports/maintenance)
@@ -133,8 +140,8 @@ export default function AutoBreadcrumbs() {
             }
           }
         }
-        
-        items.push({ 
+
+        items.push({
           label: label,
           href: isLast ? undefined : currentPath
         })
@@ -156,7 +163,7 @@ export default function AutoBreadcrumbs() {
       <ol className="flex items-center space-x-2 text-sm flex-wrap">
         {items.map((item, index) => {
           const isLast = index === items.length - 1
-          
+
           return (
             <li key={index} className="flex items-center">
               {index > 0 && (

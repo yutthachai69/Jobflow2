@@ -30,6 +30,12 @@ export default function ScanQRPage() {
   }, [])
 
   const startScanning = async () => {
+    // 1. Check for Secure Context (HTTPS or Localhost) first
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+      setError('กล้องไม่สามารถใช้งานได้บนการเชื่อมต่อที่ไม่ปลอดภัย (HTTP) กรุณาใช้ HTTPS หรือ localhost')
+      return
+    }
+
     try {
       setError(null)
       setScanning(true)
@@ -90,7 +96,17 @@ export default function ScanQRPage() {
       )
     } catch (err: any) {
       console.error('Error starting camera:', err)
-      setError('ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาตให้ใช้งานกล้อง')
+      let errorMessage = 'ไม่สามารถเปิดกล้องได้'
+      
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+         errorMessage = 'กรุณาอนุญาตให้ใช้งานกล้องในตั้งค่าของ Browser'
+      } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+         errorMessage = 'ไม่พบกล้องในอุปกรณ์นี้'
+      } else if (err?.name === 'NotReadableError' || err?.name === 'TrackStartError') {
+         errorMessage = 'กล้องถูกใช้งานโดยโปรแกรมอื่น หรือมีปัญหาในการเข้าถึง'
+      }
+
+      setError(errorMessage)
       setScanning(false)
       html5QrCodeRef.current = null
     }

@@ -72,6 +72,7 @@ const clientMainMenuItems: NavItem[] = [
     subItems: [
       { href: '/reports/maintenance', label: 'การบำรุงรักษา' },
       { href: '/reports/repair', label: 'การซ่อม' },
+      { href: '/reports/install', label: 'การติดตั้ง' },
     ],
   },
 ]
@@ -202,7 +203,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
             </div>
 
             {!isCollapsed && (
-              <span className="text-2xl font-serif font-bold whitespace-nowrap transition-opacity duration-300 text-slate-800 dark:text-white tracking-tight drop-shadow-sm">
+              <span className="text-2xl font-serif font-bold whitespace-nowrap transition-opacity duration-300 text-app-heading tracking-tight drop-shadow-sm">
                 {/* Flomac */}
                 L.M.T.
               </span>

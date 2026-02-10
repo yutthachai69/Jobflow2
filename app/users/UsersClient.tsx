@@ -38,7 +38,7 @@ export default function UsersClient({ users, currentUserId }: Props) {
     return users.filter((u) => {
       // Search filter
       const searchLower = search.toLowerCase()
-      const matchesSearch = 
+      const matchesSearch =
         !search ||
         u.username.toLowerCase().includes(searchLower) ||
         u.fullName?.toLowerCase().includes(searchLower) ||
@@ -81,7 +81,7 @@ export default function UsersClient({ users, currentUserId }: Props) {
   return (
     <>
       {/* Search & Filter */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="mb-6 bg-app-card rounded-lg shadow-sm border border-app p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1">
@@ -90,7 +90,7 @@ export default function UsersClient({ users, currentUserId }: Props) {
               placeholder="ค้นหาตามชื่อผู้ใช้, ชื่อ-นามสกุล, สถานที่..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm"
+              className="w-full px-4 py-2 border border-app rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-app-card text-app-body text-sm placeholder-app-muted"
             />
           </div>
 
@@ -99,7 +99,7 @@ export default function UsersClient({ users, currentUserId }: Props) {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm"
+              className="w-full border border-app rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-app-card text-app-body text-sm"
             >
               <option value="ALL">ทุกบทบาท</option>
               <option value="ADMIN">ผู้ดูแลระบบ</option>
@@ -124,14 +124,14 @@ export default function UsersClient({ users, currentUserId }: Props) {
           filteredUsers.map((u) => {
             const locked = isAccountLocked(u)
             return (
-              <div key={u.id} className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm ${locked ? 'border-red-200 bg-red-50' : ''}`}>
+              <div key={u.id} className={`bg-app-card rounded-lg border border-app p-4 shadow-sm ${locked ? 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800' : ''}`}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900 text-base mb-1">
+                    <div className="font-medium text-app-heading text-base mb-1">
                       {u.username}
                     </div>
                     {u.fullName && (
-                      <div className="text-sm text-gray-700 mb-2">
+                      <div className="text-sm text-app-body mb-2">
                         {u.fullName}
                       </div>
                     )}
@@ -141,9 +141,9 @@ export default function UsersClient({ users, currentUserId }: Props) {
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
+                <div className="space-y-2 mb-3 pb-3 border-b border-app">
                   <div>
-                    <div className="text-xs text-gray-500 mb-1">สถานะ</div>
+                    <div className="text-xs text-app-muted mb-1">สถานะ</div>
                     {locked ? (
                       <div className="flex flex-col gap-1">
                         <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 w-fit">
@@ -164,15 +164,15 @@ export default function UsersClient({ users, currentUserId }: Props) {
 
                   {u.role === 'CLIENT' && u.site && (
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">สถานที่</div>
-                      <div className="text-sm text-gray-900 font-medium">{u.site.name}</div>
-                      <div className="text-xs text-gray-500">{u.site.client.name}</div>
+                      <div className="text-xs text-app-muted mb-1">สถานที่</div>
+                      <div className="text-sm text-app-heading font-medium">{u.site.name}</div>
+                      <div className="text-xs text-app-muted">{u.site.client.name}</div>
                     </div>
                   )}
 
                   <div>
-                    <div className="text-xs text-gray-500 mb-1">วันที่สร้าง</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-app-muted mb-1">วันที่สร้าง</div>
+                    <div className="text-sm text-app-body">
                       {new Date(u.createdAt).toLocaleDateString('th-TH')}
                     </div>
                   </div>
@@ -188,8 +188,8 @@ export default function UsersClient({ users, currentUserId }: Props) {
                   <div className="flex gap-2">
                     {u.id !== currentUserId && (
                       <div className="flex-1">
-                        <LockButton 
-                          userId={u.id} 
+                        <LockButton
+                          userId={u.id}
                           username={u.username}
                           isLocked={locked}
                         />
@@ -217,20 +217,20 @@ export default function UsersClient({ users, currentUserId }: Props) {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto border rounded-lg shadow-sm bg-white">
+      <div className="hidden md:block overflow-x-auto border border-app rounded-lg shadow-sm bg-app-card">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-100 uppercase font-medium border-b">
+          <thead className="bg-app-section uppercase font-medium border-b border-app">
             <tr>
-              <th className="px-6 py-3 text-gray-900">ชื่อผู้ใช้</th>
-              <th className="px-6 py-3 text-gray-900">ชื่อ-นามสกุล</th>
-              <th className="px-6 py-3 text-gray-900">บทบาท</th>
-              <th className="px-6 py-3 text-gray-900">สถานะ</th>
-              <th className="px-6 py-3 text-gray-900">สถานที่ (สำหรับ CLIENT)</th>
-              <th className="px-6 py-3 text-gray-900">วันที่สร้าง</th>
-              <th className="px-6 py-3 text-gray-900">จัดการ</th>
+              <th className="px-6 py-3 text-app-heading">ชื่อผู้ใช้</th>
+              <th className="px-6 py-3 text-app-heading">ชื่อ-นามสกุล</th>
+              <th className="px-6 py-3 text-app-heading">บทบาท</th>
+              <th className="px-6 py-3 text-app-heading">สถานะ</th>
+              <th className="px-6 py-3 text-app-heading">สถานที่ (สำหรับ CLIENT)</th>
+              <th className="px-6 py-3 text-app-heading">วันที่สร้าง</th>
+              <th className="px-6 py-3 text-app-heading">จัดการ</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-app">
             {filteredUsers.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12">
@@ -247,9 +247,9 @@ export default function UsersClient({ users, currentUserId }: Props) {
               filteredUsers.map((u) => {
                 const locked = isAccountLocked(u)
                 return (
-                  <tr key={u.id} className={`hover:bg-gray-50 ${locked ? 'bg-red-50' : ''}`}>
-                    <td className="px-6 py-4 font-medium text-gray-900">{u.username}</td>
-                    <td className="px-6 py-4 text-gray-700">{u.fullName || '-'}</td>
+                  <tr key={u.id} className={`hover:bg-app-accent ${locked ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
+                    <td className="px-6 py-4 font-medium text-app-heading">{u.username}</td>
+                    <td className="px-6 py-4 text-app-body">{u.fullName || '-'}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(u.role)}`}>
                         {getRoleLabel(u.role)}
@@ -274,16 +274,16 @@ export default function UsersClient({ users, currentUserId }: Props) {
                       )}
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                    {u.role === 'CLIENT' && u.site ? (
-                      <div>
-                        <div className="font-medium text-gray-900">{u.site.name}</div>
-                        <div className="text-xs text-gray-500">{u.site.client.name}</div>
-                      </div>
-                    ) : (
-                      '-'
-                    )}
+                      {u.role === 'CLIENT' && u.site ? (
+                        <div>
+                          <div className="font-medium text-app-heading">{u.site.name}</div>
+                          <div className="text-xs text-app-muted">{u.site.client.name}</div>
+                        </div>
+                      ) : (
+                        '-'
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 text-xs">
+                    <td className="px-6 py-4 text-app-body text-xs">
                       {new Date(u.createdAt).toLocaleDateString('th-TH')}
                     </td>
                     <td className="px-6 py-4">
@@ -295,8 +295,8 @@ export default function UsersClient({ users, currentUserId }: Props) {
                           แก้ไข
                         </Link>
                         {u.id !== currentUserId && (
-                          <LockButton 
-                            userId={u.id} 
+                          <LockButton
+                            userId={u.id}
                             username={u.username}
                             isLocked={locked}
                           />
@@ -323,7 +323,7 @@ export default function UsersClient({ users, currentUserId }: Props) {
       </div>
 
       {filteredUsers.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="mt-4 text-sm text-app-muted">
           แสดง {filteredUsers.length} จาก {users.length} รายการ
         </div>
       )}

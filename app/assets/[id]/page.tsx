@@ -123,7 +123,7 @@ export default async function AssetDetailPage({ params }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 max-w-4xl mx-auto font-sans">
+    <div className="min-h-screen bg-app-bg p-4 md:p-8 max-w-4xl mx-auto font-sans">
       <Breadcrumbs
         items={[
           { label: 'Dashboard', href: '/' },
@@ -132,27 +132,26 @@ export default async function AssetDetailPage({ params }: Props) {
         ]}
       />
 
-      <div className="bg-white rounded-xl shadow-lg border p-6 mb-6">
+      <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
-              asset.status === 'ACTIVE'
-                ? 'bg-green-100 text-green-800'
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${asset.status === 'ACTIVE'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                 : asset.status === 'BROKEN'
-                ? 'bg-red-100 text-red-800'
-                : 'bg-gray-100 text-gray-800'
-            }`}>
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
+              }`}>
               {asset.status === 'ACTIVE' && 'ใช้งาน'}
               {asset.status === 'BROKEN' && 'ชำรุด'}
               {asset.status === 'RETIRED' && 'เลิกใช้งาน'}
             </span>
-            <h1 className="text-3xl font-bold mt-2 text-gray-800">
+            <h1 className="text-3xl font-bold mt-2 text-app-heading">
               {asset.brand} - {asset.model}
             </h1>
           </div>
           <div className="flex flex-col items-end gap-3">
             <div className="text-right">
-              <div className="text-sm text-gray-500">ขนาด BTU</div>
+              <div className="text-sm text-app-muted">ขนาด BTU</div>
               <div className="text-2xl font-bold text-blue-600">
                 {asset.btu ? `${asset.btu.toLocaleString()} BTU` : '-'}
               </div>
@@ -161,7 +160,7 @@ export default async function AssetDetailPage({ params }: Props) {
               <div className="flex flex-wrap justify-end gap-2">
                 <Link
                   href={`/assets/${asset.id}/edit`}
-                  className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  className="inline-flex items-center px-4 py-2 rounded-lg border border-app bg-app-card text-app-body text-sm font-medium hover:bg-app-section hover:border-app-border-glow transition-colors"
                 >
                   แก้ไข
                 </Link>
@@ -171,26 +170,26 @@ export default async function AssetDetailPage({ params }: Props) {
           </div>
         </div>
 
-        <hr className="my-6 border-gray-200" />
+        <hr className="my-6 border-app" />
 
         <div className="grid grid-cols-2 gap-4 text-sm mb-6">
           <div>
-            <p className="text-gray-500">สถานที่ติดตั้ง</p>
-            <p className="font-semibold text-lg text-gray-900">{asset.room.floor.building.site.name}</p>
-            <p className="text-gray-700">{asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}</p>
+            <p className="text-app-muted">สถานที่ติดตั้ง</p>
+            <p className="font-semibold text-lg text-app-heading">{asset.room.floor.building.site.name}</p>
+            <p className="text-app-body">{asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}</p>
           </div>
           <div>
-            <p className="text-gray-500">ข้อมูลเครื่อง</p>
-            <p className="text-gray-700">S/N: {asset.serialNo || "-"}</p>
-            <p className="text-gray-700">วันที่ติดตั้ง: {asset.installDate ? asset.installDate.toLocaleDateString('th-TH') : "-"}</p>
+            <p className="text-app-muted">ข้อมูลเครื่อง</p>
+            <p className="text-app-body">S/N: {asset.serialNo || "-"}</p>
+            <p className="text-app-body">วันที่ติดตั้ง: {asset.installDate ? asset.installDate.toLocaleDateString('th-TH') : "-"}</p>
           </div>
         </div>
 
         {/* QR Code Display - แสดงเฉพาะเครื่องปรับอากาศ */}
         {asset.assetType === 'AIR_CONDITIONER' && (
           <div className="mt-6">
-            <QRCodeDisplay 
-              qrCode={asset.qrCode} 
+            <QRCodeDisplay
+              qrCode={asset.qrCode}
               assetName={`${asset.brand || ''} ${asset.model || ''}`.trim() || asset.qrCode}
             />
           </div>
@@ -199,10 +198,10 @@ export default async function AssetDetailPage({ params }: Props) {
 
       {/* สำหรับช่าง: แสดงงานที่รอทำ */}
       {user.role === 'TECHNICIAN' && pendingJobItems.length > 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
+        <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">⚡</span>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-app-heading">
               งานที่รอทำ ({pendingJobItems.length} งาน)
             </h2>
           </div>
@@ -211,27 +210,26 @@ export default async function AssetDetailPage({ params }: Props) {
               <Link
                 key={jobItem.id}
                 href={`/technician/job-item/${jobItem.id}`}
-                className="block bg-white rounded-lg p-4 border border-yellow-200 hover:border-yellow-400 hover:shadow-md transition-all"
+                className="block bg-app-card rounded-lg p-4 border border-app hover:border-yellow-400 hover:shadow-md transition-all"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="font-semibold text-gray-900 mb-1">
+                    <div className="font-semibold text-app-heading mb-1">
                       {jobItem.workOrder.jobType} - {jobItem.workOrder.site.name}
                     </div>
-                    <div className="text-sm text-gray-600 mb-1">
+                    <div className="text-sm text-app-body mb-1">
                       {jobItem.workOrder.site.client.name}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-app-muted">
                       วันนัดหมาย: {new Date(jobItem.workOrder.scheduledDate).toLocaleDateString('th-TH')}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        jobItem.status === 'PENDING'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${jobItem.status === 'PENDING'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                        }`}
                     >
                       {jobItem.status === 'PENDING' ? 'รอดำเนินการ' : 'กำลังทำงาน'}
                     </span>
@@ -248,40 +246,40 @@ export default async function AssetDetailPage({ params }: Props) {
 
       {/* สำหรับช่าง: แสดงข้อความเมื่อไม่มีงานรอทำ */}
       {user.role === 'TECHNICIAN' && pendingJobItems.length === 0 && (
-        <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-6 mb-6">
+        <div className="bg-green-50 dark:bg-green-900/10 border-l-4 border-green-500 rounded-lg p-6 mb-6">
           <div className="flex items-center gap-2">
             <span className="text-2xl">✅</span>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-1">ไม่มีงานที่รอทำ</h3>
-              <p className="text-sm text-gray-600">เครื่องนี้ไม่มีงานที่ต้องดำเนินการ</p>
+              <h3 className="font-semibold text-app-heading mb-1">ไม่มีงานที่รอทำ</h3>
+              <p className="text-sm text-app-body">เครื่องนี้ไม่มีงานที่ต้องดำเนินการ</p>
             </div>
           </div>
         </div>
       )}
 
-      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+      <h2 className="text-xl font-bold text-app-heading mb-4 flex items-center">
         ประวัติการบำรุงรักษา
-        <span className="ml-2 text-sm font-normal text-gray-700">({asset.jobItems.length} รายการ)</span>
+        <span className="ml-2 text-sm font-normal text-app-muted">({asset.jobItems.length} รายการ)</span>
       </h2>
 
       <div className="space-y-4">
         {asset.jobItems.length === 0 ? (
-          <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed text-gray-500">
+          <div className="text-center py-10 bg-app-section rounded-lg border border-dashed border-app text-app-muted">
             ยังไม่มีประวัติการซ่อมบำรุง
           </div>
         ) : (
           asset.jobItems.map((job) => (
-            <div key={job.id} className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition">
+            <div key={job.id} className="bg-app-card p-4 rounded-lg border border-app shadow-sm hover:shadow-md transition">
               <div className="flex justify-between mb-2">
-                <div className="font-bold text-blue-800">
+                <div className="font-bold text-blue-600 dark:text-blue-400">
                   {job.workOrder.jobType} - {job.status}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-app-muted">
                   {job.startTime ? new Date(job.startTime).toLocaleDateString('th-TH') : "ไม่ระบุวัน"}
                 </div>
               </div>
-              <p className="text-gray-700 mb-3">{job.techNote || "ไม่มีบันทึกเพิ่มเติม"}</p>
-              
+              <p className="text-app-body mb-3">{job.techNote || "ไม่มีบันทึกเพิ่มเติม"}</p>
+
               {/* แสดงรูปภาพ Before/After */}
               {job.photos && job.photos.length > 0 && (
                 <div className="mt-4 mb-3">
@@ -296,15 +294,15 @@ export default async function AssetDetailPage({ params }: Props) {
                           <img
                             src={photo.url}
                             alt={photo.type}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                            className="w-full h-48 object-cover rounded-lg border border-app"
                           />
-                          <div className="text-xs text-gray-400 mt-1">
+                          <div className="text-xs text-app-muted mt-1">
                             {new Date(photo.createdAt).toLocaleString('th-TH')}
                           </div>
                         </div>
                       ))}
                   </div>
-                  
+
                   {/* แสดงรูปภาพอื่นๆ (DEFECT, METER) */}
                   {job.photos.some((p) => p.type === 'DEFECT' || p.type === 'METER') && (
                     <div className="mt-4 grid grid-cols-2 gap-4">
@@ -318,7 +316,7 @@ export default async function AssetDetailPage({ params }: Props) {
                             <img
                               src={photo.url}
                               alt={photo.type}
-                              className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                              className="w-full h-40 object-cover rounded-lg border border-app"
                             />
                           </div>
                         ))}
@@ -326,8 +324,8 @@ export default async function AssetDetailPage({ params }: Props) {
                   )}
                 </div>
               )}
-              
-              <div className="mt-2 text-xs text-gray-400 border-t pt-2">
+
+              <div className="mt-2 text-xs text-app-muted border-t border-app pt-2">
                 โดยช่าง: {job.technician?.fullName || "System Admin"}
                 {job.startTime && job.endTime && (
                   <span className="ml-2">

@@ -98,23 +98,23 @@ export default async function UsersPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-app-bg p-4 md:p-8 font-sans">
       {/* Success/Error Messages */}
       {success === 'deleted' && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800">ลบผู้ใช้สำเร็จแล้ว</p>
+        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <p className="text-sm text-green-800 dark:text-green-300">ลบผู้ใช้สำเร็จแล้ว</p>
         </div>
       )}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-800">{getErrorMessage(error)}</p>
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-sm text-red-800 dark:text-red-300">{getErrorMessage(error)}</p>
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">👥 จัดการผู้ใช้งาน ({users.length})</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">สร้างและจัดการบัญชีผู้ใช้งานในระบบ</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-app-heading">👥 จัดการผู้ใช้งาน ({users.length})</h1>
+          <p className="text-app-body mt-1 text-sm sm:text-base">สร้างและจัดการบัญชีผู้ใช้งานในระบบ</p>
         </div>
         <Link
           href="/users/new"
@@ -135,7 +135,7 @@ export default async function UsersPage({ searchParams }: Props) {
         return (
           <>
             <UsersClient users={paginatedUsers} currentUserId={user.id} />
-            
+
             {totalPages > 1 && (
               <Pagination
                 currentPage={currentPage}

@@ -50,10 +50,10 @@ export default async function LocationsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-app-bg p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">จัดการสถานที่</h1>
+          <h1 className="text-3xl font-bold text-app-heading">จัดการสถานที่</h1>
           <Link
             href="/locations/clients/new"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
@@ -64,9 +64,9 @@ export default async function LocationsPage() {
 
         <div className="space-y-6">
           {clients.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">ยังไม่มีข้อมูลลูกค้า</h2>
-              <p className="text-gray-600 mb-4">เริ่มต้นโดยการเพิ่มลูกค้าใหม่</p>
+            <div className="bg-app-card rounded-lg shadow p-12 text-center border border-app">
+              <h2 className="text-xl font-bold text-app-heading mb-2">ยังไม่มีข้อมูลลูกค้า</h2>
+              <p className="text-app-body mb-4">เริ่มต้นโดยการเพิ่มลูกค้าใหม่</p>
               <Link
                 href="/locations/clients/new"
                 className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
@@ -76,18 +76,18 @@ export default async function LocationsPage() {
             </div>
           ) : (
             clients.map((client) => (
-              <div key={client.id} className="bg-white rounded-lg shadow">
+              <div key={client.id} className="bg-app-card rounded-lg shadow border border-app">
                 {/* Client Header */}
-                <div className="p-6 border-b bg-blue-50">
+                <div className="p-6 border-b border-app bg-app-section">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      <h2 className="text-2xl font-bold text-app-heading mb-2">
                         {client.name}
                       </h2>
                       {client.contactInfo && (
-                        <p className="text-gray-600">{client.contactInfo}</p>
+                        <p className="text-app-body">{client.contactInfo}</p>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-app-muted mt-1">
                         {client._count.sites} สถานที่
                       </p>
                     </div>
@@ -128,15 +128,15 @@ export default async function LocationsPage() {
                   ) : (
                     <div className="space-y-6">
                       {client.sites.map((site) => (
-                        <div key={site.id} className="border rounded-lg p-4 bg-gray-50">
+                        <div key={site.id} className="border border-app rounded-lg p-4 bg-app-bg/50">
                           {/* Site Header */}
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                              <h3 className="text-lg font-bold text-app-heading mb-1">
                                 {site.name}
                               </h3>
                               {site.address && (
-                                <p className="text-sm text-gray-600">{site.address}</p>
+                                <p className="text-sm text-app-muted">{site.address}</p>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
@@ -174,9 +174,9 @@ export default async function LocationsPage() {
                           ) : (
                             <div className="space-y-4">
                               {site.buildings.map((building) => (
-                                <div key={building.id} className="bg-white rounded p-3 border">
+                                <div key={building.id} className="bg-app-card rounded p-3 border border-app">
                                   <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-semibold text-gray-900">
+                                    <h4 className="font-semibold text-app-heading">
                                       🏛️ {building.name}
                                     </h4>
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -208,11 +208,11 @@ export default async function LocationsPage() {
                                   ) : (
                                     <div className="space-y-2 pl-4">
                                       {building.floors.map((floor) => (
-                                        <div key={floor.id} className="border-l-2 border-gray-200 pl-3">
+                                        <div key={floor.id} className="border-l-2 border-app pl-3">
                                           <div className="flex justify-between items-start">
                                             <div className="flex-1">
                                               <div className="flex items-center gap-2 mb-1">
-                                                <h5 className="font-medium text-gray-800 text-sm">
+                                                <h5 className="font-medium text-app-body text-sm">
                                                   🏢 {floor.name}
                                                 </h5>
                                                 {user.role === 'ADMIN' && (
@@ -243,7 +243,7 @@ export default async function LocationsPage() {
                                                   {floor.rooms.map((room) => (
                                                     <div
                                                       key={room.id}
-                                                      className="text-xs text-gray-600 flex justify-between items-center"
+                                                      className="text-xs text-app-muted flex justify-between items-center"
                                                     >
                                                       <div className="flex items-center gap-2">
                                                         <span>

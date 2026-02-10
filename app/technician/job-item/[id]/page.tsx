@@ -152,11 +152,10 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   <button
                     type="submit"
                     disabled={!canComplete}
-                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
-                      canComplete
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
                         ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                         : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
-                    }`}
+                      }`}
                     title={!canComplete ? 'กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน' : ''}
                   >
                     <span>เสร็จสิ้น</span>
@@ -186,6 +185,16 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   </button>
                 </form>
               </>
+            )}
+            {jobItem.status === "ISSUE_FOUND" && (
+              <form action={updateJobItemStatus.bind(null, id, "IN_PROGRESS")}>
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300 flex items-center gap-2"
+                >
+                  <span>ดำเนินการต่อ</span>
+                </button>
+              </form>
             )}
           </div>
         </div>
@@ -261,7 +270,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               <p className="text-gray-600 font-medium mb-4">ยังไม่มีรูปภาพ</p>
             </div>
           )}
-          
+
           {/* Upload Section (only show if not DONE) */}
           {jobItem.status !== 'DONE' && (
             <div className="mt-6 pt-6 border-t border-gray-200">

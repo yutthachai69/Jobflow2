@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db-test:
+    image: postgres:15-alpine
+    container_name: jobflow-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobflow_test
+    volumes:
+      - pgdata-test:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Map port 5433 (Host) to 5432 (Container) to avoid conflict
+    restart: always
+
+volumes:
+  pgdata-test:

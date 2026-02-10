@@ -30,17 +30,17 @@ export default async function ContactPage() {
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="min-h-screen bg-app-bg p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           {/* Back Button */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-slate-600 bg-white border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 hover:shadow-md transition-all duration-300 group mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-app-body bg-app-card border border-app hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/10 hover:shadow-md transition-all duration-300 group mb-8"
           >
-            <svg 
-              className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -49,9 +49,9 @@ export default async function ContactPage() {
           </Link>
 
           {/* Header Section */}
-          <div className="mb-10 pb-6 border-b border-slate-100/80">
+          <div className="mb-10 pb-6 border-b border-app">
             <div className="flex items-center gap-5">
-              
+
               {/* Icon Container with Glow Effect */}
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-2xl blur opacity-25 group-hover:opacity-50 transition-opacity duration-500"></div>
@@ -64,10 +64,10 @@ export default async function ContactPage() {
 
               {/* Text Section */}
               <div>
-                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-1 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+                <h1 className="text-3xl font-extrabold text-app-heading tracking-tight mb-1 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
                   จัดการข้อมูลการติดต่อ
                 </h1>
-                <p className="text-slate-500 text-base font-light">
+                <p className="text-app-muted text-base font-light">
                   แก้ไขข้อมูลช่องทางการติดต่อที่แสดงให้ลูกค้าเห็นในหน้าเว็บ
                 </p>
               </div>
@@ -84,7 +84,7 @@ export default async function ContactPage() {
   // =========================================================
   // 2. ส่วนของ CLIENT/TECHNICIAN (หน้าฟอร์มส่งข้อความ)
   // =========================================================
-  
+
   // ดึงข้อมูลการติดต่อ
   const contactInfo = await prisma.contactInfo.findFirst()
 
@@ -112,18 +112,18 @@ export default async function ContactPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
+    <div className="min-h-screen bg-app-bg p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-        
+
         {/* Back Button (ปรับดีไซน์ใหม่) */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-slate-600 bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 hover:shadow-md transition-all duration-300 group mb-8"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-app-body bg-app-card backdrop-blur-sm border border-app hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/10 hover:shadow-md transition-all duration-300 group mb-8"
         >
-          <svg 
-            className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" 
-            fill="none" 
-            viewBox="0 0 24 24" 
+          <svg
+            className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300"
+            fill="none"
+            viewBox="0 0 24 24"
             stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -132,9 +132,9 @@ export default async function ContactPage() {
         </Link>
 
         {/* Header Section (ปรับดีไซน์ใหม่) */}
-        <div className="mb-10 pb-6 border-b border-blue-100/50">
+        <div className="mb-10 pb-6 border-b border-app">
           <div className="flex items-center gap-5">
-            
+
             {/* Icon Container (เปลี่ยนเป็นไอคอน Chat/Contact) */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-2xl blur opacity-25 group-hover:opacity-50 transition-opacity duration-500"></div>
@@ -148,10 +148,10 @@ export default async function ContactPage() {
 
             {/* Text Section */}
             <div>
-              <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-1 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+              <h1 className="text-3xl font-extrabold text-app-heading tracking-tight mb-1 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
                 ติดต่อเรา
               </h1>
-              <p className="text-slate-500 text-base font-light">
+              <p className="text-app-muted text-base font-light">
                 แจ้งปัญหา สอบถามข้อมูล หรือขอความช่วยเหลือจากทีมงาน
               </p>
             </div>
@@ -159,7 +159,7 @@ export default async function ContactPage() {
         </div>
 
         {/* Contact Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 md:p-8 border border-white/50">
+        <div className="bg-app-card backdrop-blur-sm rounded-2xl shadow-xl p-6 md:p-8 border border-app">
           <ContactForm userName={userName} userSite={userSite} contactInfo={contactInfo} />
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { login } from '@/app/actions/index'
 import Link from 'next/link'
 import Tooltip from '@/app/components/Tooltip'
@@ -9,23 +9,28 @@ import { isRedirectError } from '@/lib/error-handler'
 
 export default function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   // ดึง callbackUrl จาก URL search params
   const [callbackUrl, setCallbackUrl] = useState<string | null>(null)
-  
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const callback = params.get('callbackUrl')
+    // Reset submitting state when URL changes (e.g. redirect back with error)
+    setIsSubmitting(false)
+  }, [searchParams])
+
+  useEffect(() => {
+    const callback = searchParams.get('callbackUrl')
     if (callback) {
       setCallbackUrl(callback)
     }
-  }, [])
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -61,15 +66,22 @@ export default function LoginForm() {
     try {
       await login(formDataObj)
       // ถ้า login สำเร็จ จะ redirect ไปที่อื่น ไม่มาถึงบรรทัดนี้
-    } catch (error: unknown) {
+    } catch (error: any) {
       // เช็คว่าเป็น Next.js redirect error หรือไม่
-      // Next.js ใช้ redirect() จะ throw error ที่มี digest ขึ้นต้นด้วย 'NEXT_REDIRECT'
-      // ถ้าเป็น redirect error แสดงว่า login สำเร็จ ไม่ต้องแสดง error
       if (isRedirectError(error)) {
-        // Login สำเร็จ จะ redirect ไปที่อื่น ไม่ต้องทำอะไร
+        // ถ้าเป็น redirect error แสดงว่า server action พยายาม redirect
+        // แต่ถ้า redirect กลับมาที่เดิม (เช่น ?error=invalid duplicate) 
+        // client อาจจะไม่ re-mount ทำให้ state ไม่ถูก reset
+
+        // เราจะอนุมานว่าถ้า redirect กลับมาหน้า login (มี error) ให้ reset state
+        const targetUrl = error.digest?.split(';')[2] || error.message
+        if (targetUrl?.includes('/login?error=')) {
+          // Small delay to allow URL update to happen if it's different
+          setTimeout(() => setIsSubmitting(false), 500)
+        }
         return
       }
-      
+
       // ถ้าไม่ใช่ redirect error แสดงว่าเกิด error จริงๆ
       setErrors({ submit: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' })
       setIsSubmitting(false)
@@ -121,9 +133,8 @@ export default function LoginForm() {
               passwordInput?.focus()
             }
           }}
-          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 transition-all duration-200 backdrop-blur-sm hover:bg-app-card focus:border-[var(--app-btn-primary)] focus:ring-[var(--app-btn-primary-glow)] ${
-            errors.username ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-          }`}
+          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 transition-all duration-200 backdrop-blur-sm hover:bg-app-card focus:border-[var(--app-btn-primary)] focus:ring-[var(--app-btn-primary-glow)] ${errors.username ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+            }`}
           style={{
             backgroundColor: 'var(--app-section)',
             borderColor: errors.username ? undefined : 'var(--app-border)',
@@ -165,9 +176,8 @@ export default function LoginForm() {
               form?.requestSubmit()
             }
           }}
-          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 transition-all duration-200 backdrop-blur-sm hover:bg-app-card focus:border-[var(--app-btn-primary)] focus:ring-[var(--app-btn-primary-glow)] ${
-            errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-          }`}
+          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 transition-all duration-200 backdrop-blur-sm hover:bg-app-card focus:border-[var(--app-btn-primary)] focus:ring-[var(--app-btn-primary-glow)] ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+            }`}
           style={{
             backgroundColor: 'var(--app-section)',
             borderColor: errors.password ? undefined : 'var(--app-border)',

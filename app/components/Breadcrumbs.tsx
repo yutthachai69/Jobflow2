@@ -17,27 +17,27 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
       <ol className="flex items-center space-x-2 text-sm">
         {items.map((item, index) => {
           const isLast = index === items.length - 1
-          
+
           return (
             <li key={index} className="flex items-center">
               {index > 0 && (
-                <span className="mx-2 text-gray-400" aria-hidden="true">
+                <span className="mx-2 text-app-muted" aria-hidden="true">
                   /
                 </span>
               )}
               {isLast ? (
-                <span className="text-gray-900 font-medium" aria-current="page">
+                <span className="text-app-heading font-medium" aria-current="page">
                   {item.label}
                 </span>
               ) : item.href ? (
                 <Link
                   href={item.href}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                  className="text-app-body hover:text-app-heading transition-colors"
                 >
                   {item.label}
                 </Link>
               ) : (
-                <span className="text-gray-600">{item.label}</span>
+                <span className="text-app-body">{item.label}</span>
               )}
             </li>
           )

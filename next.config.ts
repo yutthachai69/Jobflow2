@@ -4,10 +4,12 @@ import packageJson from './package.json'
 const isDev = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
-  output: 'standalone', // <--- สำคัญมาก! ต้องเติมบรรทัดนี้ครับ เพื่อให้ Docker ทำงานได้
   images: {
     unoptimized: true,
-    remotePatterns: [],
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.supabase.co' },
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+    ],
   },
   env: {
     // ดึง version จาก package.json มาใช้ (เปลี่ยนที่เดียว ใช้ได้ทุกที่)
@@ -23,8 +25,8 @@ const nextConfig: NextConfig = {
           {
             key: 'Content-Security-Policy',
             value: isDev
-              ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'"
-              : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+              ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com"
+              : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
           },
           {
             key: 'X-Content-Type-Options',
@@ -40,7 +42,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=(), microphone=(), camera=()',
+            value: 'geolocation=(), microphone=(), camera=(self)',
           },
         ],
       },

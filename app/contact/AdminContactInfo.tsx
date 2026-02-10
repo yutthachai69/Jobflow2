@@ -39,11 +39,11 @@ export default function AdminContactInfo({ contactInfo }: Props) {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'รูปแบบอีเมลไม่ถูกต้อง'
     }
-    
+
     if (!formData.phone || formData.phone.trim() === '') {
       newErrors.phone = 'กรุณากรอกเบอร์โทรศัพท์'
     }
-    
+
     if (!formData.hours || formData.hours.trim() === '') {
       newErrors.hours = 'กรุณากรอกเวลาทำการ'
     }
@@ -68,10 +68,10 @@ export default function AdminContactInfo({ contactInfo }: Props) {
       await updateContactInfo(submitFormData)
       setSuccess(true)
       setIsSubmitting(false)
-      
+
       // Reset success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000)
-      
+
       // Refresh to show updated data
       router.refresh()
     } catch (error: any) {
@@ -95,7 +95,7 @@ export default function AdminContactInfo({ contactInfo }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 md:p-8 border border-gray-200">
+    <form onSubmit={handleSubmit} className="bg-app-card rounded-xl shadow-sm p-6 md:p-8 border border-app">
       {/* Success Message */}
       {success && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -115,7 +115,7 @@ export default function AdminContactInfo({ contactInfo }: Props) {
       <div className="space-y-6">
         {/* Email */}
         <div data-error={errors.email ? 'true' : undefined}>
-          <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="email" className="block text-sm font-semibold text-app-heading mb-2">
             อีเมล <span className="text-red-500">*</span>
           </label>
           <input
@@ -124,9 +124,8 @@ export default function AdminContactInfo({ contactInfo }: Props) {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.email ? 'border-red-500' : 'border-gray-300'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
+            className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-app'
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-app-card text-app-body placeholder:text-gray-400`}
             placeholder="support@airservice.com"
           />
           {errors.email && (
@@ -136,7 +135,7 @@ export default function AdminContactInfo({ contactInfo }: Props) {
 
         {/* Phone */}
         <div data-error={errors.phone ? 'true' : undefined}>
-          <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="phone" className="block text-sm font-semibold text-app-heading mb-2">
             เบอร์โทรศัพท์ <span className="text-red-500">*</span>
           </label>
           <input
@@ -145,9 +144,8 @@ export default function AdminContactInfo({ contactInfo }: Props) {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.phone ? 'border-red-500' : 'border-gray-300'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
+            className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-app'
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-app-card text-app-body placeholder:text-gray-400`}
             placeholder="02-XXX-XXXX"
           />
           {errors.phone && (
@@ -157,7 +155,7 @@ export default function AdminContactInfo({ contactInfo }: Props) {
 
         {/* Hours */}
         <div data-error={errors.hours ? 'true' : undefined}>
-          <label htmlFor="hours" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="hours" className="block text-sm font-semibold text-app-heading mb-2">
             เวลาทำการ <span className="text-red-500">*</span>
           </label>
           <input
@@ -166,9 +164,8 @@ export default function AdminContactInfo({ contactInfo }: Props) {
             name="hours"
             value={formData.hours}
             onChange={handleChange}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.hours ? 'border-red-500' : 'border-gray-300'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
+            className={`w-full px-4 py-3 rounded-lg border ${errors.hours ? 'border-red-500' : 'border-app'
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-app-card text-app-body placeholder:text-gray-400`}
             placeholder="จันทร์-ศุกร์ 08:00-17:00 น."
           />
           {errors.hours && (
@@ -177,11 +174,11 @@ export default function AdminContactInfo({ contactInfo }: Props) {
         </div>
 
         {/* Info Box */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-app-body">
               <p className="font-semibold mb-1">ข้อมูลนี้จะแสดงให้ลูกค้าและช่างเห็น</p>
-              <p className="text-gray-600">คุณสามารถแก้ไขข้อมูลนี้ได้ตลอดเวลา</p>
+              <p className="text-app-muted">คุณสามารถแก้ไขข้อมูลนี้ได้ตลอดเวลา</p>
             </div>
           </div>
         </div>
@@ -197,7 +194,7 @@ export default function AdminContactInfo({ contactInfo }: Props) {
           </button>
           <Link
             href="/"
-            className="flex-1 sm:flex-none px-8 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 font-medium text-center transition-all duration-200 text-gray-700"
+            className="flex-1 sm:flex-none px-8 py-3 border-2 border-app rounded-lg hover:bg-app-accent hover:border-app-border-glow font-medium text-center transition-all duration-200 text-app-body"
           >
             ยกเลิก
           </Link>

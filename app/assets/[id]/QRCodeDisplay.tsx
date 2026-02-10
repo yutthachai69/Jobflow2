@@ -19,7 +19,7 @@ export default function QRCodeDisplay({ qrCode, assetName }: QRCodeDisplayProps)
       setQrCodeUrl(`/scan/${encodeURIComponent(qrCode)}`)
     }
   }, [qrCode])
-  
+
   const qrCodeImageUrl = qrCodeUrl ? `/api/qrcode?text=${encodeURIComponent(qrCodeUrl)}` : ''
 
   const handlePrint = () => {
@@ -107,14 +107,14 @@ export default function QRCodeDisplay({ qrCode, assetName }: QRCodeDisplayProps)
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-app-card rounded-lg border border-app p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">QR Code</h3>
+        <h3 className="text-lg font-semibold text-app-heading">QR Code</h3>
         <div className="flex gap-2">
           <button
             onClick={handleDownload}
             disabled={!qrCodeImageUrl}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-app-body bg-app-card border border-app rounded-md hover:bg-app-section transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ดาวน์โหลด
           </button>
@@ -130,20 +130,20 @@ export default function QRCodeDisplay({ qrCode, assetName }: QRCodeDisplayProps)
       <div className="flex flex-col items-center gap-4">
         {qrCodeImageUrl && (
           <div className="flex flex-col items-center gap-2">
-            <div className="border-2 border-gray-300 p-4 bg-white rounded-lg">
+            <div className="border-[3px] border-black p-4 bg-white rounded-lg">
               <img
                 src={qrCodeImageUrl}
                 alt={`QR Code for ${qrCode}`}
-                className="w-64 h-64"
+                className="w-64 h-64 mix-blend-multiply"
               />
             </div>
-            <p className="text-sm font-mono text-gray-700 font-medium">{qrCode}</p>
+            <p className="text-sm font-mono text-app-heading font-medium tracking-wider">{qrCode}</p>
           </div>
         )}
         {!qrCodeImageUrl && (
-          <p className="text-sm font-mono text-gray-700 font-medium">{qrCode}</p>
+          <p className="text-sm font-mono text-app-heading font-medium">{qrCode}</p>
         )}
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-app-muted text-center">
           สแกน QR Code นี้เพื่อดูรายละเอียดทรัพย์สิน
         </p>
       </div>

@@ -71,29 +71,29 @@ export default async function SecurityIncidentsPage({ searchParams }: Props) {
   const totalPages = Math.ceil(total / itemsPerPage)
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans">
+    <div className="min-h-screen bg-app-bg p-8 font-sans">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">🔒 Security Incidents</h1>
-        <p className="text-gray-600 mt-1">ติดตามและจัดการเหตุการณ์ด้านความปลอดภัย</p>
+        <h1 className="text-2xl font-bold text-app-heading">🔒 Security Incidents</h1>
+        <p className="text-app-body mt-1">ติดตามและจัดการเหตุการณ์ด้านความปลอดภัย</p>
       </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="text-sm text-gray-600">Total Incidents</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">{totalIncidents}</div>
+        <div className="bg-app-card rounded-lg shadow-sm border border-app p-4">
+          <div className="text-sm text-app-muted">Total Incidents</div>
+          <div className="text-2xl font-bold text-app-heading mt-1">{totalIncidents}</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="text-sm text-gray-600">Unresolved</div>
+        <div className="bg-app-card rounded-lg shadow-sm border border-app p-4">
+          <div className="text-sm text-app-muted">Unresolved</div>
           <div className="text-2xl font-bold text-red-600 mt-1">{unresolvedIncidents}</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="text-sm text-gray-600">By Type</div>
-          <div className="text-lg font-semibold text-gray-900 mt-1">{byType.length} types</div>
+        <div className="bg-app-card rounded-lg shadow-sm border border-app p-4">
+          <div className="text-sm text-app-muted">By Type</div>
+          <div className="text-lg font-semibold text-app-heading mt-1">{byType.length} types</div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="text-sm text-gray-600">By Severity</div>
-          <div className="text-lg font-semibold text-gray-900 mt-1">{bySeverity.length} levels</div>
+        <div className="bg-app-card rounded-lg shadow-sm border border-app p-4">
+          <div className="text-sm text-app-muted">By Severity</div>
+          <div className="text-lg font-semibold text-app-heading mt-1">{bySeverity.length} levels</div>
         </div>
       </div>
 

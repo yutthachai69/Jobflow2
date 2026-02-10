@@ -55,11 +55,11 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
       formDataObj.append('message', formData.message)
 
       await submitContactMessage(formDataObj)
-      
+
       setIsSubmitting(false)
       setSubmitted(true)
       setFormData({ phone: '', message: '' })
-      
+
       // Reset submitted state after 5 seconds
       setTimeout(() => setSubmitted(false), 5000)
     } catch (error) {
@@ -94,8 +94,8 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
             />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">ส่งข้อมูลเรียบร้อย!</h2>
-        <p className="text-gray-600 mb-6">เราจะติดต่อกลับโดยเร็วที่สุด</p>
+        <h2 className="text-2xl font-bold text-app-heading mb-2">ส่งข้อมูลเรียบร้อย!</h2>
+        <p className="text-app-muted mb-6">เราจะติดต่อกลับโดยเร็วที่สุด</p>
         <Link
           href="/"
           className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 font-medium transition-all"
@@ -109,13 +109,13 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* แสดงข้อมูลผู้ส่ง (Read-only) */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
         <div className="flex items-start gap-3">
           <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-700 mb-1">ข้อมูลผู้ส่ง</p>
-            <p className="text-gray-900 font-medium">{userName}</p>
+            <p className="text-sm font-semibold text-app-body mb-1">ข้อมูลผู้ส่ง</p>
+            <p className="text-app-heading font-medium">{userName}</p>
             {userSite && (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-app-muted mt-1">
                 {userSite.name} ({userSite.clientName})
               </p>
             )}
@@ -125,7 +125,7 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
 
       {/* เบอร์โทรศัพท์ */}
       <div data-error={errors.phone ? 'true' : undefined}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-app-heading mb-2">
           เบอร์โทรศัพท์ <span className="text-red-500">*</span>
         </label>
         <input
@@ -133,9 +133,8 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${
-            errors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-          }`}
+          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-app-card text-app-body placeholder:text-gray-400 ${errors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-app'
+            }`}
           placeholder="เช่น 081-234-5678"
         />
         {errors.phone && (
@@ -152,7 +151,7 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
 
       {/* ข้อความ */}
       <div data-error={errors.message ? 'true' : undefined}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-app-heading mb-2">
           ข้อความ <span className="text-red-500">*</span>
         </label>
         <textarea
@@ -160,9 +159,8 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
           value={formData.message}
           onChange={handleChange}
           rows={6}
-          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white resize-none text-gray-900 placeholder:text-gray-400 ${
-            errors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-          }`}
+          className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-app-card resize-none text-app-body placeholder:text-gray-400 ${errors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-app'
+            }`}
           placeholder="กรุณาระบุปัญหา สอบถามข้อมูล หรือข้อความที่ต้องการติดต่อ..."
         />
         {errors.message && (
@@ -173,14 +171,14 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
       </div>
 
       {/* ข้อมูลการติดต่อเพิ่มเติม */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-app-body">
             <p className="font-semibold mb-1">ข้อมูลการติดต่อเพิ่มเติม</p>
-            <p className="text-gray-600">
+            <p className="text-app-muted">
               คุณสามารถติดต่อเราผ่านช่องทางอื่นๆ ได้ที่:
             </p>
-            <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600">
+            <ul className="list-disc list-inside mt-2 space-y-1 text-app-muted">
               <li>อีเมล: {contactInfo?.email || 'support@airservice.com'}</li>
               <li>โทรศัพท์: {contactInfo?.phone || '02-XXX-XXXX'}</li>
               <li>เวลาทำการ: {contactInfo?.hours || 'จันทร์-ศุกร์ 08:00-17:00 น.'}</li>
@@ -200,7 +198,7 @@ export default function ContactForm({ userName, userSite, contactInfo }: Contact
         </button>
         <Link
           href="/"
-          className="sm:flex-none px-8 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium text-center transition-all duration-200 text-gray-700"
+          className="sm:flex-none px-8 py-3 border-2 border-app rounded-xl hover:bg-app-accent hover:border-app-border-glow font-medium text-center transition-all duration-200 text-app-body"
         >
           ยกเลิก
         </Link>

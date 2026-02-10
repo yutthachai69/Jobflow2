@@ -226,7 +226,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
           {/* Status Actions - Only for ADMIN */}
           {user.role === 'ADMIN' && workOrder.status !== "COMPLETED" && workOrder.status !== "CANCELLED" && (
             <div className="flex flex-wrap gap-3 pt-6 border-t border-app">
-              {workOrder.status === "IN_PROGRESS" && (
+              {(workOrder.status !== "COMPLETED" && workOrder.status !== "CANCELLED" && doneCount === workOrder.jobItems.length) && (
                 <form action={updateWorkOrderStatus.bind(null, workOrder.id, "COMPLETED")}>
                   <button type="submit" className="btn-app-primary px-6 py-3 rounded-xl hover:shadow-xl font-semibold transition-all flex items-center gap-2">
                     <span>เสร็จสิ้นงาน</span>
