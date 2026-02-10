@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { getWOStatus } from '@/lib/status-colors'
 
 export const metadata = {
-    title: 'รายงานการติดตั้ง - Flomac Service',
+    title: 'รายงานการติดตั้ง - L.M.T. Service',
     description: 'รายงานงานติดตั้ง (INSTALL) ตามสถานที่',
 }
 

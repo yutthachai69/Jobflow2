@@ -41,8 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
-    description: "Flomac Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
+    title: "L.M.T. Service - ระบบบริหารจัดการงานบริการแอร์",
+    description: "L.M.T. Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
   },
   robots: {
     index: true,

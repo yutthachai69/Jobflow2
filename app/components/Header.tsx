@@ -80,13 +80,13 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
         <Link href="/" className="lg:hidden flex items-center gap-2 flex-shrink-0 group">
           <img
             src="/flomac.png"
-            alt="Flomac"
+            alt="L.M.T."
             width={120}
             height={36}
             className="h-10 w-auto object-contain drop-shadow-sm"
           />
           <span className="text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 bg-clip-text text-transparent tracking-tight">
-            Flomac
+            {process.env.NEXT_PUBLIC_APP_NAME || 'L.M.T.'}
           </span>
         </Link>
 
@@ -96,7 +96,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
             {siteName}
           </span>
         )}
-        
+
         {/* Mobile: สถานที่ */}
         {siteName && (
           <span className="md:hidden text-base font-bold text-app-heading truncate max-w-[150px]">
@@ -110,8 +110,8 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
         <ThemeToggle />
         {(role === 'ADMIN' || role === 'CLIENT') && (
           <div className="hidden sm:block">
-            <NotificationBell 
-              initialCount={role === 'ADMIN' ? unreadMessageCount : unreadNotificationCount} 
+            <NotificationBell
+              initialCount={role === 'ADMIN' ? unreadMessageCount : unreadNotificationCount}
               href={role === 'ADMIN' ? '/messages' : '/notifications'}
             />
           </div>

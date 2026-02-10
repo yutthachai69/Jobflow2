@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!workOrder) {
     return {
-      title: "ไม่พบข้อมูล - Flomac Service",
+      title: "ไม่พบข้อมูล - L.M.T. Service",
     };
   }
 
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     CANCELLED: "ยกเลิก",
   };
 
-  const title = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} - Flomac Service`;
+  const title = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} - L.M.T. Service`;
   const description = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} | สถานะ: ${statusLabels[workOrder.status] || workOrder.status} | ${workOrder.site.client.name} - ${workOrder.site.name}`;
 
   return {

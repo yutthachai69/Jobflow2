@@ -32,11 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!asset) {
     return {
-      title: "ไม่พบข้อมูล - Flomac Service",
+      title: "ไม่พบข้อมูล - L.M.T. Service",
     };
   }
 
-  const title = `${asset.brand} ${asset.model} - Flomac Service`;
+  const title = `${asset.brand} ${asset.model} - L.M.T. Service`;
   const description = `รายละเอียดเครื่องปรับอากาศ ${asset.brand} ${asset.model} | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
 
   return {
@@ -136,10 +136,10 @@ export default async function AssetDetailPage({ params }: Props) {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${asset.status === 'ACTIVE'
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                : asset.status === 'BROKEN'
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+              : asset.status === 'BROKEN'
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
               }`}>
               {asset.status === 'ACTIVE' && 'ใช้งาน'}
               {asset.status === 'BROKEN' && 'ชำรุด'}
@@ -227,8 +227,8 @@ export default async function AssetDetailPage({ params }: Props) {
                   <div className="flex flex-col items-end gap-2">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${jobItem.status === 'PENDING'
-                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
                         }`}
                     >
                       {jobItem.status === 'PENDING' ? 'รอดำเนินการ' : 'กำลังทำงาน'}
