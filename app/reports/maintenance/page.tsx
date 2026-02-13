@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { getWOStatus } from '@/lib/status-colors'
 
 export const metadata = {
-  title: 'รายงานการบำรุงรักษา - L.M.T. Service',
+  title: 'รายงานการบำรุงรักษา - LMT air service',
   description: 'รายงานงานบำรุงรักษา (PM) ตามสถานที่',
 }
 

@@ -23,18 +23,17 @@ export async function login(formData: FormData) {
     const password = formData.get('password') as string
     const callbackUrl = formData.get('callbackUrl') as string | null
 
+    console.log('[Login Attempt] Username:', username)
+
     if (!username || !password) {
-      const redirectUrl = callbackUrl 
-        ? `/login?error=missing&callbackUrl=${encodeURIComponent(callbackUrl)}`
-        : '/login?error=missing'
-      redirect(redirectUrl)
+      return { error: 'missing' }
     }
 
     // Get client IP for rate limiting
     const headersList = await headers()
     const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-                     headersList.get('x-real-ip') ||
-                     'unknown'
+      headersList.get('x-real-ip') ||
+      'unknown'
 
     // Check rate limit with both username and IP
     const rateLimitResult = checkRateLimit(username, ipAddress)
@@ -45,13 +44,11 @@ export async function login(formData: FormData) {
         lockoutUntil: rateLimitResult.lockoutUntil,
       })
 
-      redirect(
-        `/login?error=rate_limit&retryAfter=${
-          rateLimitResult.lockoutUntil
-            ? Math.ceil((rateLimitResult.lockoutUntil.getTime() - Date.now()) / 1000)
-            : 900
-        }`
-      )
+      const retryAfter = rateLimitResult.lockoutUntil
+        ? Math.ceil((rateLimitResult.lockoutUntil.getTime() - Date.now()) / 1000)
+        : 900
+
+      return { error: 'rate_limit', retryAfter }
     }
 
     let user
@@ -61,26 +58,24 @@ export async function login(formData: FormData) {
       })
     } catch (dbError: any) {
       console.error('Database error during login:', dbError)
-      
-      // ตรวจสอบว่าเป็น connection error หรือ schema error
-      const isConnectionError = 
+
+      const isConnectionError =
         dbError.message?.includes('Can\'t reach database server') ||
         dbError.message?.includes('connect ECONNREFUSED') ||
-        dbError.message?.includes('P1001') || // Prisma connection error
+        dbError.message?.includes('P1001') ||
         dbError.code === 'P1001'
-      
+
       if (isConnectionError) {
-        // Connection error - แสดง error message แทน setup button
-        redirect('/login?error=server&message=' + encodeURIComponent('ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาติดต่อผู้ดูแลระบบ'))
+        return { error: 'server', message: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาติดต่อผู้ดูแลระบบ' }
       } else {
-        // Schema error - แสดง setup button
-        redirect('/login?error=database')
+        return { error: 'database' }
       }
     }
 
     if (!user) {
+      console.log('[Login Failed] User not found:', username)
       recordFailedLogin(username, ipAddress)
-      redirect('/login?error=invalid')
+      return { error: 'invalid' }
     }
 
     const { autoUnlockExpiredAccounts } = await import('@/lib/account-lock')
@@ -91,7 +86,8 @@ export async function login(formData: FormData) {
     })
 
     if (!refreshedUser) {
-      redirect('/login?error=invalid')
+      console.log('[Login Failed] Refreshed user not found')
+      return { error: 'invalid' }
     }
 
     const now = new Date()
@@ -112,7 +108,7 @@ export async function login(formData: FormData) {
         lockedUntil: refreshedUser.lockedUntil?.toISOString(),
       })
 
-      redirect(`/login?error=locked&message=${encodeURIComponent(lockoutMessage)}`)
+      return { error: 'locked', message: lockoutMessage }
     }
 
     const isValidPassword = await bcrypt.compare(
@@ -120,7 +116,10 @@ export async function login(formData: FormData) {
       refreshedUser.password
     )
 
+    console.log('[Login Debug] Password valid?', isValidPassword)
+
     if (!isValidPassword) {
+      console.log('[Login Failed] Invalid password for:', username)
       recordFailedLogin(username, ipAddress)
 
       const rateLimitResult = checkRateLimit(username, ipAddress)
@@ -141,19 +140,13 @@ export async function login(formData: FormData) {
         })
       }
 
-      redirect('/login?error=invalid')
+      return { error: 'invalid' }
     }
 
     clearFailedLogin(username, ipAddress)
 
     const { setSession } = await import('@/lib/auth')
     await setSession(refreshedUser.id, refreshedUser.role, refreshedUser.siteId ?? null)
-
-    // Log login success (important security event, but reduce verbosity)
-    // Uncomment if you need to debug login:
-    // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_AUTH === 'true') {
-    //   console.log('[Login] Session set for user:', refreshedUser.username, 'role:', refreshedUser.role, 'siteId:', refreshedUser.siteId ?? '(none)')
-    // }
 
     logSecurityEvent('LOGIN_SUCCESS', {
       userId: refreshedUser.id,
@@ -163,12 +156,6 @@ export async function login(formData: FormData) {
 
     const role = String(refreshedUser.role)
 
-    // Log redirect (uncomment if debugging):
-    // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_AUTH === 'true') {
-    //   console.log('[Login] Redirecting to home for role:', role)
-    // }
-
-    // ถ้ามี callbackUrl ให้ redirect ไปที่นั้น
     if (callbackUrl) {
       redirect(callbackUrl)
     }
@@ -179,7 +166,6 @@ export async function login(formData: FormData) {
 
     redirect('/')
   } catch (error: any) {
-    // ✅ แก้ไขตรงนี้: เช็ค Error เองโดยไม่ต้องพึ่ง import
     if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message === 'NEXT_REDIRECT') {
       throw error
     }
@@ -188,7 +174,7 @@ export async function login(formData: FormData) {
       error,
       await getCurrentUser().catch(() => null)
     )
-    throw error
+    throw error // Re-throw so client can handle general error if needed, or return generic error
   }
 }
 

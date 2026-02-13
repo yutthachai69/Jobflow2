@@ -64,21 +64,28 @@ export default function LoginForm() {
     }
 
     try {
-      await login(formDataObj)
-      // ถ้า login สำเร็จ จะ redirect ไปที่อื่น ไม่มาถึงบรรทัดนี้
-    } catch (error: any) {
+      const result = await login(formDataObj)
+
+      if (result?.error) {
+        setIsSubmitting(false)
+        if (result.error === 'invalid') {
+          setErrors({ submit: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' })
+        } else if (result.error === 'locked') {
+          setErrors({ submit: result.message || 'บัญชีถูกล็อก' })
+        } else if (result.error === 'rate_limit') {
+          setErrors({ submit: `พยายามเข้าสู่ระบบมากเกินไป กรุณารอ ${result.retryAfter ? Math.ceil(result.retryAfter / 60) : 15} นาที` })
+        } else if (result.error === 'server') {
+          setErrors({ submit: result.message || 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' })
+        } else if (result.error === 'database') {
+          setErrors({ submit: 'ไม่พบฐานข้อมูลหรือโครงสร้างไม่ถูกต้อง (Database Error)' })
+        } else {
+          setErrors({ submit: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' })
+        }
+      }
+      // If no error, the action likely redirected.
+    } catch (error: unknown) {
       // เช็คว่าเป็น Next.js redirect error หรือไม่
       if (isRedirectError(error)) {
-        // ถ้าเป็น redirect error แสดงว่า server action พยายาม redirect
-        // แต่ถ้า redirect กลับมาที่เดิม (เช่น ?error=invalid duplicate) 
-        // client อาจจะไม่ re-mount ทำให้ state ไม่ถูก reset
-
-        // เราจะอนุมานว่าถ้า redirect กลับมาหน้า login (มี error) ให้ reset state
-        const targetUrl = error.digest?.split(';')[2] || error.message
-        if (targetUrl?.includes('/login?error=')) {
-          // Small delay to allow URL update to happen if it's different
-          setTimeout(() => setIsSubmitting(false), 500)
-        }
         return
       }
 

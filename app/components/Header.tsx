@@ -80,13 +80,13 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
         <Link href="/" className="lg:hidden flex items-center gap-2 flex-shrink-0 group">
           <img
             src="/L.M.T.png"
-            alt="L.M.T."
+            alt="LMT air service"
             width={120}
             height={36}
             className="h-10 w-auto object-contain drop-shadow-sm"
           />
           <span className="text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 bg-clip-text text-transparent tracking-tight">
-            {process.env.NEXT_PUBLIC_APP_NAME || 'L.M.T.'}
+            LMT air service
           </span>
         </Link>
 

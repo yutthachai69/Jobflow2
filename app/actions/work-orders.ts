@@ -558,3 +558,40 @@ export async function updateJobItemNote(jobItemId: string, formData: FormData) {
     throw error
   }
 }
+
+export async function updateJobItemChecklist(jobItemId: string, checklistJson: string) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      throw new Error('Unauthorized')
+    }
+
+    const jobItem = await prisma.jobItem.findUnique({
+      where: { id: jobItemId },
+    })
+
+    if (!jobItem) {
+      throw new Error('Job Item not found')
+    }
+
+    // Authorization
+    if (user.role === 'TECHNICIAN') {
+      if (jobItem.technicianId && jobItem.technicianId !== user.id) {
+        throw new Error('Unauthorized')
+      }
+    }
+
+    await prisma.jobItem.update({
+      where: { id: jobItemId },
+      data: {
+        checklist: checklistJson
+      }
+    })
+
+    revalidatePath(`/work-orders/${jobItem.workOrderId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating checklist:', error)
+    return { success: false, error: 'Failed to update checklist' }
+  }
+}

@@ -32,11 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!asset) {
     return {
-      title: "ไม่พบข้อมูล - L.M.T. Service",
+      title: "ไม่พบข้อมูล - LMT air service",
     };
   }
 
-  const title = `${asset.brand} ${asset.model} - L.M.T. Service`;
+  const title = `${asset.brand} ${asset.model} - LMT air service`;
   const description = `รายละเอียดเครื่องปรับอากาศ ${asset.brand} ${asset.model} | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
 
   return {

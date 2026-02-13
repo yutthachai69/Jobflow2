@@ -16,11 +16,12 @@ import {
   IconWrench,
   IconReports,
   IconSurvey,
+  IconChecklist,
 } from './SidebarIcons'
 
 type NavRole = 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
 
-type IconKey = 'dashboard' | 'workorder' | 'assets' | 'users' | 'locations' | 'security' | 'contact' | 'scan' | 'wrench' | 'reports' | 'survey'
+type IconKey = 'dashboard' | 'workorder' | 'assets' | 'users' | 'locations' | 'security' | 'contact' | 'scan' | 'wrench' | 'reports' | 'survey' | 'checklist'
 
 const iconMap: Record<IconKey, React.ComponentType<{ active?: boolean }>> = {
   dashboard: IconDashboard,
@@ -34,6 +35,7 @@ const iconMap: Record<IconKey, React.ComponentType<{ active?: boolean }>> = {
   wrench: IconWrench,
   reports: IconReports,
   survey: IconSurvey,
+  checklist: IconChecklist,
 }
 
 type NavLink = { type: 'link'; href: string; label: string; icon: IconKey }
@@ -51,6 +53,7 @@ const SIDEBAR_COLLAPSED_KEY = 'airservice-sidebar-collapsed'
 const adminItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
+  { type: 'link', href: '/admin/checklists', label: 'ตรวจสอบ (PM)', icon: 'checklist' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
@@ -193,7 +196,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                 alt="Flomac" */}
               <Image
                 src="/L.M.T.png"
-                alt="L.M.T."
+                alt="LMT air service"
                 width={220}
                 height={70}
                 className={`object-contain object-left transition-all duration-300 relative z-10 drop-shadow-md dark:brightness-125 dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] ${isCollapsed ? 'h-8 w-auto' : 'h-16 md:h-[4.25rem] w-auto'
@@ -205,7 +208,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
             {!isCollapsed && (
               <span className="text-2xl font-serif font-bold whitespace-nowrap transition-opacity duration-300 text-app-heading tracking-tight drop-shadow-sm">
                 {/* Flomac */}
-                L.M.T.
+                LMT air service
               </span>
             )}
           </Link>
@@ -535,7 +538,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
         <div className={`p-4 border-t border-app text-xs text-app-muted text-center transition-all duration-300 ${isCollapsed ? 'px-2' : ''}`}>
           {!isCollapsed ? (
             <>
-              <p className="font-semibold text-app-heading">{process.env.NEXT_PUBLIC_APP_NAME || 'Flomac Service'}</p>
+              <p className="font-semibold text-app-heading">{process.env.NEXT_PUBLIC_APP_NAME || 'LMT air service'}</p>
               <p className="opacity-75">v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.2'}</p>
             </>
           ) : (

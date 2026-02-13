@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     // ดึง version จาก package.json มาใช้ (เปลี่ยนที่เดียว ใช้ได้ทุกที่)
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
     // NEXT_PUBLIC_APP_NAME: 'Flomac Service',
-    NEXT_PUBLIC_APP_NAME: 'L.M.T.',
+    NEXT_PUBLIC_APP_NAME: 'LMT air service',
   },
   async headers() {
     return [

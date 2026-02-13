@@ -15,12 +15,12 @@ if (typeof window === 'undefined') {
 }
 
 export const metadata: Metadata = {
-  title: "L.M.T. Enigneering Limited Partnership - ระบบบริหารจัดการงานบริการแอร์",
-  description: "L.M.T. Enigneering Limited Partnership Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร สำหรับองค์กร",
-  keywords: ["L.M.T. Enigneering Limited Partnership", "เครื่องปรับอากาศ", "Maintenance", "Work Order", "Asset Management"],
-  authors: [{ name: "L.M.T. Enigneering Limited Partnership Team" }],
-  creator: "L.M.T. Enigneering Limited Partnership",
-  publisher: "L.M.T. Enigneering Limited Partnership",
+  title: "LMT air service - ระบบบริหารจัดการงานบริการแอร์",
+  description: "LMT air service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร สำหรับองค์กร",
+  keywords: ["LMT air service", "เครื่องปรับอากาศ", "Maintenance", "Work Order", "Asset Management"],
+  authors: [{ name: "LMT air service Team" }],
+  creator: "LMT air service",
+  publisher: "LMT air service",
   icons: {
     icon: '/L.M.T.png',
     apple: '/L.M.T.png',
@@ -32,17 +32,17 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   openGraph: {
-    title: "L.M.T. Enigneering Limited Partnership - ระบบบริหารจัดการงานบริการแอร์",
-    description: "L.M.T. Enigneering Limited Partnership Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
+    title: "LMT air service - ระบบบริหารจัดการงานบริการแอร์",
+    description: "LMT air service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
     url: "/",
-    siteName: "L.M.T. Enigneering Limited Partnership",
+    siteName: "LMT air service",
     locale: "th_TH",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "L.M.T. Service - ระบบบริหารจัดการงานบริการแอร์",
-    description: "L.M.T. Service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
+    title: "LMT air service - ระบบบริหารจัดการงานบริการแอร์",
+    description: "LMT air service Management System - ระบบจัดการงานบริการเครื่องปรับอากาศแบบครบวงจร",
   },
   robots: {
     index: true,

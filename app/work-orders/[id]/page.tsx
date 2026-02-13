@@ -10,6 +10,7 @@ import ExportButton from "./ExportButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import { getWOStatus, getJobStatus } from "@/lib/status-colors";
 import { getWorkOrderDisplayNumber } from "@/lib/work-order-number";
+import ChecklistSection from "./ChecklistSection";
 import type { Metadata } from "next";
 
 interface Props {
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!workOrder) {
     return {
-      title: "ไม่พบข้อมูล - L.M.T. Service",
+      title: "ไม่พบข้อมูล - LMT air service",
     };
   }
 
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     CANCELLED: "ยกเลิก",
   };
 
-  const title = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} - L.M.T. Service`;
+  const title = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} - LMT air service`;
   const description = `ใบสั่งงาน ${jobTypeLabels[workOrder.jobType] || workOrder.jobType} | สถานะ: ${statusLabels[workOrder.status] || workOrder.status} | ${workOrder.site.client.name} - ${workOrder.site.name}`;
 
   return {
@@ -275,6 +276,16 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                           <p className="text-app-body text-sm flex-1">{jobItem.techNote}</p>
                         </div>
                       )}
+
+                      {/* Checklist Section */}
+                      <div className="mt-4">
+                        <ChecklistSection
+                          jobItemId={jobItem.id}
+                          initialData={jobItem.checklist}
+                          isEditable={(user.role === 'ADMIN' || (user.role === 'TECHNICIAN' && jobItem.technicianId === user.id)) && jobItem.status !== 'DONE'}
+                          jobType={workOrder.jobType}
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`px-4 py-2 rounded-xl font-semibold text-sm ${jobSt.tailwind}`}>{jobSt.label}</span>

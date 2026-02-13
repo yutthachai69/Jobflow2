@@ -8,8 +8,8 @@ import SnowfallEffect from "@/app/components/SnowfallEffect";
 export const metadata: Metadata = {
   // title: "เข้าสู่ระบบ - Flomac Service",
   // description: "เข้าสู่ระบบ Flomac Service - ระบบบริหารจัดการงานบริการแอร์",
-  title: "เข้าสู่ระบบ - L.M.T. Engineering",
-  description: "เข้าสู่ระบบ L.M.T. Engineering - ระบบบริหารจัดการงานบริการแอร์",
+  title: "เข้าสู่ระบบ - LMT air service",
+  description: "เข้าสู่ระบบ LMT air service - ระบบบริหารจัดการงานบริการแอร์",
   robots: {
     index: false,
     follow: false,
@@ -53,7 +53,7 @@ export default async function LoginPage({ searchParams }: Props) {
               <div className="absolute inset-0 blur-3xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary-glow)' }}></div>
               <Image
                 src="/L.M.T.png"
-                alt="L.M.T Logo"
+                alt="LMT air service Logo"
                 width={600}
                 height={250}
                 className="h-40 md:h-56 w-auto object-contain mx-auto relative z-10 drop-shadow-2xl filter"
@@ -65,7 +65,7 @@ export default async function LoginPage({ searchParams }: Props) {
             {/* แก้ไขตรงนี้: เอา -mt ออก และเพิ่มระยะห่างแทน */}
             <div className="relative z-18 mt-4 md:mt-6">
               <h2 className="text-xl md:text-2xl font-black tracking-wide uppercase mb-3" style={{ color: 'var(--app-text-heading)' }}>
-                L.M.T. Engineering Limited Partnership
+                LMT air service
               </h2>
               <div className="h-1 w-20 rounded-full mx-auto shadow-sm" style={{ background: 'var(--app-btn-primary)' }}></div>
             </div>
@@ -155,7 +155,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--app-text-muted)' }}>
           <div className="order-2 md:order-1">
             {/* © {currentYear} Flomac Co., Ltd. All rights reserved. */}
-            © {currentYear} L.M.T. Engineering Limited Partnership. All rights reserved.
+            © {currentYear} LMT air service. All rights reserved.
           </div>
           <div className="flex gap-6 order-1 md:order-2">
             <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Privacy Policy</span>

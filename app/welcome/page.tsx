@@ -5,12 +5,11 @@ import SnowfallEffect from "@/app/components/SnowfallEffect";
 
 export const metadata: Metadata = {
   // title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by Flomac",
-  title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by L.M.T.",
-  description: "เชื่อมต่อข้อมูลลูกค้า ทีมช่าง และงานซ่อมบำรุงไว้ในที่เดียว ควบคุมทุกขั้นตอนได้อย่างแม่นยำ",
+  title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by LMT air service",
+  description: "ระบบจัดการงานซ่อมแอร์ บำรุงรักษา และติดตั้ง สำหรับทีมช่างและลูกค้า",
   openGraph: {
-    // title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by Flomac",
-    title: "ยินดีต้อนรับ - ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ by L.M.T.",
-    description: "เชื่อมต่อข้อมูลลูกค้า ทีมช่าง และงานซ่อมบำรุงไว้ในที่เดียว",
+    title: "LMT air service - จัดการงานแอร์ครบวงจร",
+    description: "ระบบจัดการงานซ่อมแอร์ บำรุงรักษา และติดตั้ง สำหรับทีมช่างและลูกค้า",
     type: "website",
   },
 };
@@ -50,7 +49,7 @@ export default function WelcomePage() {
 
                 <Image
                   src="/L.M.T.png"
-                  alt="L.M.T. Logo"
+                  alt="LMT air service Logo"
                   width={700}
                   height={300}
                   /* ปรับปรุง: เอา -mb-4 และ -mb-6 ออก เพื่อไม่ให้โลโก้เหินลงไปทับข้อความ */
@@ -62,7 +61,7 @@ export default function WelcomePage() {
 
               {/* 2. ชื่อบริษัท */}
               <h2 className="text-xl md:text-2xl font-bold mb-2 tracking-wide uppercase -mt-4 md:-mt-6" style={{ color: 'var(--app-text-heading)' }}>
-                L.M.T. Enigneering Limited Partnership
+                LMT air service
               </h2>
               <div className="h-1 w-20 rounded-full mb-8 mx-auto shadow-sm" style={{ background: 'var(--app-btn-primary)' }}></div>
 
@@ -73,10 +72,10 @@ export default function WelcomePage() {
 
               {/* 4. คำบรรยาย */}
               <p className="text-base md:text-lg mb-4 max-w-4xl mx-auto leading-relaxed font-medium" style={{ color: 'var(--app-text-body)' }}>
-                เชื่อมต่อข้อมูลลูกค้า ทีมช่าง และงานซ่อมบำรุงไว้ในที่เดียว
+                จัดการงานซ่อม บำรุง และติดตั้งแอร์ ง่าย ครบ จบในที่เดียว
               </p>
               <p className="text-sm md:text-base max-w-3xl mx-auto font-light" style={{ color: 'var(--app-text-muted)' }}>
-                ควบคุมทุกขั้นตอน ตั้งแต่เปิดใบงานจนถึงส่งมอบงาน ได้อย่างแม่นยำและรวดเร็ว
+                เปิดใบสั่งงาน ติดตามสถานะ ดูประวัติการซ่อม ได้ทุกที่ ทุกเวลา
               </p>
             </div>
 
@@ -85,37 +84,52 @@ export default function WelcomePage() {
               {/* Feature 1 */}
               <div className="group opacity-0 backdrop-blur-md rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative overflow-hidden animate-card-enter delay-300" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full opacity-30 group-hover:scale-150 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg relative z-10 group-hover:rotate-6 transition-transform duration-300" style={{ backgroundColor: 'var(--app-btn-primary)' }}>
-                  <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 mx-auto shadow-lg relative z-10 transition-transform duration-300" style={{ backgroundColor: '#1a1a1a' }}>
+                  <video
+                    src="/task-management.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <h3 className="text-xl font-bold mb-3 relative z-10" style={{ color: 'var(--app-text-heading)' }}>จัดการทรัพย์สินและอุปกรณ์</h3>
-                <p className="leading-relaxed relative z-10" style={{ color: 'var(--app-text-body)' }}>บันทึกประวัติและสถานะเครื่องปรับอากาศทุกเครื่องในองค์กรอย่างเป็นระบบ</p>
+                <h3 className="text-xl font-bold mb-3 relative z-10" style={{ color: 'var(--app-text-heading)' }}>ดูแลเครื่องแอร์ทุกตัว</h3>
+                <p className="leading-relaxed relative z-10" style={{ color: 'var(--app-text-body)' }}>เช็คสถานะและดูประวัติการซ่อมของเครื่องแอร์ทุกตัวได้ในที่เดียว</p>
               </div>
 
               {/* Feature 2 */}
               <div className="group opacity-0 backdrop-blur-md rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative overflow-hidden animate-card-enter delay-400" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full opacity-30 group-hover:scale-150 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg relative z-10 group-hover:rotate-6 transition-transform duration-300" style={{ backgroundColor: 'var(--app-btn-primary)' }}>
-                  <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
+                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 mx-auto shadow-lg relative z-10 transition-transform duration-300" style={{ backgroundColor: '#1a1a1a' }}>
+                  <video
+                    src="/work-list.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <h3 className="text-xl font-bold mb-3 relative z-10" style={{ color: 'var(--app-text-heading)' }}>ใบสั่งงานอัจฉริยะ</h3>
-                <p className="leading-relaxed relative z-10" style={{ color: 'var(--app-text-body)' }}>สร้าง, มอบหมาย และติดตามสถานะใบสั่งงาน (PM/CM/Install) ได้แบบ Real-time</p>
+                <h3 className="text-xl font-bold mb-3 relative z-10" style={{ color: 'var(--app-text-heading)' }}>เปิดใบสั่งงานง่ายๆ</h3>
+                <p className="leading-relaxed relative z-10" style={{ color: 'var(--app-text-body)' }}>สั่งงานซ่อม บำรุง ติดตั้ง แล้วติดตามสถานะได้ทันที</p>
               </div>
 
               {/* Feature 3 */}
               <div className="motion-enter group opacity-0 backdrop-blur-md rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative overflow-hidden animate-card-enter delay-500" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full opacity-30 group-hover:scale-150 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg relative z-10 group-hover:rotate-6 transition-transform duration-300" style={{ backgroundColor: 'var(--app-btn-primary)' }}>
-                  <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-1a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
+                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 mx-auto shadow-lg relative z-10 transition-transform duration-300" style={{ backgroundColor: '#1a1a1a' }}>
+                  <video
+                    src="/qr-code.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <h3 className="text-xl font-bold mb-3 relative z-10" style={{ color: 'var(--app-text-heading)' }}>สแกน QR Code</h3>
-                <p className="leading-relaxed relative z-10" style={{ color: 'var(--app-text-body)' }}>ช่างเข้าถึงข้อมูลและประวัติการซ่อมบำรุงหน้างานได้ทันทีเพียงแค่สแกน</p>
+                <p className="leading-relaxed relative z-10" style={{ color: 'var(--app-text-body)' }}>แค่สแกนก็เห็นข้อมูลเครื่องแอร์ พร้อมประวัติการซ่อมทั้งหมด</p>
               </div>
             </div>
 
@@ -160,7 +174,7 @@ export default function WelcomePage() {
             <div className="mt-8 md:mt-0 md:order-1">
               <p className="text-center md:text-left text-sm" style={{ color: 'var(--app-text-muted)' }}>
                 {/* © {currentYear} Flomac Co., Ltd. All rights reserved. */}
-                © {currentYear} L.M.T. Engineering Limited Partnership. All rights reserved.
+                © {currentYear} LMT air service. All rights reserved.
               </p>
             </div>
           </div>

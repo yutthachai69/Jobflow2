@@ -59,7 +59,7 @@ export default function Navigation({ initialUser = null }: NavigationProps) {
               <Link href="/" className="flex items-center gap-2" aria-label="กลับหน้าแรก">
                 <img
                   src="/L.M.T.png"
-                  alt="L.M.T."
+                  alt="LMT air service"
                   width={120}
                   height={36}
                   className="h-9 w-auto object-contain"

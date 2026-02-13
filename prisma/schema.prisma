@@ -209,6 +209,7 @@ model JobItem {
   endTime   DateTime?
 
   photos JobPhoto[]
+  checklist String? // JSON string storing the actual checklist progress
 
   @@index([technicianId])
   @@index([status])
@@ -352,3 +353,20 @@ model Notification {
   @@index([createdAt])
   @@index([type])
 }
+
+// ==========================================
+// 9. Checklist System (ระบบรายการตรวจสอบ)
+// ==========================================
+
+model ChecklistTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  items       String   // JSON string storing list of items
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Updated JobItem to include checklist data
+// JobItem model is defined above, but we can't extend it here in Prisma Schema.
+// I need to go up and add the field to the existing JobItem model.
