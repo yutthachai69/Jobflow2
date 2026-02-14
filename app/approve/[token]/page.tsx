@@ -8,15 +8,14 @@ export default async function CustomerApprovalPage({ params }: { params: { token
     const workOrder = await prisma.workOrder.findUnique({
         where: { approvalToken: params.token },
         include: {
-            asset: {
-                include: {
-                    site: true,
-                    room: { include: { floor: { include: { building: true } } } }
-                }
-            },
             jobItems: {
                 include: {
-                    photos: true // Include photos to show to customer
+                    photos: true,
+                    asset: {
+                        include: {
+                            room: { include: { floor: { include: { building: true } } } }
+                        }
+                    }
                 }
             },
             site: true
@@ -29,7 +28,8 @@ export default async function CustomerApprovalPage({ params }: { params: { token
     }
 
     // 3. Format Strings
-    const assetLocation = `${workOrder.asset.room.name} (${workOrder.asset.room.floor.building.name})`
+    const jobItem = workOrder.jobItems[0]
+    const assetLocation = jobItem?.asset ? `${jobItem.asset.room.name} (${jobItem.asset.room.floor.building.name})` : 'ไม่ระบุสถานที่'
     const isPending = workOrder.status === 'WAITING_APPROVAL'
 
     // Determine status color/text
@@ -72,11 +72,11 @@ export default async function CustomerApprovalPage({ params }: { params: { token
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
                             <div>
                                 <p className="text-gray-500 text-xs uppercase">รหัสทรัพย์สิน</p>
-                                <p className="font-semibold text-gray-900">{workOrder.asset.qrCode}</p>
+                                <p className="font-semibold text-gray-900">{jobItem?.asset?.qrCode || '-'}</p>
                             </div>
                             <div>
                                 <p className="text-gray-500 text-xs uppercase">ชื่อรายการ</p>
-                                <p className="font-semibold text-gray-900">{workOrder.asset.brand} - {workOrder.asset.model}</p>
+                                <p className="font-semibold text-gray-900">{jobItem?.asset?.brand || ''} - {jobItem?.asset?.model || ''}</p>
                             </div>
                             <div className="md:col-span-2">
                                 <p className="text-gray-500 text-xs uppercase">สถานที่ติดตั้ง</p>
