@@ -277,15 +277,17 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                         </div>
                       )}
 
-                      {/* Checklist Section */}
-                      <div className="mt-4">
-                        <ChecklistSection
-                          jobItemId={jobItem.id}
-                          initialData={jobItem.checklist}
-                          isEditable={(user.role === 'ADMIN' || (user.role === 'TECHNICIAN' && jobItem.technicianId === user.id)) && jobItem.status !== 'DONE'}
-                          jobType={workOrder.jobType}
-                        />
-                      </div>
+                      {/* Checklist Section — เฉพาะงาน PM */}
+                      {workOrder.jobType === 'PM' && (
+                        <div className="mt-4">
+                          <ChecklistSection
+                            jobItemId={jobItem.id}
+                            initialData={jobItem.checklist}
+                            isEditable={(user.role === 'ADMIN' || (user.role === 'TECHNICIAN' && jobItem.technicianId === user.id)) && jobItem.status !== 'DONE'}
+                            jobType={workOrder.jobType}
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`px-4 py-2 rounded-xl font-semibold text-sm ${jobSt.tailwind}`}>{jobSt.label}</span>

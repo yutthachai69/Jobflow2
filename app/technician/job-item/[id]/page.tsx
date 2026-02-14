@@ -5,6 +5,9 @@ import { updateJobItemStatus, updateJobItemNote } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
 import PhotoUpload from "./PhotoUpload";
 import DeletePhotoButton from "./DeletePhotoButton";
+import ChecklistSection from "@/app/work-orders/[id]/ChecklistSection";
+import RequestRepairButton from "./RequestRepairButton";
+import SendApprovalButton from "./SendApprovalButton";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -21,7 +24,16 @@ export default async function TechnicianJobItemPage({ params }: Props) {
 
   const jobItem = await prisma.jobItem.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      assetId: true,
+      status: true,
+      techNote: true,
+      technicianId: true,
+      workOrderId: true,
+      startTime: true,
+      endTime: true,
+      checklist: true,
       asset: {
         include: {
           room: {
@@ -40,6 +52,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
         },
       },
       workOrder: true,
+      generatedWorkOrder: true,
       technician: true,
       photos: {
         orderBy: { createdAt: "asc" },
@@ -132,7 +145,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
 
         {/* Status Actions */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <h2 className="text-lg font-bold text-gray-900">อัปเดตสถานะ</h2>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -153,8 +166,8 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                     type="submit"
                     disabled={!canComplete}
                     className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
-                        : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
+                      : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                       }`}
                     title={!canComplete ? 'กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน' : ''}
                   >
@@ -192,12 +205,72 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   type="submit"
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300 flex items-center gap-2"
                 >
-                  <span>ดำเนินการต่อ</span>
+                  <span>ดำเนินการต่อ (Resume)</span>
                 </button>
               </form>
             )}
           </div>
+
+          {/* Request Repair Card or Status */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            {jobItem.generatedWorkOrder ? (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">แจ้งซ่อมแล้ว (Repair Requested)</h3>
+                    <p className="text-sm text-gray-600">เลขที่ใบงาน: <Link href={`/work-orders/${jobItem.generatedWorkOrder.id}`} className="text-blue-600 hover:underline font-mono">{jobItem.generatedWorkOrder.workOrderNumber}</Link></p>
+                  </div>
+                </div>
+                <div className="mt-3 pl-11">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    สถานะ: {jobItem.generatedWorkOrder.status}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <RequestRepairButton
+                assetId={jobItem.assetId}
+                userId={user.id}
+                jobStatus={jobItem.status}
+                assetName={`${jobItem.asset.brand} - ${jobItem.asset.model}`}
+                assetLocation={`${jobItem.asset.room.name} (${jobItem.asset.room.floor.building.name})`}
+                assetCode={jobItem.asset.qrCode}
+                sourceJobItemId={jobItem.id}
+              />
+            )}
+          </div>
+
+          {/* Approval Workflow Section */}
+          {(jobItem.status === 'ISSUE_FOUND' || jobItem.workOrder.approvalToken) && !jobItem.generatedWorkOrder && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">การอนุมัติงานซ่อม (Customer Approval)</h3>
+              <SendApprovalButton
+                workOrderId={jobItem.workOrderId}
+                status={jobItem.workOrder.status}
+                approvalToken={jobItem.workOrder.approvalToken}
+              />
+            </div>
+          )}
         </div>
+
+
+
+        {/* Checklist Section — เฉพาะงาน PM */}
+        {jobItem.workOrder.jobType === 'PM' && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6">
+            <ChecklistSection
+              jobItemId={id}
+              initialData={jobItem.checklist}
+              isEditable={jobItem.status !== 'DONE'}
+              jobType={jobItem.workOrder.jobType}
+            />
+          </div>
+        )}
 
         {/* Tech Note */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">

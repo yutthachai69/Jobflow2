@@ -14,6 +14,7 @@ export default function ToastProvider() {
           borderRadius: '12px',
           padding: '16px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          zIndex: 99999,
         },
         success: {
           iconTheme: {

@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: 'profile.line-scdn.net' },
     ],
   },
   env: {
@@ -25,8 +26,8 @@ const nextConfig: NextConfig = {
           {
             key: 'Content-Security-Policy',
             value: isDev
-              ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com"
-              : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+              ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://*.line-scdn.net https://profile.line-scdn.net; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.line.me"
+              : "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://*.line-scdn.net https://profile.line-scdn.net; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.line.me; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
           },
           {
             key: 'X-Content-Type-Options',

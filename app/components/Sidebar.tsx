@@ -17,11 +17,12 @@ import {
   IconReports,
   IconSurvey,
   IconChecklist,
+  IconLine,
 } from './SidebarIcons'
 
 type NavRole = 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
 
-type IconKey = 'dashboard' | 'workorder' | 'assets' | 'users' | 'locations' | 'security' | 'contact' | 'scan' | 'wrench' | 'reports' | 'survey' | 'checklist'
+type IconKey = 'dashboard' | 'workorder' | 'assets' | 'users' | 'locations' | 'security' | 'contact' | 'scan' | 'wrench' | 'reports' | 'survey' | 'checklist' | 'line'
 
 const iconMap: Record<IconKey, React.ComponentType<{ active?: boolean }>> = {
   dashboard: IconDashboard,
@@ -36,6 +37,7 @@ const iconMap: Record<IconKey, React.ComponentType<{ active?: boolean }>> = {
   reports: IconReports,
   survey: IconSurvey,
   checklist: IconChecklist,
+  line: IconLine,
 }
 
 type NavLink = { type: 'link'; href: string; label: string; icon: IconKey }
@@ -59,6 +61,7 @@ const adminItems: NavItem[] = [
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
   { type: 'link', href: '/locations', label: 'สถานที่', icon: 'locations' },
   { type: 'link', href: '/security-incidents', label: 'ความปลอดภัย', icon: 'security' },
+  { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
   { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
 ]
 
@@ -194,21 +197,20 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
               {/* <Image
                 src="/flomac.png"
                 alt="Flomac" */}
-              <Image
-                src="/L.M.T.png"
+              <img
+                src="/lmt-logo.png"
                 alt="LMT air service"
                 width={220}
                 height={70}
-                className={`object-contain object-left transition-all duration-300 relative z-10 drop-shadow-md dark:brightness-125 dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] ${isCollapsed ? 'h-8 w-auto' : 'h-16 md:h-[4.25rem] w-auto'
-                  }`}
-                priority
+                style={{ maxWidth: isCollapsed ? '2rem' : '4rem', height: 'auto' }}
+                className="object-contain drop-shadow-md relative z-10"
               />
             </div>
 
             {!isCollapsed && (
               <span className="text-2xl font-serif font-bold whitespace-nowrap transition-opacity duration-300 text-app-heading tracking-tight drop-shadow-sm">
                 {/* Flomac */}
-                LMT air service
+                Air Service
               </span>
             )}
           </Link>

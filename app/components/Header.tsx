@@ -79,7 +79,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
 
         <Link href="/" className="lg:hidden flex items-center gap-2 flex-shrink-0 group">
           <img
-            src="/L.M.T.png"
+            src="/lmt-logo.png"
             alt="LMT air service"
             width={120}
             height={36}

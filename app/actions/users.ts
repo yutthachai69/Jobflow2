@@ -16,6 +16,7 @@ export async function createUser(formData: FormData) {
     const username = sanitizeString(formData.get('username') as string)
     const password = formData.get('password') as string
     const fullName = sanitizeString(formData.get('fullName') as string)
+    const lineUserId = sanitizeString(formData.get('lineUserId') as string)
     const role = formData.get('role') as 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
     const siteId = sanitizeString(formData.get('siteId') as string)
 
@@ -59,6 +60,7 @@ export async function createUser(formData: FormData) {
         fullName: fullName || null,
         role,
         siteId: role === 'CLIENT' ? siteId : null,
+        lineUserId: lineUserId || null,
       },
     })
 
@@ -78,6 +80,7 @@ export async function updateUser(formData: FormData) {
     const username = sanitizeString(formData.get('username') as string)
     const password = formData.get('password') as string
     const fullName = sanitizeString(formData.get('fullName') as string)
+    const lineUserId = sanitizeString(formData.get('lineUserId') as string)
     const role = formData.get('role') as 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
     const siteId = sanitizeString(formData.get('siteId') as string)
 
@@ -123,6 +126,7 @@ export async function updateUser(formData: FormData) {
       fullName: fullName || null,
       role,
       siteId: role === 'CLIENT' ? siteId : null,
+      lineUserId: lineUserId || null,
     }
 
     // Only update password if provided

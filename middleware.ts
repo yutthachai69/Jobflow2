@@ -11,20 +11,20 @@ const isDev = process.env.NODE_ENV !== 'production'
 const csp = isDev
   ? [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // อนุญาตใน dev เท่านั้น
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.line-scdn.net https://d.line-scdn.net", // อนุญาตใน dev เท่านั้น
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob:",
-    "connect-src 'self' ws: wss: http://localhost:* https://localhost:*",
+    "img-src 'self' data: blob: https://*.line-scdn.net https://profile.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
+    "connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://api.line.me https://*.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
     "frame-ancestors 'none'",
   ].join('; ')
   : [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'", // Next.js hydration ต้องใช้ inline scripts
+    "script-src 'self' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net", // Next.js hydration ต้องใช้ inline scripts
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // จำเป็นสำหรับ Next.js
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob:",
-    "connect-src 'self'",
+    "img-src 'self' data: blob: https://*.line-scdn.net https://profile.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
+    "connect-src 'self' https://api.line.me https://*.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -45,7 +45,7 @@ export default function UserForm({ sites }: Props) {
     } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       newErrors.username = 'ชื่อผู้ใช้สามารถใช้ได้เฉพาะตัวอักษร ตัวเลข _ และ -'
     }
-    
+
     if (!password) {
       newErrors.password = 'กรุณากรอกรหัสผ่าน'
     } else if (password.length < 6) {
@@ -53,11 +53,11 @@ export default function UserForm({ sites }: Props) {
     } else if (password.length > 128) {
       newErrors.password = 'รหัสผ่านต้องไม่เกิน 128 ตัวอักษร'
     }
-    
+
     if (selectedRole === 'CLIENT' && !selectedSiteId) {
       newErrors.siteId = 'กรุณาเลือกสถานที่ (สำหรับ CLIENT)'
     }
-    
+
     if (fullName && fullName.length > 200) {
       newErrors.fullName = 'ชื่อ-นามสกุลต้องไม่เกิน 200 ตัวอักษร'
     }
@@ -100,9 +100,8 @@ export default function UserForm({ sites }: Props) {
             aria-required="true"
             aria-invalid={errors.username ? 'true' : 'false'}
             aria-describedby={errors.username ? 'username-error' : 'username-help'}
-            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${
-              errors.username ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-            }`}
+            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${errors.username ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+              }`}
             placeholder="เช่น tech1, client1"
             onChange={(e) => {
               const value = e.target.value
@@ -142,9 +141,8 @@ export default function UserForm({ sites }: Props) {
             aria-required="true"
             aria-invalid={errors.password ? 'true' : 'false'}
             aria-describedby={errors.password ? 'password-error' : 'password-help'}
-            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${
-              errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-            }`}
+            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+              }`}
             placeholder="อย่างน้อย 6 ตัวอักษร"
             onChange={(e) => {
               const value = e.target.value
@@ -183,6 +181,37 @@ export default function UserForm({ sites }: Props) {
           />
         </div>
 
+        {/* LINE User ID */}
+        <div data-error={errors.lineUserId ? 'true' : undefined}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            LINE User ID (สำหรับแจ้งเตือน)
+          </label>
+          <input
+            type="text"
+            name="lineUserId"
+            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 font-mono text-sm ${errors.lineUserId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+              }`}
+            placeholder="เช่น U1234567890abcdef..."
+            onChange={(e) => {
+              const value = e.target.value.trim()
+              if (value && !value.startsWith('U')) {
+                setErrors({ ...errors, lineUserId: 'User ID ต้องขึ้นต้นด้วยตัว U (ไม่ใช่เบอร์โทรศัพท์)' })
+              } else {
+                const { lineUserId, ...rest } = errors
+                setErrors(rest)
+              }
+            }}
+          />
+          {errors.lineUserId ? (
+            <p className="mt-1 text-sm text-red-600 font-medium">{errors.lineUserId}</p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">
+              ใส่ User ID ของ LINE เพื่อรับการแจ้งเตือน (ไม่ใช่ LINE ID ทั่วไป หรือ เบอร์โทร)
+              <br />* ดูวิธีหา User ID ได้จากคู่มือ
+            </p>
+          )}
+        </div>
+
         {/* Role */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -211,9 +240,8 @@ export default function UserForm({ sites }: Props) {
             <select
               value={selectedSiteId}
               onChange={(e) => setSelectedSiteId(e.target.value)}
-              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 ${
-                errors.siteId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-              }`}
+              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 ${errors.siteId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+                }`}
             >
               <option value="">-- เลือกสถานที่ --</option>
               {sites.map((site) => (

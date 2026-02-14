@@ -120,3 +120,11 @@ export function IconChecklist({ active }: { active?: boolean }) {
     </svg>
   )
 }
+
+export function IconLine({ active }: { active?: boolean }) {
+  return (
+    <svg className={iconClass} fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path d="M12 2C6.48 2 2 5.92 2 10.75C2 14.88 5.16 18.25 9.4 19.19L8.76 21.36C8.68 21.6 8.95 21.8 9.17 21.68L12.87 19.6C16.92 19.46 22 15.93 22 10.75C22 5.92 17.52 2 12 2ZM12 17.5C11.5 17.5 11 17.48 10.53 17.44C10.35 17.42 10.17 17.47 10.05 17.56L8.08 18.72L8.43 17.06C8.47 16.88 8.4 16.69 8.24 16.57C5.46 14.71 4 12.84 4 10.75C4 7.25 7.6 4 12 4C16.4 4 20 7.25 20 10.75C20 14.25 16.4 17.5 12 17.5Z" />
+    </svg>
+  )
+}

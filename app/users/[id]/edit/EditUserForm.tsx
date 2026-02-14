@@ -19,6 +19,7 @@ interface User {
   fullName: string | null
   role: 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
   siteId: string | null
+  lineUserId?: string | null
 }
 
 interface Props {
@@ -53,7 +54,7 @@ export default function EditUserForm({ user, sites }: Props) {
     } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       newErrors.username = 'ชื่อผู้ใช้สามารถใช้ได้เฉพาะตัวอักษร ตัวเลข _ และ -'
     }
-    
+
     // Password is optional when editing (only validate if provided)
     if (password && password.length > 0) {
       if (password.length < 6) {
@@ -62,11 +63,11 @@ export default function EditUserForm({ user, sites }: Props) {
         newErrors.password = 'รหัสผ่านต้องไม่เกิน 128 ตัวอักษร'
       }
     }
-    
+
     if (selectedRole === 'CLIENT' && !selectedSiteId) {
       newErrors.siteId = 'กรุณาเลือกสถานที่ (สำหรับ CLIENT)'
     }
-    
+
     if (fullName && fullName.length > 200) {
       newErrors.fullName = 'ชื่อ-นามสกุลต้องไม่เกิน 200 ตัวอักษร'
     }
@@ -92,6 +93,11 @@ export default function EditUserForm({ user, sites }: Props) {
       submitFormData.append('role', selectedRole)
       submitFormData.append('siteId', selectedRole === 'CLIENT' ? selectedSiteId : '')
 
+      const lineUserId = (formData.get('lineUserId') as string)?.trim()
+      if (lineUserId) {
+        submitFormData.append('lineUserId', lineUserId)
+      }
+
       await updateUser(submitFormData)
       router.push('/users')
       router.refresh()
@@ -113,9 +119,8 @@ export default function EditUserForm({ user, sites }: Props) {
           id="username"
           name="username"
           defaultValue={user.username}
-          className={`w-full px-4 py-3 rounded-lg border ${
-            errors.username ? 'border-red-500' : 'border-gray-300'
-          } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
+          className={`w-full px-4 py-3 rounded-lg border ${errors.username ? 'border-red-500' : 'border-gray-300'
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
           placeholder="กรอกชื่อผู้ใช้"
         />
         {errors.username && (
@@ -132,9 +137,8 @@ export default function EditUserForm({ user, sites }: Props) {
           type="password"
           id="password"
           name="password"
-          className={`w-full px-4 py-3 rounded-lg border ${
-            errors.password ? 'border-red-500' : 'border-gray-300'
-          } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
+          className={`w-full px-4 py-3 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
           placeholder="กรอกรหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)"
         />
         {errors.password && (
@@ -152,13 +156,44 @@ export default function EditUserForm({ user, sites }: Props) {
           id="fullName"
           name="fullName"
           defaultValue={user.fullName || ''}
-          className={`w-full px-4 py-3 rounded-lg border ${
-            errors.fullName ? 'border-red-500' : 'border-gray-300'
-          } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
+          className={`w-full px-4 py-3 rounded-lg border ${errors.fullName ? 'border-red-500' : 'border-gray-300'
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400`}
           placeholder="กรอกชื่อ-นามสกุล"
         />
         {errors.fullName && (
           <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+        )}
+      </div>
+
+      {/* LINE User ID */}
+      <div className="mb-6" data-error={errors.lineUserId ? true : undefined}>
+        <label htmlFor="lineUserId" className="block text-sm font-semibold text-gray-700 mb-2">
+          LINE User ID (สำหรับแจ้งเตือน)
+        </label>
+        <input
+          type="text"
+          id="lineUserId"
+          name="lineUserId"
+          defaultValue={user.lineUserId || ''}
+          className={`w-full px-4 py-3 rounded-lg border ${errors.lineUserId ? 'border-red-500' : 'border-gray-300'
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 font-mono text-sm`}
+          placeholder="เช่น U1234567890abcdef..."
+          onChange={(e) => {
+            const value = e.target.value.trim()
+            if (value && !value.startsWith('U')) {
+              setErrors({ ...errors, lineUserId: 'User ID ต้องขึ้นต้นด้วยตัว U (ไม่ใช่เบอร์โทรศัพท์)' })
+            } else {
+              const { lineUserId, ...rest } = errors
+              setErrors(rest)
+            }
+          }}
+        />
+        {errors.lineUserId ? (
+          <p className="mt-1 text-sm text-red-600 font-medium">{errors.lineUserId}</p>
+        ) : (
+          <p className="mt-1 text-xs text-gray-500">
+            ใส่ User ID ของ LINE เพื่อรับการแจ้งเตือน (ไม่ใช่ LINE ID ทั่วไป หรือ เบอร์โทร)
+          </p>
         )}
       </div>
 
@@ -177,9 +212,8 @@ export default function EditUserForm({ user, sites }: Props) {
               setSelectedSiteId('')
             }
           }}
-          className={`w-full px-4 py-3 rounded-lg border ${
-            errors.role ? 'border-red-500' : 'border-gray-300'
-          } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
+          className={`w-full px-4 py-3 rounded-lg border ${errors.role ? 'border-red-500' : 'border-gray-300'
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
         >
           <option value="ADMIN">ผู้ดูแลระบบ</option>
           <option value="TECHNICIAN">ช่าง</option>
@@ -201,9 +235,8 @@ export default function EditUserForm({ user, sites }: Props) {
             name="siteId"
             value={selectedSiteId}
             onChange={(e) => setSelectedSiteId(e.target.value)}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.siteId ? 'border-red-500' : 'border-gray-300'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
+            className={`w-full px-4 py-3 rounded-lg border ${errors.siteId ? 'border-red-500' : 'border-gray-300'
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
           >
             <option value="">-- เลือกสถานที่ --</option>
             {sites.map((site) => (

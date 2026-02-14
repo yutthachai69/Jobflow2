@@ -33,6 +33,7 @@ model User {
   lockedReason String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  lineUserId  String?   // LINE User ID สำหรับแจ้งเตือนรายบุคคล
 
   siteId String? // สำหรับ CLIENT role: 1 User = 1 Site
   site   Site?   @relation(fields: [siteId], references: [id])
@@ -157,6 +158,9 @@ enum JobType {
 enum OrderStatus {
   OPEN
   IN_PROGRESS
+  WAITING_APPROVAL // รอลูกค้าอนุมัติ
+  APPROVED         // อนุมัติแล้ว (พร้อมซ่อม)
+  REJECTED         // ไม่อนุมัติ
   COMPLETED
   CANCELLED
 }
@@ -173,7 +177,14 @@ model WorkOrder {
 
   assignedTeam String?
 
+  // Approval System
+  approvalToken   String?   @unique // Token for public access
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  
   jobItems  JobItem[]
+  sourceJobItem JobItem? @relation("SourceJobItem")
   feedbacks  Feedback[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -182,6 +193,7 @@ model WorkOrder {
   @@index([scheduledDate])
   @@index([siteId])
   @@index([workOrderNumber])
+  @@index([approvalToken]) // Add index for fast lookup by token
 }
 
 enum JobItemStatus {
@@ -210,6 +222,10 @@ model JobItem {
 
   photos JobPhoto[]
   checklist String? // JSON string storing the actual checklist progress
+
+  // Link to a created CM (Corrective Maintenance) WorkOrder if one was generated from this item
+  generatedWorkOrderId String? @unique
+  generatedWorkOrder   WorkOrder? @relation("SourceJobItem", fields: [generatedWorkOrderId], references: [id])
 
   @@index([technicianId])
   @@index([status])
