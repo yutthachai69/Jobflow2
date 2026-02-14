@@ -404,108 +404,106 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
         return
       }
     }
-  }
 
     // For DONE status, require BEFORE and AFTER photos
     if (status === 'DONE') {
-    const beforePhotos = jobItem.photos.filter((p) => p.type === 'BEFORE')
-    const afterPhotos = jobItem.photos.filter((p) => p.type === 'AFTER')
+      const beforePhotos = jobItem.photos.filter((p) => p.type === 'BEFORE')
+      const afterPhotos = jobItem.photos.filter((p) => p.type === 'AFTER')
 
-    if (beforePhotos.length === 0 || afterPhotos.length === 0) {
-      throw new Error('ต้องแนบรูปภาพทั้งก่อนและหลังการทำงานก่อนที่จะเสร็จสิ้นงาน')
+      if (beforePhotos.length === 0 || afterPhotos.length === 0) {
+        throw new Error('ต้องแนบรูปภาพทั้งก่อนและหลังการทำงานก่อนที่จะเสร็จสิ้นงาน')
+      }
     }
-  }
 
-  await prisma.jobItem.update({
-    where: { id: jobItemId },
-    data: {
-      status,
-      startTime: status === 'IN_PROGRESS' ? new Date() : jobItem.startTime,
-      endTime: status === 'DONE' ? new Date() : jobItem.endTime,
-      technicianId: user.role === 'TECHNICIAN' && !jobItem.technicianId ? user.id : jobItem.technicianId,
-    },
-  })
+    await prisma.jobItem.update({
+      where: { id: jobItemId },
+      data: {
+        status,
+        startTime: status === 'IN_PROGRESS' ? new Date() : jobItem.startTime,
+        endTime: status === 'DONE' ? new Date() : jobItem.endTime,
+        technicianId: user.role === 'TECHNICIAN' && !jobItem.technicianId ? user.id : jobItem.technicianId,
+      },
+    })
 
-  // สร้าง notification สำหรับ CLIENT เมื่องานเสร็จ
-  if (status === 'DONE') {
-    const workOrder = await prisma.workOrder.findUnique({
-      where: { id: jobItem.workOrderId },
-      include: {
-        site: {
-          include: {
-            users: {
-              where: { role: 'CLIENT' },
+    // สร้าง notification สำหรับ CLIENT เมื่องานเสร็จ
+    if (status === 'DONE') {
+      const workOrder = await prisma.workOrder.findUnique({
+        where: { id: jobItem.workOrderId },
+        include: {
+          site: {
+            include: {
+              users: {
+                where: { role: 'CLIENT' },
+              },
             },
           },
-        },
-        jobItems: {
-          where: {
-            status: 'DONE',
+          jobItems: {
+            where: {
+              status: 'DONE',
+            },
+            include: {
+              photos: true
+            }
           },
-          include: {
-            photos: true
-          }
         },
-      },
-    },
       })
 
-  if (workOrder) {
-    // ตรวจสอบว่าทุก job item เสร็จแล้วหรือยัง
-    const allJobItems = await prisma.jobItem.findMany({
-      where: { workOrderId: jobItem.workOrderId },
-    })
-    const allDone = allJobItems.every((ji) => ji.status === 'DONE')
-
-    // ถ้าทุกงานเสร็จแล้ว สร้าง notification สำหรับ CLIENT
-    if (allDone && workOrder.site.users.length > 0) {
-      for (const client of workOrder.site.users) {
-        await prisma.notification.create({
-          data: {
-            type: 'WORK_ORDER_COMPLETED',
-            title: 'งานเสร็จสมบูรณ์',
-            message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} เสร็จสมบูรณ์แล้ว กรุณาให้คะแนนความพึงพอใจ`,
-            userId: client.id,
-            relatedId: workOrder.id,
-          },
+      if (workOrder) {
+        // ตรวจสอบว่าทุก job item เสร็จแล้วหรือยัง
+        const allJobItems = await prisma.jobItem.findMany({
+          where: { workOrderId: jobItem.workOrderId },
         })
-      }
+        const allDone = allJobItems.every((ji) => ji.status === 'DONE')
 
-      // Send LINE Notification to Clients
-      try {
-        const { sendLineMessage, createNotificationFlexMessage } = await import('@/app/lib/line-messaging')
+        // ถ้าทุกงานเสร็จแล้ว สร้าง notification สำหรับ CLIENT
+        if (allDone && workOrder.site.users.length > 0) {
+          for (const client of workOrder.site.users) {
+            await prisma.notification.create({
+              data: {
+                type: 'WORK_ORDER_COMPLETED',
+                title: 'งานเสร็จสมบูรณ์',
+                message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} เสร็จสมบูรณ์แล้ว กรุณาให้คะแนนความพึงพอใจ`,
+                userId: client.id,
+                relatedId: workOrder.id,
+              },
+            })
+          }
 
-        const message = createNotificationFlexMessage({
-          title: '✅ งานซ่อมเสร็จสมบูรณ์',
-          message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} ดำเนินการเรียบร้อยแล้ว`,
-          details: [
-            { label: 'สถานที่', value: workOrder.site.name },
-            { label: 'สินทรัพย์', value: `${workOrder.jobItems[0].asset.brand} ${workOrder.jobItems[0].asset.model}` }
-          ],
-          actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
-          imageUrl: workOrder.jobItems[0]?.photos?.find(p => p.type === 'AFTER')?.url,
-          color: '#06C755' // Green
-        })
+          // Send LINE Notification to Clients
+          try {
+            const { sendLineMessage, createNotificationFlexMessage } = await import('@/app/lib/line-messaging')
 
-        console.log(`Sending completion LINE to ${workOrder.site.users.length} clients`)
-        await Promise.all(workOrder.site.users
-          .filter(u => u.lineUserId)
-          .map(u => sendLineMessage(u.lineUserId!, message))
-        )
-      } catch (error) {
-        console.error('Failed to send LINE completion notification:', error)
+            const message = createNotificationFlexMessage({
+              title: '✅ งานซ่อมเสร็จสมบูรณ์',
+              message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} ดำเนินการเรียบร้อยแล้ว`,
+              details: [
+                { label: 'สถานที่', value: workOrder.site.name },
+                { label: 'สินทรัพย์', value: `${workOrder.jobItems[0].asset.brand} ${workOrder.jobItems[0].asset.model}` }
+              ],
+              actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
+              imageUrl: workOrder.jobItems[0]?.photos?.find(p => p.type === 'AFTER')?.url,
+              color: '#06C755' // Green
+            })
+
+            console.log(`Sending completion LINE to ${workOrder.site.users.length} clients`)
+            await Promise.all(workOrder.site.users
+              .filter(u => u.lineUserId)
+              .map(u => sendLineMessage(u.lineUserId!, message))
+            )
+          } catch (error) {
+            console.error('Failed to send LINE completion notification:', error)
+          }
+        }
       }
     }
-  }
-}
 
-revalidatePath(`/technician/job-item/${jobItemId}`)
-revalidatePath('/technician')
-revalidatePath('/work-orders')
+    revalidatePath(`/technician/job-item/${jobItemId}`)
+    revalidatePath('/technician')
+    revalidatePath('/work-orders')
   } catch (error) {
-  await handleServerActionError(error, await getCurrentUser().catch(() => null))
-  throw error
-}
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
 }
 
 export async function deleteJobPhoto(photoId: string) {

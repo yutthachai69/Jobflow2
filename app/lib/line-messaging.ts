@@ -107,7 +107,7 @@ export function createApprovalFlexMessage(
         }
     };
 }
-}
+
 
 export function createNotificationFlexMessage({
     title,
