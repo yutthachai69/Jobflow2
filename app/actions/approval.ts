@@ -19,12 +19,15 @@ export async function sendForApproval(workOrderId: string) {
                 approvalToken: token
             },
             include: {
-                asset: {
+                jobItems: {
                     include: {
-                        room: { include: { floor: { include: { building: true } } } }
+                        asset: {
+                            include: {
+                                room: { include: { floor: { include: { building: true } } } }
+                            }
+                        }
                     }
-                },
-                jobItems: true
+                }
             }
         })
 
@@ -36,14 +39,18 @@ export async function sendForApproval(workOrderId: string) {
         const approvalLink = `${baseUrl}/approve/${token}`
 
         // Prepare LINE Message
-        const assetName = `${workOrder.asset.brand} - ${workOrder.asset.model}`
+        // Prepare LINE Message
+        const jobItem = workOrder.jobItems[0]
+        const assetName = jobItem?.asset ? `${jobItem.asset.brand} - ${jobItem.asset.model}` : 'Unknown Asset'
         const issue = workOrder.jobItems[0]?.techNote || workOrder.jobItems[0]?.checklist || 'ไม่ระบุรายละเอียด'
 
         // Send to Admin Group / Technician
         const adminGroupId = process.env.LINE_ADMIN_URI_ID
+        const location = jobItem?.asset ? `${jobItem.asset.room.name} (${jobItem.asset.room.floor.building.name})` : 'ไม่ระบุสถานที่'
+
         const flexMessage = createApprovalFlexMessage(
             `${workOrder.workOrderNumber} - ${assetName}`,
-            `อาการ: ${issue}\nสถานที่: ${workOrder.asset.room.name} (${workOrder.asset.room.floor.building.name})`,
+            `อาการ: ${issue}\nสถานที่: ${location}`,
             approvalLink
         )
 
