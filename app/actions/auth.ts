@@ -68,7 +68,8 @@ export async function login(formData: FormData) {
       if (isConnectionError) {
         return { error: 'server', message: 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาติดต่อผู้ดูแลระบบ' }
       } else {
-        return { error: 'database' }
+        // [DEBUG] Return actual db error message
+        return { error: 'database', message: `Database Error: ${dbError.message || dbError?.code || 'Unknown'}` }
       }
     }
 
