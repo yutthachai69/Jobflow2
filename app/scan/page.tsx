@@ -142,6 +142,56 @@ export default function ScanQRPage() {
     setScanning(false)
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setError(null)
+    setScanning(true)
+
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode')
+
+      // Create a temporary container for scanner if it doesn't exist (needed by library)
+      const readerId = 'qr-reader'
+      const html5QrCode = new Html5Qrcode(readerId)
+
+      try {
+        const decodedText = await html5QrCode.scanFile(file, true)
+
+        // Success!
+        // ตรวจสอบว่าเป็น URL ของเราเองหรือไม่
+        try {
+          const url = new URL(decodedText)
+          if (url.origin === window.location.origin) {
+            router.push(url.pathname + url.search)
+            return
+          }
+        } catch {
+          // ไม่ใช่ URL
+        }
+
+        const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(decodedText)}`)
+        const data = await response.json()
+        if (data.assetId) {
+          router.push(`/assets/${data.assetId}`)
+        } else {
+          setError('ไม่พบทรัพย์สินที่ระบุในรูปภาพนี้')
+          setScanning(false)
+        }
+      } catch (scanErr) {
+        setError('ไม่พบ QR Code ในรูปภาพนี้ กรุณาลองใช้รูปอื่นที่ชัดเจนกว่าเดิม')
+        setScanning(false)
+      }
+    } catch (err: any) {
+      setError(`เกิดข้อผิดพลาดในการอ่านไฟล์: ${err?.message || err}`)
+      setScanning(false)
+    } finally {
+      // Clear input so same file can be selected again
+      e.target.value = ''
+    }
+  }
+
   const handleManualSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
@@ -211,14 +261,33 @@ export default function ScanQRPage() {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {!scanning ? (
-              <button
-                onClick={startScanning}
-                className="flex-1 btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium text-lg transition-all"
-              >
-                เปิดกล้องสแกน
-              </button>
+              <>
+                <button
+                  onClick={startScanning}
+                  className="flex-1 btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium text-lg transition-all"
+                >
+                  เปิดกล้องสแกน
+                </button>
+                <div className="flex-1 relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                    title="เลือกรูปจากแกลเลอรี่"
+                  />
+                  <button
+                    className="w-full bg-app-card border-2 border-[var(--app-btn-primary)] text-[var(--app-btn-primary)] px-6 py-3 rounded-lg hover:bg-app-section font-medium text-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    เลือกรูป/แกลเลอรี่
+                  </button>
+                </div>
+              </>
             ) : (
               <button
                 onClick={stopScanning}
