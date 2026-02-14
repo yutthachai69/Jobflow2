@@ -1,13 +1,21 @@
 import { Client, FlexMessage, TextMessage } from '@line/bot-sdk';
 
-const client = new Client({
-    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
-    channelSecret: process.env.LINE_CHANNEL_SECRET,
-});
+// Lazy initialization of LINE client to prevent build-time errors
+const getLineClient = () => {
+    if (!process.env.LINE_CHANNEL_ACCESS_TOKEN || !process.env.LINE_CHANNEL_SECRET) {
+        return null;
+    }
+    return new Client({
+        channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+        channelSecret: process.env.LINE_CHANNEL_SECRET,
+    });
+};
 
 export async function sendLineMessage(to: string, message: FlexMessage | TextMessage) {
-    if (!process.env.LINE_CHANNEL_ACCESS_TOKEN) {
-        console.warn('LINE_CHANNEL_ACCESS_TOKEN is not set. Skipping LINE notification.');
+    const client = getLineClient();
+
+    if (!client) {
+        console.warn('LINE_CHANNEL_ACCESS_TOKEN or LINE_CHANNEL_SECRET is not set. Skipping LINE notification.');
         return;
     }
 
