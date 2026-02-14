@@ -276,7 +276,12 @@ export async function assignTechnicianToJobItem(jobItemId: string, technicianId:
               jobItems: { include: { asset: { include: { room: true } } } }
             }
           },
-          technician: true
+          technician: true,
+          asset: {
+            include: {
+              room: true
+            }
+          }
         }
       })
 
@@ -310,7 +315,7 @@ export async function assignTechnicianToJobItem(jobItemId: string, technicianId:
             title: '👷 มอบหมายช่างแล้ว',
             message: `ช่าง ${technician?.fullName || 'ทีมงาน'} กำลังเดินทางเข้าตรวจสอบ`,
             details: [
-              { label: 'ใบงาน', value: workOrder.workOrderNumber },
+              { label: 'ใบงาน', value: workOrder.workOrderNumber || '' },
               { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
             ],
             actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
@@ -345,6 +350,7 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
       include: {
         technician: true,
         photos: true,
+        asset: true // Include asset here to be used later
       },
     })
 
@@ -381,9 +387,9 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
 
             const message = createNotificationFlexMessage({
               title: '🔧 ช่างเริ่มดำเนินการ',
-              message: `ช่าง ${user.fullName} รับงานและเริ่มดำเนินการแล้ว`,
+              message: `ช่าง ${jobItem.technician?.fullName || user.username || 'ทีมงาน'} รับงานและเริ่มดำเนินการแล้ว`,
               details: [
-                { label: 'ใบงาน', value: workOrder.workOrderNumber },
+                { label: 'ใบงาน', value: workOrder.workOrderNumber || '' },
                 { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
               ],
               actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
@@ -478,7 +484,7 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
               message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} ดำเนินการเรียบร้อยแล้ว`,
               details: [
                 { label: 'สถานที่', value: workOrder.site.name },
-                { label: 'สินทรัพย์', value: `${workOrder.jobItems[0].asset.brand} ${workOrder.jobItems[0].asset.model}` }
+                { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
               ],
               actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
               imageUrl: workOrder.jobItems[0]?.photos?.find(p => p.type === 'AFTER')?.url,
