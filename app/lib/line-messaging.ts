@@ -40,6 +40,7 @@ export function createApprovalFlexMessage(
                 aspectMode: 'cover',
                 action: {
                     type: 'uri',
+                    label: 'ดูรายละเอียด',
                     uri: approvalLink
                 }
             } : undefined,
