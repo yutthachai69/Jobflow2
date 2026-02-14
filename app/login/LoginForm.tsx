@@ -77,7 +77,7 @@ export default function LoginForm() {
         } else if (result.error === 'server') {
           setErrors({ submit: result.message || 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' })
         } else if (result.error === 'database') {
-          setErrors({ submit: result.message || 'ไม่พบฐานข้อมูลหรือโครงสร้างไม่ถูกต้อง (Database Error)' })
+          setErrors({ submit: 'ไม่พบฐานข้อมูลหรือโครงสร้างไม่ถูกต้อง (Database Error)' })
         } else {
           setErrors({ submit: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' })
         }
