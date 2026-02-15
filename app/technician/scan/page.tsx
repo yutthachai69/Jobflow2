@@ -49,12 +49,27 @@ export default function ScanQRPage() {
             html5QrCodeRef.current = null
 
             // ค้นหา Asset จาก QR Code แล้ว redirect ไปหน้า Asset Detail
+            // ตรวจสอบว่าเป็น URL หรือไม่
+            try {
+              const url = new URL(decodedText)
+              if (url.origin === window.location.origin) {
+                router.push(url.pathname + url.search)
+                return
+              }
+              if (window.confirm(`พบลิงก์ภายนอก:\n${decodedText}\n\nต้องการเปิดลิงก์นี้หรือไม่?`)) {
+                window.open(decodedText, '_blank')
+              }
+              return
+            } catch {
+              // ไม่ใช่ URL
+            }
+
             const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(decodedText)}`)
             const data = await response.json()
             if (data.assetId) {
               router.push(`/assets/${data.assetId}`)
             } else {
-              setError('ไม่พบเครื่องปรับอากาศที่ระบุ')
+              alert(`ข้อมูลที่สแกนได้:\n${decodedText}`)
               setScanning(false)
             }
           } catch (err) {
@@ -102,12 +117,27 @@ export default function ScanQRPage() {
       try {
         const decodedText = await html5QrCode.scanFile(file, true)
 
+        try {
+          const url = new URL(decodedText)
+          if (url.origin === window.location.origin) {
+            router.push(url.pathname + url.search)
+            return
+          }
+          if (window.confirm(`พบลิงก์ภายนอกในรูปภาพ:\n${decodedText}\n\nต้องการเปิดลิงก์นี้หรือไม่?`)) {
+            window.open(decodedText, '_blank')
+          }
+          setScanning(false)
+          return
+        } catch {
+          // ไม่ใช่ URL
+        }
+
         const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(decodedText)}`)
         const data = await response.json()
         if (data.assetId) {
           router.push(`/assets/${data.assetId}`)
         } else {
-          setError('ไม่พบเครื่องปรับอากาศที่ระบุในรูปภาพนี้')
+          alert(`ข้อมูลในรูปภาพ:\n${decodedText}`)
           setScanning(false)
         }
       } catch (scanErr) {

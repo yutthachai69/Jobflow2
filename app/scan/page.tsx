@@ -90,25 +90,33 @@ export default function ScanQRPage() {
             setScanning(false)
             html5QrCodeRef.current = null
 
-            // ตรวจสอบว่าเป็น URL ของเราเองหรือไม่
+            // ตรวจสอบว่าเป็น URL หรือไม่
             try {
               const url = new URL(decodedText)
+
               // ถ้าเป็น URL ของเราเอง ให้ redirect ไปที่ URL นั้น
               if (url.origin === window.location.origin) {
                 router.push(url.pathname + url.search)
                 return
               }
+
+              // ถ้าเป็น URL ภายนอก (เช่น line.me) ให้ถามก่อนเปิด
+              if (window.confirm(`พบลิงก์ภายนอก:\n${decodedText}\n\nต้องการเปิดลิงก์นี้หรือไม่?`)) {
+                window.open(decodedText, '_blank')
+              }
+              return
             } catch {
               // ไม่ใช่ URL ให้ค้นหาจาก QR Code text
             }
 
-            // ถ้าไม่ใช่ URL หรือไม่ใช่ URL ของเรา ให้ค้นหา Asset จาก QR Code
+            // ถ้าไม่ใช่ URL ให้ค้นหา Asset จาก QR Code
             const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(decodedText)}`)
             const data = await response.json()
             if (data.assetId) {
               router.push(`/assets/${data.assetId}`)
             } else {
-              setError('ไม่พบทรัพย์สินที่ระบุ')
+              // ถ้าไม่พบในระบบ และไม่ใช่ URL ให้โชว์ข้อมูลที่สแกนได้แทน
+              alert(`ข้อมูลที่สแกนได้:\n${decodedText}`)
               setScanning(false)
             }
           } catch (err) {
@@ -160,13 +168,18 @@ export default function ScanQRPage() {
         const decodedText = await html5QrCode.scanFile(file, true)
 
         // Success!
-        // ตรวจสอบว่าเป็น URL ของเราเองหรือไม่
         try {
           const url = new URL(decodedText)
           if (url.origin === window.location.origin) {
             router.push(url.pathname + url.search)
             return
           }
+
+          if (window.confirm(`พบลิงก์ภายนอกในรูปภาพ:\n${decodedText}\n\nต้องการเปิดลิงก์นี้หรือไม่?`)) {
+            window.open(decodedText, '_blank')
+          }
+          setScanning(false)
+          return
         } catch {
           // ไม่ใช่ URL
         }
@@ -176,7 +189,7 @@ export default function ScanQRPage() {
         if (data.assetId) {
           router.push(`/assets/${data.assetId}`)
         } else {
-          setError('ไม่พบทรัพย์สินที่ระบุในรูปภาพนี้')
+          alert(`ข้อมูลในรูปภาพ:\n${decodedText}`)
           setScanning(false)
         }
       } catch (scanErr) {
