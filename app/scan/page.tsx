@@ -207,6 +207,12 @@ export default function ScanQRPage() {
     }
   }
 
+  const handleSelectImage = () => {
+    if (window.confirm('ต้องการเปิดคลังรูปภาพเพื่อสแกน QR Code ใช่หรือไม่?')) {
+      fileInputRef.current?.click()
+    }
+  }
+
   const handleManualSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
