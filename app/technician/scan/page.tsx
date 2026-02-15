@@ -8,7 +8,6 @@ export default function ScanQRPage() {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const html5QrCodeRef = useRef<any>(null)
-  const html5QrCodeRef = useRef<any>(null)
   const scannedRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
