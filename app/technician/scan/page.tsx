@@ -8,7 +8,9 @@ export default function ScanQRPage() {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const html5QrCodeRef = useRef<any>(null)
+  const html5QrCodeRef = useRef<any>(null)
   const scannedRef = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     return () => {
@@ -115,7 +117,7 @@ export default function ScanQRPage() {
       const html5QrCode = new Html5Qrcode('qr-reader')
 
       try {
-        const decodedText = await html5QrCode.scanFile(file, true)
+        const decodedText = await html5QrCode.scanFile(file, false)
 
         try {
           const url = new URL(decodedText)
@@ -149,6 +151,12 @@ export default function ScanQRPage() {
       setScanning(false)
     } finally {
       e.target.value = ''
+    }
+  }
+
+  const handleSelectImage = () => {
+    if (window.confirm('ต้องการเปิดคลังรูปภาพเพื่อสแกน QR Code ใช่หรือไม่?')) {
+      fileInputRef.current?.click()
     }
   }
 
@@ -210,15 +218,16 @@ export default function ScanQRPage() {
                 >
                   เปิดกล้องสแกน
                 </button>
-                <div className="flex-1 relative">
+                <div className="flex-1">
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                    title="เลือกรูปจากแกลเลอรี่"
+                    className="hidden"
                   />
                   <button
+                    onClick={handleSelectImage}
                     className="w-full bg-white border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 font-medium text-lg flex items-center justify-center gap-2"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

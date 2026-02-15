@@ -9,6 +9,7 @@ export default function ScanQRPage() {
   const [error, setError] = useState<string | null>(null)
   const html5QrCodeRef = useRef<any>(null)
   const scannedRef = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ตรวจสอบ error จาก URL params
   useEffect(() => {
@@ -165,7 +166,8 @@ export default function ScanQRPage() {
       const html5QrCode = new Html5Qrcode(readerId)
 
       try {
-        const decodedText = await html5QrCode.scanFile(file, true)
+        // scanFile(file, false) prevents the library from rendering the image to the DOM
+        const decodedText = await html5QrCode.scanFile(file, false)
 
         // Success!
         try {
@@ -283,15 +285,16 @@ export default function ScanQRPage() {
                 >
                   เปิดกล้องสแกน
                 </button>
-                <div className="flex-1 relative">
+                <div className="flex-1">
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                    title="เลือกรูปจากแกลเลอรี่"
+                    className="hidden"
                   />
                   <button
+                    onClick={handleSelectImage}
                     className="w-full bg-app-card border-2 border-[var(--app-btn-primary)] text-[var(--app-btn-primary)] px-6 py-3 rounded-lg hover:bg-app-section font-medium text-lg transition-all flex items-center justify-center gap-2"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
