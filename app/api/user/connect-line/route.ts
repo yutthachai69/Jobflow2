@@ -25,12 +25,13 @@ export async function POST(req: Request) {
         }
 
         // Update user with Line User ID
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
             where: { id: user.id },
-            data: { lineUserId }
+            data: { lineUserId },
+            select: { username: true, lineUserId: true } // Select fields to return
         })
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ success: true, user: updatedUser })
 
     } catch (error: any) {
         console.error('Error connecting LINE:', error)
