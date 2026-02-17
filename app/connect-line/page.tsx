@@ -112,11 +112,13 @@ export default function ConnectLinePage() {
                             ✅ บันทึกข้อมูลสำเร็จ
                         </div>
 
-                        {/* Debug Info */}
-                        <div className="bg-gray-100 p-3 rounded-lg text-xs text-left space-y-1">
-                            <p><strong>JobFlow User:</strong> <span className="text-blue-600">{data.user?.username}</span></p>
-                            <p><strong>LINE UID:</strong> <span className="text-gray-500 break-all">{data.user?.lineUserId}</span></p>
-                        </div>
+                        {/* Debug Info: Shows who was actually connected */}
+                        {connectedUserData && (
+                            <div className="bg-gray-100 p-3 rounded-lg text-xs text-left space-y-1">
+                                <p><strong>JobFlow User:</strong> <span className="text-blue-600 font-bold">{connectedUserData.username}</span></p>
+                                <p><strong>LINE UID:</strong> <span className="text-gray-500 break-all">{connectedUserData.lineUserId}</span></p>
+                            </div>
+                        )}
                         <p className="text-xs text-gray-400">คุณสามารถปิดหน้านี้ได้เลย</p>
                     </div>
                 )}
