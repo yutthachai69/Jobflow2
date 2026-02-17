@@ -67,7 +67,7 @@ export default function WelcomePage() {
 
               {/* 3. ชื่อระบบ */}
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 tracking-tight leading-tight drop-shadow-sm" style={{ color: 'var(--app-text-heading)' }}>
-                ระบบบริหารจัดการงานบริการเครื่องปรับอากาศ
+                LMT air service จัดการบริการเครื่องปรับอากาศ
               </h1>
 
               {/* 4. คำบรรยาย */}
