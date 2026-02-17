@@ -46,6 +46,7 @@ type NavItem = NavLink | NavGroup
 
 interface SidebarProps {
   role: NavRole
+  lineUserId?: string | null
   isMobileOpen?: boolean
   onMobileToggle?: () => void
 }
@@ -112,7 +113,7 @@ const MobileMenuButton = ({ onClick, isMobileOpen }: { onClick: () => void; isMo
   </button>
 )
 
-export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileToggle }: SidebarProps) {
+export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen, onMobileToggle }: SidebarProps) {
   const pathname = usePathname()
   const [internalIsOpen, setInternalIsOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -150,7 +151,13 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
     return null
   }
 
-  const items = role === 'ADMIN' ? adminItems : role === 'CLIENT' ? [] : technicianItems
+  // ฟิลเตอร์: ถ้ามี lineUserId แล้ว ซ่อนเมนู "เชื่อมต่อ LINE"
+  const filterLineConnect = (items: NavItem[]) => {
+    if (!lineUserId) return items
+    return items.filter(item => !(item.type === 'link' && item.href === '/connect-line'))
+  }
+
+  const items = role === 'ADMIN' ? filterLineConnect(adminItems) : role === 'CLIENT' ? [] : filterLineConnect(technicianItems)
 
   useEffect(() => {
     if (pathname?.startsWith('/reports')) setReportsExpanded(true)
@@ -384,7 +391,7 @@ export default function Sidebar({ role, isMobileOpen: externalIsOpen, onMobileTo
                   </h3>
                 </div>
               )}
-              {clientSupplementaryMenuItems.map((item) => {
+              {filterLineConnect(clientSupplementaryMenuItems).map((item) => {
                 if (item.type !== 'link') return null
                 const linkItem = item as NavLink
                 const active = isActive(linkItem.href)

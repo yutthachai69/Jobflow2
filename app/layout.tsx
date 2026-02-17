@@ -80,6 +80,7 @@ export default async function RootLayout({
           fullName: true,
           role: true,
           siteId: true,
+          lineUserId: true,
           site: {
             select: {
               name: true,
@@ -110,6 +111,7 @@ export default async function RootLayout({
           username: dbUser.username,
           fullName: dbUser.fullName,
           siteName,
+          lineUserId: dbUser.lineUserId,
         };
       }
     } catch (error) {
@@ -148,6 +150,7 @@ export default async function RootLayout({
               username={userData.username}
               fullName={userData.fullName}
               siteName={userData.siteName}
+              lineUserId={userData.lineUserId}
             >
               {children}
             </AppLayout>
