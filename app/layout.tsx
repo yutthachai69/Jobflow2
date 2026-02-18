@@ -122,6 +122,7 @@ export default async function RootLayout({
         username: undefined,
         fullName: null,
         siteName: null,
+        lineUserId: null,
       };
     }
   }
