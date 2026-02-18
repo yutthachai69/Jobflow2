@@ -62,7 +62,8 @@ const adminItems: NavItem[] = [
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
   { type: 'link', href: '/locations', label: 'สถานที่', icon: 'locations' },
   { type: 'link', href: '/security-incidents', label: 'ความปลอดภัย', icon: 'security' },
-  { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
+  // [OLD LIFF] คอมเม้นไว้ - ถ้าอยากใช้ LIFF login กลับ ให้ uncomment
+  // { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
   { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
 ]
 
@@ -87,7 +88,8 @@ const clientMainMenuItems: NavItem[] = [
 // เมนูเสริมสำหรับ CLIENT
 const clientSupplementaryMenuItems: NavItem[] = [
   { type: 'link', href: '/survey', label: 'แบบสำรวจ', icon: 'survey' },
-  { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
+  // [OLD LIFF] คอมเม้นไว้ - ถ้าอยากใช้ LIFF login กลับ ให้ uncomment
+  // { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
   { type: 'link', href: '/contact', label: 'ติดต่อเรา', icon: 'contact' },
 ]
 
@@ -96,7 +98,8 @@ const technicianItems: NavItem[] = [
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/technician', label: 'หน้างาน', icon: 'wrench' },
   { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
-  { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
+  // [OLD LIFF] คอมเม้นไว้ - ถ้าอยากใช้ LIFF login กลับ ให้ uncomment
+  // { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
 ]
 
 // Mobile Menu Button (Fixed Position)
