@@ -139,6 +139,10 @@ export async function createSite(formData: FormData) {
     const clientId = sanitizeString(formData.get('clientId') as string)
     const name = sanitizeString(formData.get('name') as string)
     const address = sanitizeString(formData.get('address') as string)
+    const latitudeStr = formData.get('latitude') as string
+    const longitudeStr = formData.get('longitude') as string
+    const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+    const longitude = longitudeStr ? parseFloat(longitudeStr) : null
 
     if (!clientId) {
       throw new Error('Client ID is required')
@@ -152,6 +156,8 @@ export async function createSite(formData: FormData) {
         clientId,
         name,
         address: address || null,
+        latitude,
+        longitude,
       },
     })
 
@@ -176,6 +182,10 @@ export async function updateSite(formData: FormData) {
     const clientId = sanitizeString(formData.get('clientId') as string)
     const name = sanitizeString(formData.get('name') as string)
     const address = sanitizeString(formData.get('address') as string)
+    const latitudeStr = formData.get('latitude') as string
+    const longitudeStr = formData.get('longitude') as string
+    const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+    const longitude = longitudeStr ? parseFloat(longitudeStr) : null
 
     if (!siteId) {
       throw new Error('Site ID is required')
@@ -201,6 +211,8 @@ export async function updateSite(formData: FormData) {
         clientId,
         name,
         address: address || null,
+        latitude,
+        longitude,
       },
     })
 

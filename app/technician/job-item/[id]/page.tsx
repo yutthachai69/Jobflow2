@@ -134,6 +134,16 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   <span className="text-gray-400">→</span>
                   <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.name}</span>
                 </div>
+                {jobItem.asset.room.floor.building.site.latitude && jobItem.asset.room.floor.building.site.longitude && (
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${jobItem.asset.room.floor.building.site.latitude},${jobItem.asset.room.floor.building.site.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
+                  >
+                    🗺️ นำทางไปสถานที่
+                  </a>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
@@ -211,42 +221,44 @@ export default async function TechnicianJobItemPage({ params }: Props) {
             )}
           </div>
 
-          {/* Request Repair Card or Status */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            {jobItem.generatedWorkOrder ? (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+          {/* Request Repair Card or Status - only show when ISSUE_FOUND */}
+          {(jobItem.status === 'ISSUE_FOUND' || jobItem.generatedWorkOrder) && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              {jobItem.generatedWorkOrder ? (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900">แจ้งซ่อมแล้ว (Repair Requested)</h3>
+                      <p className="text-sm text-gray-600">เลขที่ใบงาน: <Link href={`/work-orders/${jobItem.generatedWorkOrder.id}`} className="text-blue-600 hover:underline font-mono">{jobItem.generatedWorkOrder.workOrderNumber}</Link></p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">แจ้งซ่อมแล้ว (Repair Requested)</h3>
-                    <p className="text-sm text-gray-600">เลขที่ใบงาน: <Link href={`/work-orders/${jobItem.generatedWorkOrder.id}`} className="text-blue-600 hover:underline font-mono">{jobItem.generatedWorkOrder.workOrderNumber}</Link></p>
+                  <div className="mt-3 pl-11">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      สถานะ: {jobItem.generatedWorkOrder.status}
+                    </span>
                   </div>
                 </div>
-                <div className="mt-3 pl-11">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    สถานะ: {jobItem.generatedWorkOrder.status}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <RequestRepairButton
-                assetId={jobItem.assetId}
-                userId={user.id}
-                jobStatus={jobItem.status}
-                assetName={`${jobItem.asset.brand} - ${jobItem.asset.model}`}
-                assetLocation={`${jobItem.asset.room.name} (${jobItem.asset.room.floor.building.name})`}
-                assetCode={jobItem.asset.qrCode}
-                sourceJobItemId={jobItem.id}
-              />
-            )}
-          </div>
+              ) : (
+                <RequestRepairButton
+                  assetId={jobItem.assetId}
+                  userId={user.id}
+                  jobStatus={jobItem.status}
+                  assetName={`${jobItem.asset.brand} - ${jobItem.asset.model}`}
+                  assetLocation={`${jobItem.asset.room.name} (${jobItem.asset.room.floor.building.name})`}
+                  assetCode={jobItem.asset.qrCode}
+                  sourceJobItemId={jobItem.id}
+                />
+              )}
+            </div>
+          )}
 
-          {/* Approval Workflow Section */}
-          {(jobItem.status === 'ISSUE_FOUND' || jobItem.workOrder.approvalToken) && !jobItem.generatedWorkOrder && (
+          {/* Approval Workflow Section - only show when ISSUE_FOUND and no repair yet */}
+          {jobItem.status === 'ISSUE_FOUND' && !jobItem.generatedWorkOrder && (
             <div className="mt-6 pt-6 border-t border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">การอนุมัติงานซ่อม (Customer Approval)</h3>
               <SendApprovalButton

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import Tooltip from "@/app/components/Tooltip";
+import SiteMapPicker from "@/app/components/SiteMapPicker";
 
 interface Props {
   searchParams: Promise<{ clientId?: string }>;
@@ -31,14 +32,14 @@ export default async function NewSitePage({ searchParams }: Props) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-8">
         <div className="max-w-2xl mx-auto">
-          <Link 
-            href="/locations" 
+          <Link
+            href="/locations"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
           >
             <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span>
             <span className="font-medium">กลับ</span>
           </Link>
-          
+
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center border border-gray-100">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             </div>
@@ -61,8 +62,8 @@ export default async function NewSitePage({ searchParams }: Props) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Back Link */}
-        <Link 
-          href="/locations" 
+        <Link
+          href="/locations"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span>
@@ -140,6 +141,16 @@ export default async function NewSitePage({ searchParams }: Props) {
               <p className="mt-2 text-xs text-gray-500">
                 ที่อยู่สำหรับการติดต่อและประสานงาน (ไม่บังคับ)
               </p>
+            </div>
+
+            {/* Map Picker */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <span className="flex items-center gap-2">
+                  📍 ตำแหน่งบนแผนที่
+                </span>
+              </label>
+              <SiteMapPicker />
             </div>
 
             {/* Info Box */}

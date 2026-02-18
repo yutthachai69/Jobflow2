@@ -7,6 +7,7 @@ import DeleteSiteButton from "./DeleteSiteButton";
 import DeleteBuildingButton from "./DeleteBuildingButton";
 import DeleteFloorButton from "./DeleteFloorButton";
 import DeleteRoomButton from "./DeleteRoomButton";
+import LocationsMap from "@/app/components/LocationsMap";
 
 export default async function LocationsPage() {
   const user = await getCurrentUser();
@@ -49,6 +50,19 @@ export default async function LocationsPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // Collect all site markers for the map
+  const siteMarkers = clients.flatMap(client =>
+    client.sites
+      .filter(site => site.latitude && site.longitude)
+      .map(site => ({
+        id: site.id,
+        lat: site.latitude!,
+        lng: site.longitude!,
+        title: `${site.name} (${client.name})`,
+        address: site.address,
+      }))
+  )
+
   return (
     <div className="min-h-screen bg-app-bg p-8">
       <div className="max-w-7xl mx-auto">
@@ -61,6 +75,11 @@ export default async function LocationsPage() {
             + เพิ่มลูกค้าใหม่
           </Link>
         </div>
+
+        {/* Google Map Overview */}
+        {siteMarkers.length > 0 && (
+          <LocationsMap markers={siteMarkers} />
+        )}
 
         <div className="space-y-6">
           {clients.length === 0 ? (
@@ -128,7 +147,7 @@ export default async function LocationsPage() {
                   ) : (
                     <div className="space-y-6">
                       {client.sites.map((site) => (
-                        <div key={site.id} className="border border-app rounded-lg p-4 bg-app-bg/50">
+                        <div key={site.id} id={`site-${site.id}`} className="border border-app rounded-lg p-4 bg-app-bg/50 transition-all duration-500">
                           {/* Site Header */}
                           <div className="flex justify-between items-start mb-4">
                             <div>

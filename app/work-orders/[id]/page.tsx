@@ -194,6 +194,16 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                   <span className="font-medium text-app-heading">{workOrder.site.name}</span>
                   <span className="text-app-muted">•</span>
                   <span className="text-app-body">{workOrder.site.client.name}</span>
+                  {user.role !== 'CLIENT' && workOrder.site.latitude && workOrder.site.longitude && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${workOrder.site.latitude},${workOrder.site.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 ml-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold hover:bg-green-200 transition-colors"
+                    >
+                      🗺️ นำทาง
+                    </a>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-app-body text-sm">
                   <span>📅</span>

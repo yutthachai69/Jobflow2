@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { useConfirm } from '@/app/components/ConfirmModal'
 
 export default function ScanQRPage() {
   const router = useRouter()
+  const { confirm, ConfirmDialog } = useConfirm()
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const html5QrCodeRef = useRef<any>(null)
@@ -102,9 +105,14 @@ export default function ScanQRPage() {
               }
 
               // ถ้าเป็น URL ภายนอก (เช่น line.me) ให้ถามก่อนเปิด
-              if (window.confirm(`พบลิงก์ภายนอก:\n${decodedText}\n\nต้องการเปิดลิงก์นี้หรือไม่?`)) {
-                window.open(decodedText, '_blank')
-              }
+              const openLink = await confirm({
+                title: 'พบลิงก์ภายนอก',
+                message: decodedText,
+                confirmText: 'เปิดลิงก์',
+                cancelText: 'ยกเลิก',
+                variant: 'info',
+              })
+              if (openLink) window.open(decodedText, '_blank')
               return
             } catch {
               // ไม่ใช่ URL ให้ค้นหาจาก QR Code text
@@ -117,7 +125,7 @@ export default function ScanQRPage() {
               router.push(`/assets/${data.assetId}`)
             } else {
               // ถ้าไม่พบในระบบ และไม่ใช่ URL ให้โชว์ข้อมูลที่สแกนได้แทน
-              alert(`ข้อมูลที่สแกนได้:\n${decodedText}`)
+              toast(`ข้อมูลที่สแกนได้: ${decodedText}`, { icon: '📷', duration: 5000 })
               setScanning(false)
             }
           } catch (err) {
@@ -177,9 +185,14 @@ export default function ScanQRPage() {
             return
           }
 
-          if (window.confirm(`พบลิงก์ภายนอกในรูปภาพ:\n${decodedText}\n\nต้องการเปิดลิงก์นี้หรือไม่?`)) {
-            window.open(decodedText, '_blank')
-          }
+          const openLink = await confirm({
+            title: 'พบลิงก์ภายนอกในรูปภาพ',
+            message: decodedText,
+            confirmText: 'เปิดลิงก์',
+            cancelText: 'ยกเลิก',
+            variant: 'info',
+          })
+          if (openLink) window.open(decodedText, '_blank')
           setScanning(false)
           return
         } catch {
@@ -191,7 +204,7 @@ export default function ScanQRPage() {
         if (data.assetId) {
           router.push(`/assets/${data.assetId}`)
         } else {
-          alert(`ข้อมูลในรูปภาพ:\n${decodedText}`)
+          toast(`ข้อมูลในรูปภาพ: ${decodedText}`, { icon: '📷', duration: 5000 })
           setScanning(false)
         }
       } catch (scanErr) {
@@ -208,9 +221,7 @@ export default function ScanQRPage() {
   }
 
   const handleSelectImage = () => {
-    if (window.confirm('ต้องการเปิดคลังรูปภาพเพื่อสแกน QR Code ใช่หรือไม่?')) {
-      fileInputRef.current?.click()
-    }
+    fileInputRef.current?.click()
   }
 
   const handleManualSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -260,107 +271,110 @@ export default function ScanQRPage() {
   }
 
   return (
-    <div className="min-h-screen bg-app-bg p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-app-heading mb-2">
-            สแกน QR Code
-          </h1>
-          <p className="text-app-body">
-            สแกน QR Code บนทรัพย์สินเพื่อดูรายละเอียด
-          </p>
-        </div>
+    <>
+      <ConfirmDialog />
+      <div className="min-h-screen bg-app-bg p-4 md:p-8">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-app-heading mb-2">
+              สแกน QR Code
+            </h1>
+            <p className="text-app-body">
+              สแกน QR Code บนทรัพย์สินเพื่อดูรายละเอียด
+            </p>
+          </div>
 
-        {/* Scanner Area */}
-        <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
-          <div id="qr-reader" className="w-full mb-4"></div>
+          {/* Scanner Area */}
+          <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
+            <div id="qr-reader" className="w-full mb-4"></div>
 
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-              <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            {!scanning ? (
-              <>
-                <button
-                  onClick={startScanning}
-                  className="flex-1 btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium text-lg transition-all"
-                >
-                  เปิดกล้องสแกน
-                </button>
-                <div className="flex-1">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={handleSelectImage}
-                    className="w-full bg-app-card border-2 border-[var(--app-btn-primary)] text-[var(--app-btn-primary)] px-6 py-3 rounded-lg hover:bg-app-section font-medium text-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    เลือกรูป/แกลเลอรี่
-                  </button>
-                </div>
-              </>
-            ) : (
-              <button
-                onClick={stopScanning}
-                className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium text-lg transition-colors"
-              >
-                หยุดสแกน
-              </button>
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>
+              </div>
             )}
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              {!scanning ? (
+                <>
+                  <button
+                    onClick={startScanning}
+                    className="flex-1 btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium text-lg transition-all"
+                  >
+                    เปิดกล้องสแกน
+                  </button>
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={handleSelectImage}
+                      className="w-full bg-app-card border-2 border-[var(--app-btn-primary)] text-[var(--app-btn-primary)] px-6 py-3 rounded-lg hover:bg-app-section font-medium text-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      เลือกรูป/แกลเลอรี่
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  onClick={stopScanning}
+                  className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium text-lg transition-colors"
+                >
+                  หยุดสแกน
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Manual Input */}
+          <div className="bg-app-card rounded-xl shadow-lg border border-app p-6">
+            <h2 className="text-lg font-bold text-app-heading mb-4">
+              หรือกรอกรหัสทรัพย์สินโดยตรง
+            </h2>
+            <form
+              className="space-y-4"
+              onSubmit={handleManualSubmit}
+            >
+              <div>
+                <label className="block text-sm font-medium text-app-body mb-2">
+                  รหัสทรัพย์สิน (QR Code)
+                </label>
+                <input
+                  type="text"
+                  name="qrCode"
+                  placeholder="พิมพ์รหัสทรัพย์สิน เช่น AC-2024-001"
+                  className="w-full border border-app rounded-lg px-4 py-3 text-lg bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-app-body mb-2">
+                  หรือ URL จาก QR Code
+                </label>
+                <input
+                  type="text"
+                  name="qrCodeUrl"
+                  placeholder="วาง URL ที่ได้จาก QR Code"
+                  className="w-full border border-app rounded-lg px-4 py-3 text-base bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium transition-all"
+              >
+                ค้นหา
+              </button>
+            </form>
           </div>
         </div>
-
-        {/* Manual Input */}
-        <div className="bg-app-card rounded-xl shadow-lg border border-app p-6">
-          <h2 className="text-lg font-bold text-app-heading mb-4">
-            หรือกรอกรหัสทรัพย์สินโดยตรง
-          </h2>
-          <form
-            className="space-y-4"
-            onSubmit={handleManualSubmit}
-          >
-            <div>
-              <label className="block text-sm font-medium text-app-body mb-2">
-                รหัสทรัพย์สิน (QR Code)
-              </label>
-              <input
-                type="text"
-                name="qrCode"
-                placeholder="พิมพ์รหัสทรัพย์สิน เช่น AC-2024-001"
-                className="w-full border border-app rounded-lg px-4 py-3 text-lg bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-app-body mb-2">
-                หรือ URL จาก QR Code
-              </label>
-              <input
-                type="text"
-                name="qrCodeUrl"
-                placeholder="วาง URL ที่ได้จาก QR Code"
-                className="w-full border border-app rounded-lg px-4 py-3 text-base bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium transition-all"
-            >
-              ค้นหา
-            </button>
-          </form>
-        </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -21,7 +21,7 @@ export default async function TechnicianPage() {
         },
       },
     },
-    orderBy: { scheduledDate: "asc" },
+    orderBy: { scheduledDate: "desc" },
   });
 
   const getStatusConfig = (status: string) => {
@@ -83,10 +83,10 @@ export default async function TechnicianPage() {
                         </div>
                         <div className="flex items-center gap-2 text-gray-600 text-sm">
                           <span>📅</span>
-                          <span>วันนัดหมาย: {new Date(wo.scheduledDate).toLocaleDateString("th-TH", { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
+                          <span>วันนัดหมาย: {new Date(wo.scheduledDate).toLocaleDateString("th-TH", {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
                           })}</span>
                         </div>
                       </div>

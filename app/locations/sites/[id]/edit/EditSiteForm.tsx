@@ -5,6 +5,16 @@ import { useRouter } from 'next/navigation'
 import { updateSite } from '@/app/actions/index'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import dynamic from 'next/dynamic'
+
+const MapPicker = dynamic(() => import('@/app/components/MapPicker'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center" style={{ height: '300px' }}>
+      <span className="text-gray-400 text-sm">กำลังโหลดแผนที่...</span>
+    </div>
+  ),
+})
 
 interface Client {
   id: string
@@ -15,6 +25,8 @@ interface Site {
   id: string
   name: string
   address: string | null
+  latitude: number | null
+  longitude: number | null
   clientId: string
   client: {
     id: string
@@ -32,6 +44,8 @@ export default function EditSiteForm({ site, clients }: Props) {
   const [selectedClientId, setSelectedClientId] = useState<string>(site.clientId)
   const [name, setName] = useState<string>(site.name)
   const [address, setAddress] = useState<string>(site.address || '')
+  const [latitude, setLatitude] = useState<number | null>(site.latitude)
+  const [longitude, setLongitude] = useState<number | null>(site.longitude)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -62,6 +76,8 @@ export default function EditSiteForm({ site, clients }: Props) {
     formData.set('clientId', selectedClientId)
     formData.set('name', name)
     formData.set('address', address)
+    if (latitude != null) formData.set('latitude', latitude.toString())
+    if (longitude != null) formData.set('longitude', longitude.toString())
 
     try {
       await updateSite(formData)
@@ -95,9 +111,8 @@ export default function EditSiteForm({ site, clients }: Props) {
               setSelectedClientId(e.target.value)
               if (errors.clientId) setErrors({ ...errors, clientId: '' })
             }}
-            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 ${
-              errors.clientId ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
-            }`}
+            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 ${errors.clientId ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
+              }`}
           >
             <option value="">-- เลือกลูกค้า --</option>
             {clients.map((client) => (
@@ -126,9 +141,8 @@ export default function EditSiteForm({ site, clients }: Props) {
               setName(e.target.value)
               if (errors.name) setErrors({ ...errors, name: '' })
             }}
-            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${
-              errors.name ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
-            }`}
+            className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${errors.name ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
+              }`}
             placeholder="เช่น สุขุมวิท, โรงงาน A, สำนักงานใหญ่"
             autoFocus
           />
@@ -153,6 +167,24 @@ export default function EditSiteForm({ site, clients }: Props) {
             placeholder="ที่อยู่เต็ม รวมถึงเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
           />
           <p className="mt-2 text-xs text-gray-500">ที่อยู่สำหรับการติดต่อและประสานงาน (ไม่บังคับ)</p>
+        </div>
+
+        {/* Map Picker */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <span className="flex items-center gap-2">
+              📍 ตำแหน่งบนแผนที่
+            </span>
+          </label>
+          <MapPicker
+            latitude={site.latitude}
+            longitude={site.longitude}
+            onChange={(newLat, newLng) => {
+              setLatitude(newLat)
+              setLongitude(newLng)
+            }}
+            height="300px"
+          />
         </div>
 
         {/* Submit Error */}

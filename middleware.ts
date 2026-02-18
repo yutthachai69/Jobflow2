@@ -11,24 +11,23 @@ const isDev = process.env.NODE_ENV !== 'production'
 const csp = isDev
   ? [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.line-scdn.net https://d.line-scdn.net", // อนุญาตใน dev เท่านั้น
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.line-scdn.net https://d.line-scdn.net https://maps.googleapis.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob: https://*.line-scdn.net https://profile.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
-    "connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://api.line.me https://*.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
+    "img-src 'self' data: blob: https://*.line-scdn.net https://profile.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com https://maps.gstatic.com https://maps.googleapis.com https://*.ggpht.com https://*.google.com https://*.googleusercontent.com",
+    "connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://api.line.me https://*.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com https://maps.googleapis.com https://*.google.com",
     "frame-ancestors 'none'",
   ].join('; ')
   : [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net", // Next.js hydration ต้องใช้ inline scripts
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // จำเป็นสำหรับ Next.js
+    "script-src 'self' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net https://maps.googleapis.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob: https://*.line-scdn.net https://profile.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
-    "connect-src 'self' https://api.line.me https://*.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com",
+    "img-src 'self' data: blob: https://*.line-scdn.net https://profile.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com https://maps.gstatic.com https://maps.googleapis.com https://*.ggpht.com https://*.google.com https://*.googleusercontent.com",
+    "connect-src 'self' https://api.line.me https://*.line-scdn.net https://*.supabase.co https://*.public.blob.vercel-storage.com https://maps.googleapis.com https://*.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    // ไม่ใช้ upgrade-insecure-requests เมื่อรันผ่าน HTTP (ทำให้ CSS/JS โหลดไม่ได้)
   ].join('; ')
 
 const LOGIN_URL = '/login'
@@ -40,6 +39,7 @@ function getSecretKey() {
 }
 
 // Verify token and check expiration
+// Returns payload if valid, null if invalid/expired
 async function verifyToken(token: string): Promise<boolean> {
   try {
     const secretKey = getSecretKey()

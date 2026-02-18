@@ -103,7 +103,6 @@ export async function createWorkOrder(formData: FormData) {
     const jobType = formData.get('jobType') as 'PM' | 'CM' | 'INSTALL'
     const scheduledDateStr = formData.get('scheduledDate') as string
     const assignedTeam = sanitizeString(formData.get('assignedTeam') as string)
-    const assetIds = formData.getAll('assetIds') as string[]
 
     // Validation
     if (!siteId) {
@@ -115,37 +114,108 @@ export async function createWorkOrder(formData: FormData) {
     if (!scheduledDateStr) {
       throw new Error('Scheduled date is required')
     }
-    if (assetIds.length === 0) {
-      throw new Error('At least one asset is required')
-    }
 
     const scheduledDate = new Date(scheduledDateStr)
     if (isNaN(scheduledDate.getTime())) {
       throw new Error('Invalid date format')
     }
 
-    // สร้าง Work Order
-    const workOrder = await prisma.workOrder.create({
-      data: {
-        siteId,
-        jobType,
-        scheduledDate,
-        assignedTeam: assignedTeam || null,
-        status: 'OPEN',
-      },
-    })
+    // สร้าง Work Order Number
+    const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
 
-    // สร้าง Job Items สำหรับแต่ละ Asset
-    await prisma.jobItem.createMany({
-      data: assetIds.map((assetId) => ({
-        workOrderId: workOrder.id,
-        assetId,
-        status: 'PENDING',
-      })),
-    })
+    if (jobType === 'INSTALL') {
+      // ===== INSTALL MODE: สร้าง Asset ใหม่อัตโนมัติ =====
+      const newAssetsJson = formData.get('newAssets') as string
+      const roomId = formData.get('roomId') as string
 
-    revalidatePath('/work-orders')
-    redirect(`/work-orders/${workOrder.id}`)
+      if (!newAssetsJson || !roomId) {
+        throw new Error('New assets data and room ID are required for INSTALL')
+      }
+
+      const newAssets: Array<{ brand: string; model: string; serialNo: string; btu: string }> = JSON.parse(newAssetsJson)
+      const validAssets = newAssets.filter(a => a.brand.trim() !== '')
+
+      if (validAssets.length === 0) {
+        throw new Error('At least one asset with a brand is required')
+      }
+
+      // สร้าง Work Order
+      const workOrder = await prisma.workOrder.create({
+        data: {
+          workOrderNumber,
+          siteId,
+          jobType,
+          scheduledDate,
+          assignedTeam: assignedTeam || null,
+          status: 'OPEN',
+        },
+      })
+
+      // สร้าง Asset แต่ละตัว + JobItem
+      for (const assetData of validAssets) {
+        // Auto-generate unique QR code
+        const timestamp = Date.now()
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+        const qrCode = `INST-${timestamp}-${random}`
+
+        const asset = await prisma.asset.create({
+          data: {
+            qrCode,
+            assetType: 'AIR_CONDITIONER',
+            brand: assetData.brand.trim(),
+            model: assetData.model.trim() || null,
+            serialNo: assetData.serialNo.trim() || null,
+            btu: assetData.btu ? parseInt(assetData.btu) : null,
+            installDate: scheduledDate,
+            roomId,
+            status: 'ACTIVE',
+          },
+        })
+
+        await prisma.jobItem.create({
+          data: {
+            workOrderId: workOrder.id,
+            assetId: asset.id,
+            status: 'PENDING',
+          },
+        })
+      }
+
+      revalidatePath('/work-orders')
+      revalidatePath('/assets')
+      redirect(`/work-orders/${workOrder.id}`)
+    } else {
+      // ===== PM/CM MODE: เลือก Asset ที่มีอยู่ =====
+      const assetIds = formData.getAll('assetIds') as string[]
+
+      if (assetIds.length === 0) {
+        throw new Error('At least one asset is required')
+      }
+
+      // สร้าง Work Order
+      const workOrder = await prisma.workOrder.create({
+        data: {
+          workOrderNumber,
+          siteId,
+          jobType,
+          scheduledDate,
+          assignedTeam: assignedTeam || null,
+          status: 'OPEN',
+        },
+      })
+
+      // สร้าง Job Items สำหรับแต่ละ Asset
+      await prisma.jobItem.createMany({
+        data: assetIds.map((assetId) => ({
+          workOrderId: workOrder.id,
+          assetId,
+          status: 'PENDING',
+        })),
+      })
+
+      revalidatePath('/work-orders')
+      redirect(`/work-orders/${workOrder.id}`)
+    }
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error

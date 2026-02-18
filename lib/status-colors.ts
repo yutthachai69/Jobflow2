@@ -18,8 +18,8 @@ export const WO_STATUS = {
   },
   COMPLETED: {
     label: 'เสร็จสิ้น',
-    hex: '#5E8F75',
-    tailwind: 'bg-[#5E8F75]/20 text-[#5E8F75] border-[#5E8F75]',
+    hex: '#16A34A',
+    tailwind: 'bg-[#16A34A]/25 text-[#15803D] border-[#16A34A]',
   },
   CANCELLED: {
     label: 'ยกเลิก',
@@ -42,8 +42,8 @@ export const JOB_STATUS = {
   },
   DONE: {
     label: 'เสร็จสิ้น',
-    hex: '#5E8F75',
-    tailwind: 'bg-[#5E8F75]/20 text-[#5E8F75] border-[#5E8F75]',
+    hex: '#16A34A',
+    tailwind: 'bg-[#16A34A]/25 text-[#15803D] border-[#16A34A]',
   },
   ISSUE_FOUND: {
     label: 'พบปัญหา',

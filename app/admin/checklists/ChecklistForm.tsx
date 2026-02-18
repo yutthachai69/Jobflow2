@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createChecklistTemplate, updateChecklistTemplate } from '@/app/actions/checklist'
+import toast from 'react-hot-toast'
 
 interface ChecklistTemplate {
     id?: string
@@ -52,7 +53,7 @@ export default function ChecklistForm({ initialData, mode }: ChecklistFormProps)
         const validItems = items.filter(item => item.trim() !== '')
 
         if (validItems.length === 0) {
-            alert('กรุณาเพิ่มรายการตรวจสอบอย่างน้อย 1 รายการ')
+            toast.error('กรุณาเพิ่มรายการตรวจสอบอย่างน้อย 1 รายการ', { icon: '⚠️' })
             setIsSubmitting(false)
             return
         }
@@ -74,11 +75,11 @@ export default function ChecklistForm({ initialData, mode }: ChecklistFormProps)
                 router.push('/admin/checklists')
                 router.refresh()
             } else {
-                alert('เกิดข้อผิดพลาด: ' + result.error)
+                toast.error('เกิดข้อผิดพลาด: ' + result.error)
             }
         } catch (error) {
             console.error(error)
-            alert('เกิดข้อผิดพลาดในการบันทึก')
+            toast.error('เกิดข้อผิดพลาดในการบันทึก')
         } finally {
             setIsSubmitting(false)
         }
