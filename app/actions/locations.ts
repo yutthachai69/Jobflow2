@@ -37,11 +37,11 @@ export async function createClient(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function updateClient(formData: FormData) {
@@ -59,7 +59,6 @@ export async function updateClient(formData: FormData) {
       throw new Error('Client name is required')
     }
 
-    // Check if client exists
     const existingClient = await prisma.client.findUnique({
       where: { id: clientId },
     })
@@ -82,18 +81,17 @@ export async function updateClient(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function deleteClient(clientId: string) {
   try {
     const user = await requireAdmin()
 
-    // Check if client exists
     const client = await prisma.client.findUnique({
       where: { id: clientId },
       include: {
@@ -105,7 +103,6 @@ export async function deleteClient(clientId: string) {
       throw new Error('Client not found')
     }
 
-    // Check if client has sites (prevent deletion if has sites)
     if (client.sites.length > 0) {
       throw new Error('Cannot delete client with sites')
     }
@@ -121,11 +118,11 @@ export async function deleteClient(clientId: string) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 // ==========================================
@@ -167,11 +164,11 @@ export async function createSite(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function updateSite(formData: FormData) {
@@ -197,7 +194,6 @@ export async function updateSite(formData: FormData) {
       throw new Error('Site name is required')
     }
 
-    // Check if site exists
     const existingSite = await prisma.site.findUnique({
       where: { id: siteId },
     })
@@ -223,18 +219,17 @@ export async function updateSite(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function deleteSite(siteId: string) {
   try {
     const user = await requireAdmin()
 
-    // Check if site exists
     const site = await prisma.site.findUnique({
       where: { id: siteId },
       include: {
@@ -248,17 +243,14 @@ export async function deleteSite(siteId: string) {
       throw new Error('Site not found')
     }
 
-    // Check if site has buildings (prevent deletion if has buildings)
     if (site.buildings.length > 0) {
       throw new Error('Cannot delete site with buildings')
     }
 
-    // Check if site has users (prevent deletion if has users assigned)
     if (site.users.length > 0) {
       throw new Error('Cannot delete site with assigned users')
     }
 
-    // Check if site has work orders (prevent deletion if has work orders)
     if (site.workOrders.length > 0) {
       throw new Error('Cannot delete site with work orders')
     }
@@ -274,11 +266,11 @@ export async function deleteSite(siteId: string) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 // ==========================================
@@ -312,11 +304,11 @@ export async function createBuilding(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function updateBuilding(formData: FormData) {
@@ -337,7 +329,6 @@ export async function updateBuilding(formData: FormData) {
       throw new Error('Building name is required')
     }
 
-    // Check if building exists
     const existingBuilding = await prisma.building.findUnique({
       where: { id: buildingId },
     })
@@ -360,18 +351,17 @@ export async function updateBuilding(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function deleteBuilding(buildingId: string) {
   try {
     const user = await requireAdmin()
 
-    // Check if building exists
     const building = await prisma.building.findUnique({
       where: { id: buildingId },
       include: {
@@ -383,7 +373,6 @@ export async function deleteBuilding(buildingId: string) {
       throw new Error('Building not found')
     }
 
-    // Check if building has floors (prevent deletion if has floors)
     if (building.floors.length > 0) {
       throw new Error('Cannot delete building with floors')
     }
@@ -399,11 +388,11 @@ export async function deleteBuilding(buildingId: string) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 // ==========================================
@@ -437,11 +426,11 @@ export async function createFloor(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function updateFloor(formData: FormData) {
@@ -462,7 +451,6 @@ export async function updateFloor(formData: FormData) {
       throw new Error('Floor name is required')
     }
 
-    // Check if floor exists
     const existingFloor = await prisma.floor.findUnique({
       where: { id: floorId },
     })
@@ -485,18 +473,17 @@ export async function updateFloor(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function deleteFloor(floorId: string) {
   try {
     const user = await requireAdmin()
 
-    // Check if floor exists
     const floor = await prisma.floor.findUnique({
       where: { id: floorId },
       include: {
@@ -508,7 +495,6 @@ export async function deleteFloor(floorId: string) {
       throw new Error('Floor not found')
     }
 
-    // Check if floor has rooms (prevent deletion if has rooms)
     if (floor.rooms.length > 0) {
       throw new Error('Cannot delete floor with rooms')
     }
@@ -524,11 +510,11 @@ export async function deleteFloor(floorId: string) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 // ==========================================
@@ -562,11 +548,11 @@ export async function createRoom(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function updateRoom(formData: FormData) {
@@ -587,7 +573,6 @@ export async function updateRoom(formData: FormData) {
       throw new Error('Room name is required')
     }
 
-    // Check if room exists
     const existingRoom = await prisma.room.findUnique({
       where: { id: roomId },
     })
@@ -610,18 +595,17 @@ export async function updateRoom(formData: FormData) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
 
 export async function deleteRoom(roomId: string) {
   try {
     const user = await requireAdmin()
 
-    // Check if room exists
     const room = await prisma.room.findUnique({
       where: { id: roomId },
       include: {
@@ -633,7 +617,6 @@ export async function deleteRoom(roomId: string) {
       throw new Error('Room not found')
     }
 
-    // Check if room has assets (prevent deletion if has assets)
     if (room.assets.length > 0) {
       throw new Error('Cannot delete room with assets')
     }
@@ -649,9 +632,9 @@ export async function deleteRoom(roomId: string) {
     })
 
     revalidatePath('/locations')
-    redirect('/locations')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/locations')
 }
