@@ -109,18 +109,21 @@ export async function POST(request: NextRequest) {
 
       let uploadResponse: Response
       try {
+        const bodyBuffer = Buffer.from(arrayBuffer)
         uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${supabaseServiceKey}`,
             'Content-Type': file.type,
+            'Content-Length': bodyBuffer.length.toString(),
             'x-upsert': 'false',
           },
-          body: arrayBuffer,
-        })
+          body: bodyBuffer,
+        } as RequestInit)
       } catch (fetchErr: any) {
+        const causeCode = fetchErr?.cause?.code || fetchErr?.cause?.message || 'unknown'
         console.error('[upload] fetch threw error:', fetchErr?.message, fetchErr?.cause)
-        throw new Error(`Supabase fetch failed: ${fetchErr?.message}`)
+        throw new Error(`Supabase: ${fetchErr?.message} (${causeCode})`)
       }
 
       console.log('[upload] response status:', uploadResponse.status)
