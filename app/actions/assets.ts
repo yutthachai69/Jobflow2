@@ -62,11 +62,11 @@ export async function createAsset(formData: FormData) {
     })
 
     revalidatePath('/assets')
-    redirect('/assets')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/assets')
 }
 
 export async function updateAsset(formData: FormData) {
@@ -146,13 +146,14 @@ export async function updateAsset(formData: FormData) {
       timestamp: new Date().toISOString(),
     })
 
-    revalidatePath(`/assets/${assetId}`)
+    const redirectTo = `/assets/${assetId}`
+    revalidatePath(redirectTo)
     revalidatePath('/assets')
-    redirect(`/assets/${assetId}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect(`/assets/${(formData.get('assetId') as string)}`)
 }
 
 export async function deleteAsset(assetId: string) {
@@ -187,9 +188,9 @@ export async function deleteAsset(assetId: string) {
     })
 
     revalidatePath('/assets')
-    redirect('/assets')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/assets')
 }

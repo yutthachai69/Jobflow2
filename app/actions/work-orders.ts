@@ -247,11 +247,11 @@ export async function deleteWorkOrder(workOrderId: string) {
     })
 
     revalidatePath('/work-orders')
-    redirect('/work-orders')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/work-orders')
 }
 
 export async function assignTechnicianToJobItem(jobItemId: string, technicianId: string | null) {

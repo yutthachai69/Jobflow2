@@ -65,11 +65,11 @@ export async function createUser(formData: FormData) {
     })
 
     revalidatePath('/users')
-    redirect('/users')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/users')
 }
 
 export async function updateUser(formData: FormData) {
@@ -140,9 +140,9 @@ export async function updateUser(formData: FormData) {
     })
 
     revalidatePath('/users')
-    redirect('/users')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+  redirect('/users')
 }
