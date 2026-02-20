@@ -1,4 +1,3 @@
-import { put } from '@vercel/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { handleApiError } from '@/lib/error-handler'
@@ -6,6 +5,7 @@ import { createLogContext } from '@/lib/logger'
 import { logger } from '@/lib/logger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIP as getSecurityIP } from '@/lib/security'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,13 +20,6 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = checkRateLimit(ip, 'UPLOAD')
 
     if (!rateLimitResult.allowed) {
-      // ปิด warning log (ข้อมูลยังถูกบันทึกใน database อยู่)
-      // logger.warn('File upload rate limit exceeded', {
-      //   userId: user.id,
-      //   username: user.username,
-      //   ip,
-      // })
-
       return NextResponse.json(
         {
           error: 'Too many upload requests. Please try again later.',
@@ -76,16 +69,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Validate filename (prevent path traversal)
-    // Safe replace: Keep only alphanumeric, dot, underscore, and dash. Replace others with underscore.
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-
-    // Instead of rejecting, we use the sanitized name if it's different (or just generate a new one anyway below)
-    // The previous check was too strict for Thai characters or spaces
-    // if (sanitizedFilename !== file.name) {
-    //   return NextResponse.json({ error: 'Invalid filename characters' }, { status: 400 })
-    // }
-
     // Read file header to validate file signature (magic bytes)
     const arrayBuffer = await file.arrayBuffer()
     const uint8Array = new Uint8Array(arrayBuffer.slice(0, 12))
@@ -108,40 +91,51 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Generate unique filename (sanitized)
+    // Generate unique filename
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(2, 15)
     const extension = fileExtension || 'jpg'
-    // Generate relative path: job-photos/BEFORE/123456-abcde.jpg
-    const relativePath = `job-photos/${photoType}/${timestamp}-${randomStr}.${extension}`
+    const filePath = `${photoType}/${timestamp}-${randomStr}.${extension}`
 
-    // Check if Vercel Blob token exists
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      // Upload to Vercel Blob
-      const blob = await put(relativePath, file, {
-        access: 'public',
-        contentType: file.type,
-      })
-      return NextResponse.json({ url: blob.url })
+    // Upload via Supabase Storage (production)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (supabaseUrl && supabaseServiceKey) {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+      const { error: uploadError } = await supabase.storage
+        .from('job-photos')
+        .upload(filePath, arrayBuffer, {
+          contentType: file.type,
+          upsert: false,
+        })
+
+      if (uploadError) {
+        throw new Error(`Supabase upload failed: ${uploadError.message}`)
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('job-photos')
+        .getPublicUrl(filePath)
+
+      return NextResponse.json({ url: publicUrl })
     } else {
-      // Fallback: Local File Storage (for development)
+      // Fallback: Local File Storage (for development without Supabase env vars)
       try {
         const { writeFile, mkdir } = await import('fs/promises')
         const { join } = await import('path')
 
-        // Define local storage path in 'public' directory
         const publicDir = join(process.cwd(), 'public')
+        const relativePath = `job-photos/${photoType}/${timestamp}-${randomStr}.${extension}`
         const finalFilePath = join(publicDir, relativePath)
         const dir = join(publicDir, 'job-photos', photoType)
 
-        // Ensure directory exists
         await mkdir(dir, { recursive: true })
-
-        // Write file
-        const buffer = Buffer.from(await file.arrayBuffer())
+        const buffer = Buffer.from(arrayBuffer)
         await writeFile(finalFilePath, buffer)
 
-        // Return local URL
         return NextResponse.json({ url: `/${relativePath}` })
       } catch (localError: any) {
         console.error('Local file upload failed:', localError)
@@ -151,7 +145,6 @@ export async function POST(request: NextRequest) {
       }
     }
   } catch (error) {
-    // Get user again in case it wasn't set in try block
     const user = await getCurrentUser().catch(() => null)
     const context = await createLogContext(request, user)
     const errorResponse = await handleApiError(error, request, user)
@@ -164,4 +157,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
