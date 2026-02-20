@@ -5,7 +5,6 @@ import { createLogContext } from '@/lib/logger'
 import { logger } from '@/lib/logger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIP as getSecurityIP } from '@/lib/security'
-import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,29 +96,31 @@ export async function POST(request: NextRequest) {
     const extension = fileExtension || 'jpg'
     const filePath = `${photoType}/${timestamp}-${randomStr}.${extension}`
 
-    // Upload via Supabase Storage (production)
+    // Upload via Supabase Storage REST API (production)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (supabaseUrl && supabaseServiceKey) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey)
+      const BUCKET = 'job-photos'
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET}/${filePath}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('job-photos')
-        .upload(filePath, arrayBuffer, {
-          contentType: file.type,
-          upsert: false,
-        })
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'Content-Type': file.type,
+          'x-upsert': 'false',
+        },
+        body: arrayBuffer,
+      })
 
-      if (uploadError) {
-        throw new Error(`Supabase upload failed: ${uploadError.message}`)
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        throw new Error(`Supabase upload failed: ${uploadResponse.status} ${errText}`)
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('job-photos')
-        .getPublicUrl(filePath)
-
+      // Public URL pattern for public buckets
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${filePath}`
       return NextResponse.json({ url: publicUrl })
     } else {
       // Fallback: Local File Storage (for development without Supabase env vars)
