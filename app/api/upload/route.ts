@@ -100,22 +100,34 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+    console.log('[upload] supabaseUrl set:', !!supabaseUrl, '| serviceKey set:', !!supabaseServiceKey)
+
     if (supabaseUrl && supabaseServiceKey) {
       const BUCKET = 'job-photos'
       const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET}/${filePath}`
+      console.log('[upload] uploading to:', uploadUrl)
 
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'Content-Type': file.type,
-          'x-upsert': 'false',
-        },
-        body: arrayBuffer,
-      })
+      let uploadResponse: Response
+      try {
+        uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': file.type,
+            'x-upsert': 'false',
+          },
+          body: arrayBuffer,
+        })
+      } catch (fetchErr: any) {
+        console.error('[upload] fetch threw error:', fetchErr?.message, fetchErr?.cause)
+        throw new Error(`Supabase fetch failed: ${fetchErr?.message}`)
+      }
+
+      console.log('[upload] response status:', uploadResponse.status)
 
       if (!uploadResponse.ok) {
         const errText = await uploadResponse.text()
+        console.error('[upload] upload failed:', uploadResponse.status, errText)
         throw new Error(`Supabase upload failed: ${uploadResponse.status} ${errText}`)
       }
 
