@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Read file header to validate file signature (magic bytes)
+    // Read file buffer for magic bytes validation and upload
     const arrayBuffer = await file.arrayBuffer()
     const uint8Array = new Uint8Array(arrayBuffer.slice(0, 12))
 
@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
     const isValidImage =
       // JPEG: FF D8 FF
       (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8 && uint8Array[2] === 0xFF) ||
-      // PNG: 89 50 4E 47 0D 0A 1A 0A
+      // PNG: 89 50 4E 47
       (uint8Array[0] === 0x89 && uint8Array[1] === 0x50 && uint8Array[2] === 0x4E && uint8Array[3] === 0x47) ||
-      // GIF: 47 49 46 38 (GIF8)
+      // GIF: 47 49 46 38
       (uint8Array[0] === 0x47 && uint8Array[1] === 0x49 && uint8Array[2] === 0x46 && uint8Array[3] === 0x38) ||
       // WebP: RIFF...WEBP
       (uint8Array[0] === 0x52 && uint8Array[1] === 0x49 && uint8Array[2] === 0x46 && uint8Array[3] === 0x46 &&
@@ -119,11 +119,12 @@ export async function POST(request: NextRequest) {
         throw new Error(`Supabase upload failed: ${uploadResponse.status} ${errText}`)
       }
 
-      // Public URL pattern for public buckets
+      // Public URL for public bucket
       const publicUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${filePath}`
       return NextResponse.json({ url: publicUrl })
+
     } else {
-      // Fallback: Local File Storage (for development without Supabase env vars)
+      // Fallback: Local File Storage (development)
       try {
         const { writeFile, mkdir } = await import('fs/promises')
         const { join } = await import('path')
