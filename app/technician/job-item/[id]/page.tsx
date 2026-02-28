@@ -8,6 +8,7 @@ import DeletePhotoButton from "./DeletePhotoButton";
 import ChecklistSection from "@/app/work-orders/[id]/ChecklistSection";
 import RequestRepairButton from "./RequestRepairButton";
 import SendApprovalButton from "./SendApprovalButton";
+import CleanRoomForm from "@/app/components/forms/CleanRoomForm";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -272,7 +273,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
 
 
 
-        {/* Checklist Section — เฉพาะงาน PM */}
+        {/* Checklist Section — General PM */}
         {jobItem.workOrder.jobType === 'PM' && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6">
             <ChecklistSection
@@ -280,6 +281,36 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               initialData={jobItem.checklist}
               isEditable={jobItem.status !== 'DONE'}
               jobType={jobItem.workOrder.jobType}
+            />
+          </div>
+        )}
+
+        {/* Clean Room Report Form Section (Only for PM as an alternative or additional form) */}
+        {jobItem.workOrder.jobType === 'PM' && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6 p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">ฟอร์มรายการตรวจเช็ค Clean Room</h2>
+              <Link
+                href={`/reports/clean-room/${id}`}
+                className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition"
+              >
+                📄 พิมพ์รายงาน A4
+              </Link>
+            </div>
+            <CleanRoomForm
+              jobItemId={id}
+              initialData={jobItem.checklist || undefined}
+              onSaveAction={async (id, data) => {
+                "use server";
+                // We will create this action in the next step
+                const { updateJobItemChecklist } = await import("@/app/actions");
+                try {
+                  await updateJobItemChecklist(id, data);
+                  return { success: true };
+                } catch (e: any) {
+                  return { success: false, error: e.message };
+                }
+              }}
             />
           </div>
         )}

@@ -121,10 +121,20 @@ enum AssetType {
   OTHER
 }
 
+enum MachineType {
+  SPLIT_TYPE  // แอร์แบบแยกส่วน
+  FCU         // เครื่องเป่าลมเย็น
+  AHU         // เครื่องส่งลมเย็นขนาดใหญ่
+  EXHAUST     // พัดลมดูดอากาศ
+  VRF         // เครื่องปรับอากาศแบบ VRF
+  OTHER       // อื่นๆ
+}
+
 model Asset {
-  id          String      @id @default(cuid())
-  qrCode      String      @unique
-  assetType   AssetType   @default(AIR_CONDITIONER)
+  id          String       @id @default(cuid())
+  qrCode      String       @unique
+  assetType   AssetType    @default(AIR_CONDITIONER)
+  machineType MachineType? // ประเภทความเย็น (AHU, FCU, etc.) - จะมีค่าเมื่อ assetType เป็น AIR_CONDITIONER
   brand       String?
   model       String?
   serialNo    String?

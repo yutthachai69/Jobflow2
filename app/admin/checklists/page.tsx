@@ -20,10 +20,6 @@ export default function AdminChecklistsPage() {
     const [loading, setLoading] = useState(true)
     const { confirm, ConfirmDialog } = useConfirm()
 
-    useEffect(() => {
-        fetchTemplates()
-    }, [])
-
     async function fetchTemplates() {
         setLoading(true)
         const result = await getChecklistTemplates()
@@ -32,6 +28,10 @@ export default function AdminChecklistsPage() {
         }
         setLoading(false)
     }
+
+    useEffect(() => {
+        fetchTemplates()
+    }, [])
 
     async function handleDelete(id: string) {
         const confirmed = await confirm({

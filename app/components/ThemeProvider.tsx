@@ -40,7 +40,7 @@ function ThemeProviderInner({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = getStoredTheme()
-    setThemeState(stored)
+    setTimeout(() => setThemeState(stored), 0)
     applyTheme(stored)
     setMounted(true)
   }, [])

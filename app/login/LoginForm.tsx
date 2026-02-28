@@ -22,13 +22,13 @@ export default function LoginForm() {
 
   useEffect(() => {
     // Reset submitting state when URL changes (e.g. redirect back with error)
-    setIsSubmitting(false)
+    setTimeout(() => setIsSubmitting(false), 0)
   }, [searchParams])
 
   useEffect(() => {
     const callback = searchParams.get('callbackUrl')
     if (callback) {
-      setCallbackUrl(callback)
+      setTimeout(() => setCallbackUrl(callback), 0)
     }
   }, [searchParams])
 

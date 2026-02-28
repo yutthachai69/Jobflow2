@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
 interface BreadcrumbItem {
   label: string
@@ -65,6 +66,14 @@ const segmentLabels: Record<string, string> = {
 
 export default function AutoBreadcrumbs() {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // ถ้ายังไม่ mount (อยู่ฝั่ง server) หรือเป็นหน้าไม่มี breadcrumb, คืนค่า placeholder (หรือ null) เปล่าๆ ออกไปก่อน
+  if (!mounted) return null
 
   // ไม่แสดง breadcrumb บนหน้า welcome/login
   if (pathname === '/welcome' || pathname === '/login') {

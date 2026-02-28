@@ -16,23 +16,22 @@ export default function NotificationBell({ initialCount, href = '/messages' }: N
   // Update count when navigating to notification page
   useEffect(() => {
     if (pathname === href) {
-      setCount(0)
+      setTimeout(() => setCount(0), 0)
     } else {
-      setCount(initialCount)
+      setTimeout(() => setCount(initialCount), 0)
     }
   }, [pathname, initialCount, href])
 
   const isActive = pathname === href
 
-  const baseClass = `relative inline-flex items-center justify-center p-2 rounded-lg transition-colors ${
-    isActive
+  const baseClass = `relative inline-flex items-center justify-center p-2 rounded-lg transition-colors ${isActive
       ? 'bg-[var(--app-btn-primary)] text-[var(--app-btn-primary-text)]'
       : 'text-app-body hover:text-app-heading hover:bg-app-card'
-  }`
+    }`
 
   const title = href === '/messages' ? 'กล่องข้อความ' : 'การแจ้งเตือน'
-  const ariaLabel = count > 0 
-    ? `${title} (${count} ${href === '/messages' ? 'ข้อความใหม่' : 'การแจ้งเตือนใหม่'})` 
+  const ariaLabel = count > 0
+    ? `${title} (${count} ${href === '/messages' ? 'ข้อความใหม่' : 'การแจ้งเตือนใหม่'})`
     : title
 
   return (

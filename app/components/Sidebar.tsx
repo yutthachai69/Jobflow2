@@ -57,6 +57,8 @@ const adminItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
   { type: 'link', href: '/admin/checklists', label: 'ตรวจสอบ (PM)', icon: 'checklist' },
+  { type: 'link', href: '/reports/clean-room-demo/form', label: 'ตัวอย่างกรอก Clean Room', icon: 'survey' },
+  { type: 'link', href: '/reports/clean-room-demo', label: 'ตัวอย่างใบรายงาน Clean Room', icon: 'reports' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
@@ -98,6 +100,8 @@ const technicianItems: NavItem[] = [
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/technician', label: 'หน้างาน', icon: 'wrench' },
   { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
+  { type: 'link', href: '/reports/clean-room-demo/form', label: 'ตัวอย่างกรอก Clean Room', icon: 'survey' },
+  { type: 'link', href: '/reports/clean-room-demo', label: 'ตัวอย่างใบรายงาน Clean Room', icon: 'reports' },
   // [OLD LIFF] คอมเม้นไว้ - ถ้าอยากใช้ LIFF login กลับ ให้ uncomment
   // { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
 ]
@@ -149,10 +153,7 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
     }
   }
 
-  // ไม่แสดง Sidebar บนหน้า welcome/login
-  if (pathname === '/welcome' || pathname === '/login') {
-    return null
-  }
+
 
   // ฟิลเตอร์: ถ้ามี lineUserId แล้ว ซ่อนเมนู "เชื่อมต่อ LINE"
   const filterLineConnect = (items: NavItem[]) => {
@@ -165,6 +166,11 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
   useEffect(() => {
     if (pathname?.startsWith('/reports')) setReportsExpanded(true)
   }, [pathname])
+
+  // ไม่แสดง Sidebar บนหน้า welcome/login
+  if (pathname === '/welcome' || pathname === '/login') {
+    return null
+  }
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -206,10 +212,7 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full blur-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-500" />
               )}
 
-              {/* <Image
-                src="/flomac.png"
-                alt="Flomac" */}
-              <img
+              <Image
                 src="/lmt-logo.png"
                 alt="LMT air service"
                 width={220}

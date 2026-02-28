@@ -20,6 +20,7 @@ export async function createAsset(formData: FormData) {
     const model = sanitizeString(formData.get('model') as string)
     const btuStr = formData.get('btu') as string
     const installDateStr = formData.get('installDate') as string
+    const machineType = formData.get('machineType') as string || null
 
     // Validation
     if (!roomId) {
@@ -52,6 +53,7 @@ export async function createAsset(formData: FormData) {
         roomId,
         qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
         assetType: assetType as any,
+        machineType: assetType === 'AIR_CONDITIONER' ? (machineType as any) : null,
         brand: brand || null,
         model: model || null,
         serialNo: serialNo || null,
@@ -82,6 +84,7 @@ export async function updateAsset(formData: FormData) {
     const btuStr = formData.get('btu') as string
     const installDateStr = formData.get('installDate') as string
     const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
+    const machineType = formData.get('machineType') as string || null
 
     // Validation
     if (!assetId) {
@@ -131,6 +134,7 @@ export async function updateAsset(formData: FormData) {
         roomId,
         qrCode: serialNo,
         assetType: assetType as any,
+        machineType: assetType === 'AIR_CONDITIONER' ? (machineType as any) : null,
         brand: brand || null,
         model: model || null,
         serialNo: serialNo || null,

@@ -461,43 +461,51 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
         })
         const allDone = allJobItems.every((ji) => ji.status === 'DONE')
 
-        // ถ้าทุกงานเสร็จแล้ว สร้าง notification สำหรับ CLIENT
-        if (allDone && workOrder.site.users.length > 0) {
-          for (const client of workOrder.site.users) {
-            await prisma.notification.create({
-              data: {
-                type: 'WORK_ORDER_COMPLETED',
-                title: 'งานเสร็จสมบูรณ์',
-                message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} เสร็จสมบูรณ์แล้ว กรุณาให้คะแนนความพึงพอใจ`,
-                userId: client.id,
-                relatedId: workOrder.id,
-              },
-            })
-          }
+        if (allDone) {
+          // Auto-close the work order immediately when all jobs are complete
+          await prisma.workOrder.update({
+            where: { id: workOrder.id },
+            data: { status: 'COMPLETED' },
+          })
 
-          // Send LINE Notification to Clients
-          try {
-            const { sendLineMessage, createNotificationFlexMessage } = await import('@/app/lib/line-messaging')
+          // ถ้าทุกงานเสร็จแล้ว สร้าง notification สำหรับ CLIENT
+          if (workOrder.site.users.length > 0) {
+            for (const client of workOrder.site.users) {
+              await prisma.notification.create({
+                data: {
+                  type: 'WORK_ORDER_COMPLETED',
+                  title: 'งานเสร็จสมบูรณ์',
+                  message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} เสร็จสมบูรณ์แล้ว กรุณาให้คะแนนความพึงพอใจ`,
+                  userId: client.id,
+                  relatedId: workOrder.id,
+                },
+              })
+            }
 
-            const message = createNotificationFlexMessage({
-              title: '✅ งานซ่อมเสร็จสมบูรณ์',
-              message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} ดำเนินการเรียบร้อยแล้ว`,
-              details: [
-                { label: 'สถานที่', value: workOrder.site.name },
-                { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
-              ],
-              actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
-              imageUrl: workOrder.jobItems[0]?.photos?.find(p => p.type === 'AFTER')?.url,
-              color: '#06C755' // Green
-            })
+            // Send LINE Notification to Clients
+            try {
+              const { sendLineMessage, createNotificationFlexMessage } = await import('@/app/lib/line-messaging')
 
-            console.log(`Sending completion LINE to ${workOrder.site.users.length} clients`)
-            await Promise.all(workOrder.site.users
-              .filter(u => u.lineUserId)
-              .map(u => sendLineMessage(u.lineUserId!, message))
-            )
-          } catch (error) {
-            console.error('Failed to send LINE completion notification:', error)
+              const message = createNotificationFlexMessage({
+                title: '✅ งานซ่อมเสร็จสมบูรณ์',
+                message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} ดำเนินการเรียบร้อยแล้ว`,
+                details: [
+                  { label: 'สถานที่', value: workOrder.site.name },
+                  { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
+                ],
+                actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
+                imageUrl: workOrder.jobItems[0]?.photos?.find(p => p.type === 'AFTER')?.url,
+                color: '#06C755' // Green
+              })
+
+              console.log(`Sending completion LINE to ${workOrder.site.users.length} clients`)
+              await Promise.all(workOrder.site.users
+                .filter(u => u.lineUserId)
+                .map(u => sendLineMessage(u.lineUserId!, message))
+              )
+            } catch (error) {
+              console.error('Failed to send LINE completion notification:', error)
+            }
           }
         }
       }

@@ -26,7 +26,7 @@ export default function MapPicker({ latitude, longitude, onChange, height = '300
     useEffect(() => {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
         if (!apiKey) {
-            setError('Google Maps API Key ไม่ได้ตั้งค่า')
+            setTimeout(() => setError('Google Maps API Key ไม่ได้ตั้งค่า'), 0)
             return
         }
 
@@ -118,7 +118,11 @@ export default function MapPicker({ latitude, longitude, onChange, height = '300
 
         // Place initial marker if lat/lng exists
         if (latitude && longitude) {
-            placeMarker({ lat: latitude, lng: longitude }, map)
+            setTimeout(() => {
+                if (mapInstanceRef.current) {
+                    placeMarker({ lat: latitude, lng: longitude }, mapInstanceRef.current)
+                }
+            }, 0)
         }
 
         // Click to place marker

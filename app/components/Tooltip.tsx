@@ -25,7 +25,7 @@ export default function Tooltip({
     if (isVisible && triggerRef.current && tooltipRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect()
       const tooltipRect = tooltipRef.current.getBoundingClientRect()
-      
+
       let top = 0
       let left = 0
 
@@ -59,7 +59,7 @@ export default function Tooltip({
         left = window.innerWidth - tooltipRect.width - padding
       }
 
-      setTooltipPosition({ top, left })
+      setTimeout(() => setTooltipPosition({ top, left }), 0)
     }
   }, [isVisible, position])
 
@@ -106,12 +106,11 @@ export default function Tooltip({
         >
           {content}
           <div
-            className={`absolute w-2 h-2 bg-gray-900 transform rotate-45 ${
-              position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' :
-              position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' :
-              position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' :
-              'left-[-4px] top-1/2 -translate-y-1/2'
-            }`}
+            className={`absolute w-2 h-2 bg-gray-900 transform rotate-45 ${position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' :
+                position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' :
+                  position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' :
+                    'left-[-4px] top-1/2 -translate-y-1/2'
+              }`}
           />
         </div>
       )}

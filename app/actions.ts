@@ -464,6 +464,47 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
   revalidatePath(`/work-orders/${jobItem.workOrderId}`)
 }
 
+export async function updateJobItemChecklist(jobItemId: string, checklist: string) {
+  const user = await getCurrentUser()
+  if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {
+    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', {
+      userId: user?.id,
+      username: user?.username,
+      action: `UPDATE_JOB_ITEM_CHECKLIST:${jobItemId}`
+    })
+    throw new Error('Unauthorized')
+  }
+
+  const jobItem = await prisma.jobItem.findUnique({
+    where: { id: jobItemId },
+  })
+
+  if (!jobItem) {
+    throw new Error('Job item not found')
+  }
+
+  if (jobItem.status === 'DONE' && user.role !== 'ADMIN') {
+    throw new Error('ไม่สามารถแก้ไขข้อมูลได้ เนื่องจากงานเสร็จสิ้นแล้ว')
+  }
+
+  if (user.role === 'TECHNICIAN' && jobItem.technicianId !== null && jobItem.technicianId !== user.id) {
+    throw new Error('Unauthorized')
+  }
+
+  await prisma.jobItem.update({
+    where: { id: jobItemId },
+    data: { checklist },
+  })
+
+  logSecurityEvent('JOB_ITEM_CHECKLIST_UPDATED', {
+    updatedBy: user.id,
+    jobItemId,
+    timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath(`/technician/job-item/${jobItemId}`)
+}
+
 export async function deleteJobPhoto(photoId: string) {
   // Authorization: Only TECHNICIAN or ADMIN can delete photos
   const user = await getCurrentUser()

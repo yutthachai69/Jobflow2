@@ -168,15 +168,18 @@ export default async function WorkOrderDetailPage({ params }: Props) {
 
         {/* Header Card - Status Card style (border-left) */}
         <div className="bg-app-card rounded-2xl shadow-xl p-6 mb-6 border border-app border-l-4" style={{ borderLeftColor: woStatusConfig.hex }}>
-          {user.role === 'ADMIN' && (
-            <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-app">
-              <ExportButton workOrder={workOrder} />
-              <Link href={`/work-orders/${id}/edit`} className="inline-flex items-center px-4 py-2 btn-app-primary rounded-lg hover:shadow-md transition-all">
-                แก้ไข
-              </Link>
-              <DeleteWorkOrderButton workOrderId={id} />
-            </div>
-          )}
+          <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-app">
+            {/* Export buttons are visible to everyone (Client/Admin/Tech) */}
+            <ExportButton workOrder={workOrder} />
+            {user.role === 'ADMIN' && (
+              <>
+                <Link href={`/work-orders/${id}/edit`} className="inline-flex items-center px-4 py-2 btn-app-primary rounded-lg hover:shadow-md transition-all">
+                  แก้ไข
+                </Link>
+                <DeleteWorkOrderButton workOrderId={id} />
+              </>
+            )}
+          </div>
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6 mb-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3 flex-wrap">
@@ -324,6 +327,16 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                           <span>🕐</span>
                           <span>{new Date(jobItem.startTime).toLocaleString("th-TH")}</span>
                         </div>
+                      )}
+
+                      {/* ปุ่มดูใบรายงานล้างแอร์ */}
+                      {(jobItem.status === 'DONE' && workOrder.jobType === 'PM') && (
+                        <Link
+                          href={`/reports/clean-room/${jobItem.id}`}
+                          className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors border border-blue-200"
+                        >
+                          📄 ดูใบรายงาน (Report)
+                        </Link>
                       )}
                     </div>
                   </div>

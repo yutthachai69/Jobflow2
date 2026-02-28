@@ -9,6 +9,7 @@ interface Asset {
   id: string
   qrCode: string
   assetType: string
+  machineType?: string | null
   brand: string | null
   model: string | null
   serialNo: string | null
@@ -41,6 +42,7 @@ interface Props {
 export default function AssetsClient({ assets, userRole }: Props) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [typeFilter, setTypeFilter] = useState('ALL')
   const [baseUrl, setBaseUrl] = useState<string>('')
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
     return assets.filter((asset) => {
       // Search filter
       const searchLower = search.toLowerCase()
-      const matchesSearch = 
+      const matchesSearch =
         !search ||
         asset.qrCode.toLowerCase().includes(searchLower) ||
         asset.brand?.toLowerCase().includes(searchLower) ||
@@ -70,9 +72,12 @@ export default function AssetsClient({ assets, userRole }: Props) {
       // Status filter
       const matchesStatus = statusFilter === 'ALL' || asset.status === statusFilter
 
-      return matchesSearch && matchesStatus
+      // Type filter
+      const matchesType = typeFilter === 'ALL' || (asset as any).machineType === typeFilter
+
+      return matchesSearch && matchesStatus && matchesType
     })
-  }, [assets, search, statusFilter])
+  }, [assets, search, statusFilter, typeFilter])
 
   const getStatusBadge = (status: string) => {
     const configs = {
@@ -93,8 +98,10 @@ export default function AssetsClient({ assets, userRole }: Props) {
       <AssetsSearchFilter
         searchValue={search}
         statusFilter={statusFilter}
+        typeFilter={typeFilter}
         onSearchChange={setSearch}
         onStatusFilterChange={setStatusFilter}
+        onTypeFilterChange={setTypeFilter}
       />
 
       {/* Mobile Card View */}
@@ -102,86 +109,86 @@ export default function AssetsClient({ assets, userRole }: Props) {
         {filteredAssets.length === 0 ? (
           <EmptyState
             icon="🔍"
-                    title={search || statusFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
-                    description={search || statusFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
-                    actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
-                    actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' ? "/assets/new" : undefined}
+            title={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
+            description={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
+            actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
+            actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "/assets/new" : undefined}
           />
         ) : (
           filteredAssets.map((asset) => {
-            const qrCodeUrl = baseUrl 
+            const qrCodeUrl = baseUrl
               ? `${baseUrl}/scan/${encodeURIComponent(asset.qrCode)}`
               : `/scan/${encodeURIComponent(asset.qrCode)}`
             const qrCodeImageUrl = qrCodeUrl ? `/api/qrcode?text=${encodeURIComponent(qrCodeUrl)}` : ''
-            
+
             return (
-            <div key={asset.id} className="bg-app-card rounded-lg border border-app p-4 shadow-sm">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <div className="font-mono font-medium text-[var(--app-btn-primary)] text-sm mb-1">
-                    {asset.qrCode}
+              <div key={asset.id} className="bg-app-card rounded-lg border border-app p-4 shadow-sm">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <div className="font-mono font-medium text-[var(--app-btn-primary)] text-sm mb-1">
+                      {asset.qrCode}
+                    </div>
+                    <div className="font-bold text-app-heading text-base mb-1">
+                      {asset.brand || '-'}
+                    </div>
+                    <div className="text-xs text-app-muted mb-1">
+                      {asset.model || '-'} {asset.btu && `(${asset.btu.toLocaleString()} BTU)`}
+                    </div>
+                    {asset.serialNo && (
+                      <div className="text-xs text-app-muted font-mono">
+                        SN: {asset.serialNo}
+                      </div>
+                    )}
                   </div>
-                  <div className="font-bold text-app-heading text-base mb-1">
-                    {asset.brand || '-'}
+                  <div className="flex flex-col items-end gap-2">
+                    {getStatusBadge(asset.status)}
+                    {asset.assetType === 'AIR_CONDITIONER' && qrCodeImageUrl ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <Link
+                          href={qrCodeUrl}
+                          className="hover:opacity-80 transition-opacity"
+                          title={`QR Code: ${asset.qrCode}`}
+                        >
+                          <img
+                            src={qrCodeImageUrl}
+                            alt={`QR Code for ${asset.qrCode}`}
+                            className="w-12 h-12 border border-app rounded p-0.5 bg-white"
+                          />
+                        </Link>
+                        <span className="text-xs font-mono text-app-muted">{asset.qrCode}</span>
+                      </div>
+                    ) : asset.assetType === 'AIR_CONDITIONER' ? (
+                      <span className="text-app-muted text-xs">กำลังโหลด...</span>
+                    ) : null}
                   </div>
-                  <div className="text-xs text-app-muted mb-1">
-                    {asset.model || '-'} {asset.btu && `(${asset.btu.toLocaleString()} BTU)`}
+                </div>
+
+                <div className="mb-3 pb-3 border-b border-app">
+                  <div className="text-xs text-app-muted mb-1">สถานที่ติดตั้ง</div>
+                  <div className="text-sm text-app-heading font-medium">
+                    {asset.room.floor.building.site.name}
                   </div>
-                  {asset.serialNo && (
-                    <div className="text-xs text-app-muted font-mono">
-                      SN: {asset.serialNo}
+                  <div className="text-xs text-app-muted mt-1">
+                    {asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}
+                  </div>
+                  {asset.installDate && (
+                    <div className="text-xs text-app-muted mt-1">
+                      ติดตั้ง: {new Date(asset.installDate).toLocaleDateString('th-TH', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      })}
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  {getStatusBadge(asset.status)}
-                  {asset.assetType === 'AIR_CONDITIONER' && qrCodeImageUrl ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <Link 
-                        href={qrCodeUrl}
-                        className="hover:opacity-80 transition-opacity"
-                        title={`QR Code: ${asset.qrCode}`}
-                      >
-                        <img
-                          src={qrCodeImageUrl}
-                          alt={`QR Code for ${asset.qrCode}`}
-                          className="w-12 h-12 border border-app rounded p-0.5 bg-white"
-                        />
-                      </Link>
-                      <span className="text-xs font-mono text-app-muted">{asset.qrCode}</span>
-                    </div>
-                  ) : asset.assetType === 'AIR_CONDITIONER' ? (
-                    <span className="text-app-muted text-xs">กำลังโหลด...</span>
-                  ) : null}
-                </div>
-              </div>
-              
-              <div className="mb-3 pb-3 border-b border-app">
-                <div className="text-xs text-app-muted mb-1">สถานที่ติดตั้ง</div>
-                <div className="text-sm text-app-heading font-medium">
-                  {asset.room.floor.building.site.name}
-                </div>
-                <div className="text-xs text-app-muted mt-1">
-                  {asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}
-                </div>
-                {asset.installDate && (
-                  <div className="text-xs text-app-muted mt-1">
-                    ติดตั้ง: {new Date(asset.installDate).toLocaleDateString('th-TH', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit'
-                    })}
-                  </div>
-                )}
-              </div>
 
-              <Link
-                href={`/assets/${asset.id}`}
-                className="block w-full text-center btn-app-primary px-4 py-2 rounded-md hover:shadow-md font-medium text-sm transition-all"
-              >
-                {userRole === 'CLIENT' ? 'ดูสถานะ' : 'ดูรายละเอียด'}
-              </Link>
-            </div>
+                <Link
+                  href={`/assets/${asset.id}`}
+                  className="block w-full text-center btn-app-primary px-4 py-2 rounded-md hover:shadow-md font-medium text-sm transition-all"
+                >
+                  {userRole === 'CLIENT' ? 'ดูสถานะ' : 'ดูรายละเอียด'}
+                </Link>
+              </div>
             )
           })
         )}
@@ -214,10 +221,10 @@ export default function AssetsClient({ assets, userRole }: Props) {
                 <td colSpan={hasAirConditioner ? 12 : 11} className="px-6 py-12">
                   <EmptyState
                     icon="🔍"
-                    title={search || statusFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
-                    description={search || statusFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
-                    actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
-                    actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' ? "/assets/new" : undefined}
+                    title={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
+                    description={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
+                    actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
+                    actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "/assets/new" : undefined}
                   />
                 </td>
               </tr>
@@ -232,27 +239,27 @@ export default function AssetsClient({ assets, userRole }: Props) {
                   'OTHER': 'อื่นๆ',
                 }
                 const assetTypeName = assetTypeLabels[asset.assetType] || 'เครื่องปรับอากาศ'
-                
+
                 // กำหนดประเภททรัพย์สินจาก assetType และ brand/model
-                const assetTypeDisplay = asset.brand && asset.model 
+                const assetTypeDisplay = asset.brand && asset.model
                   ? `${assetTypeName} - ${asset.brand} ${asset.model}`.trim()
-                  : asset.brand 
+                  : asset.brand
                     ? `${assetTypeName} - ${asset.brand}`.trim()
                     : asset.model
                       ? `${assetTypeName} - ${asset.model}`.trim()
                       : assetTypeName
-                
+
                 // Format วันที่ติดตั้ง
                 const installDateFormatted = asset.installDate
                   ? new Date(asset.installDate).toLocaleDateString('th-TH', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit'
-                    })
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  })
                   : '-'
 
                 // QR Code URL ที่จะพาไปหน้า detail
-                const qrCodeUrl = baseUrl 
+                const qrCodeUrl = baseUrl
                   ? `${baseUrl}/scan/${encodeURIComponent(asset.qrCode)}`
                   : `/scan/${encodeURIComponent(asset.qrCode)}`
                 const qrCodeImageUrl = qrCodeUrl ? `/api/qrcode?text=${encodeURIComponent(qrCodeUrl)}` : ''
@@ -267,7 +274,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
                         {asset.assetType === 'AIR_CONDITIONER' ? (
                           qrCodeImageUrl ? (
                             <div className="flex flex-col items-center gap-1">
-                              <Link 
+                              <Link
                                 href={qrCodeUrl}
                                 className="inline-block hover:opacity-80 transition-opacity"
                                 title={`คลิกเพื่อดูรายละเอียด: ${asset.qrCode}`}

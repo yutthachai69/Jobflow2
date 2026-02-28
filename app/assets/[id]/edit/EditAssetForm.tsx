@@ -36,6 +36,7 @@ interface Asset {
   id: string
   qrCode: string
   assetType: string
+  machineType?: string | null
   brand: string | null
   model: string | null
   serialNo: string | null
@@ -78,6 +79,7 @@ export default function EditAssetForm({ asset, sites }: Props) {
   )
   const [selectedRoomId, setSelectedRoomId] = useState<string>(asset.room.id)
   const [assetType, setAssetType] = useState<string>(asset.assetType || 'AIR_CONDITIONER')
+  const [machineType, setMachineType] = useState<string>(asset.machineType || 'SPLIT_TYPE')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -115,6 +117,7 @@ export default function EditAssetForm({ asset, sites }: Props) {
     const formData = new FormData(e.currentTarget)
     const serialNo = (formData.get('serialNo') as string)?.trim() || ''
     const assetTypeValue = (formData.get('assetType') as string) || assetType
+    const machineTypeValue = (formData.get('machineType') as string) || machineType
 
     // Validation
     // QR Code/Serial Number เป็น required เฉพาะเครื่องปรับอากาศ
@@ -146,6 +149,7 @@ export default function EditAssetForm({ asset, sites }: Props) {
       submitFormData.append('roomId', selectedRoomId)
       submitFormData.append('serialNo', serialNo)
       submitFormData.append('assetType', (formData.get('assetType') as string) || asset.assetType || 'AIR_CONDITIONER')
+      submitFormData.append('machineType', machineTypeValue)
       submitFormData.append('brand', (formData.get('brand') as string) || '')
       submitFormData.append('model', (formData.get('model') as string) || '')
       submitFormData.append('btu', (formData.get('btu') as string) || '')
@@ -183,6 +187,31 @@ export default function EditAssetForm({ asset, sites }: Props) {
           </select>
         </div>
 
+        {/* Machine Type (เฉพาะแอร์) */}
+        {assetType === 'AIR_CONDITIONER' && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              ชนิดแอร์ (Machine Type) <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="machineType"
+              value={machineType}
+              onChange={(e) => setMachineType(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
+            >
+              <option value="SPLIT_TYPE">แอร์แบบแยกส่วน (Split Type)</option>
+              <option value="FCU">เครื่องเป่าลมเย็น (FCU)</option>
+              <option value="AHU">เครื่องส่งลมเย็นขนาดใหญ่ (AHU)</option>
+              <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
+              <option value="VRF">เครื่องปรับอากาศแบบ VRF</option>
+              <option value="OTHER">อื่นๆ</option>
+            </select>
+            <p className="mt-2 text-xs text-gray-500">
+              เลือกชนิดของแอร์เพื่อใช้จัดกลุ่มในรายงาน Dashboard
+            </p>
+          </div>
+        )}
+
         {/* Serial Number / QR Code */}
         {assetType === 'AIR_CONDITIONER' ? (
           <div data-error={errors.serialNo ? 'true' : undefined}>
@@ -193,9 +222,8 @@ export default function EditAssetForm({ asset, sites }: Props) {
               type="text"
               name="serialNo"
               defaultValue={asset.qrCode}
-              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${
-                errors.serialNo ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-              }`}
+              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400 ${errors.serialNo ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+                }`}
               placeholder="เช่น ABC123456"
             />
             {errors.serialNo && (
@@ -290,9 +318,8 @@ export default function EditAssetForm({ asset, sites }: Props) {
                 value={selectedRoomId}
                 onChange={(e) => setSelectedRoomId(e.target.value)}
                 disabled={!selectedFloorId}
-                className={`w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  errors.roomId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-                }`}
+                className={`w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.roomId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
+                  }`}
               >
                 <option value="">เลือกห้อง</option>
                 {availableRooms.map((room) => (

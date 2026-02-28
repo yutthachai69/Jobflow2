@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getChecklistTemplates } from '@/app/actions/checklist'
 import { updateJobItemChecklist } from '@/app/actions/work-orders'
@@ -24,7 +24,7 @@ interface ChecklistSectionProps {
     jobType: string
 }
 
-export default function ChecklistSection({ jobItemId, initialData, isEditable, jobType }: ChecklistSectionProps) {
+export default function ChecklistSection({ jobItemId, initialData, isEditable }: ChecklistSectionProps) {
     const router = useRouter()
     const { confirm, ConfirmDialog } = useConfirm()
     const [items, setItems] = useState<ChecklistItem[]>([])
@@ -42,12 +42,17 @@ export default function ChecklistSection({ jobItemId, initialData, isEditable, j
         if (initialData) {
             try {
                 const parsed = JSON.parse(initialData)
-                // Migrate old format (isChecked) → new format (result)
-                const migrated = parsed.map((item: any) => ({
-                    ...item,
-                    result: item.result ?? (item.isChecked ? 'PASS' : null),
-                }))
-                setItems(migrated)
+                if (Array.isArray(parsed)) {
+                    // Migrate old format (isChecked) → new format (result)
+                    const migrated = parsed.map((item: any) => ({
+                        ...item,
+                        result: item.result ?? (item.isChecked ? 'PASS' : null),
+                    }))
+                    setItems(migrated)
+                } else {
+                    // Handle case where initialData is a custom form JSON object (e.g., CleanRoomForm)
+                    setItems([])
+                }
             } catch (e) {
                 console.error('Failed to parse checklist data', e)
                 setItems([])

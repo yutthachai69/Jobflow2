@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/index'
 import AdminNavLinks from './navigation/AdminNavLinks'
@@ -38,7 +39,10 @@ export default function Navigation({ initialUser = null }: NavigationProps) {
   }, [role])
 
   useEffect(() => {
-    setIsMobileMenuOpen(false)
+    setIsMobileMenuOpen((prev) => {
+      if (prev) return false
+      return prev
+    })
   }, [pathname])
 
   if (pathname === '/welcome') {
@@ -57,7 +61,7 @@ export default function Navigation({ initialUser = null }: NavigationProps) {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center gap-2" aria-label="กลับหน้าแรก">
-                <img
+                <Image
                   src="/L.M.T.png"
                   alt="LMT air service"
                   width={120}

@@ -31,7 +31,7 @@ export default function GoogleMap({ markers, height = '400px', onMarkerClick }: 
     useEffect(() => {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
         if (!apiKey) {
-            setError('Google Maps API Key ไม่ได้ตั้งค่า')
+            setTimeout(() => setError('Google Maps API Key ไม่ได้ตั้งค่า'), 0)
             return
         }
 

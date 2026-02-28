@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import UserMenu from './UserMenu'
 import NotificationBell from './navigation/NotificationBell'
@@ -22,10 +23,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
 
-  // ไม่แสดง Header บนหน้า welcome/login
-  if (pathname === '/welcome' || pathname === '/login') {
-    return null
-  }
+
 
   useEffect(() => {
     if (role === 'ADMIN') {
@@ -61,6 +59,11 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
     }
   }, [role])
 
+  // ไม่แสดง Header บนหน้า welcome/login
+  if (pathname === '/welcome' || pathname === '/login') {
+    return null
+  }
+
   return (
     <header className="sticky top-0 z-40 bg-app-section border-b border-app h-16 flex items-center justify-between gap-4 px-4 lg:pl-4" style={{ overflow: 'visible' }}>
       {/* Left: Mobile menu + Logo (mobile) + Location (CLIENT) */}
@@ -78,7 +81,7 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
         )}
 
         <Link href="/" className="lg:hidden flex items-center gap-2 flex-shrink-0 group">
-          <img
+          <Image
             src="/lmt-logo.png"
             alt="LMT air service"
             width={120}

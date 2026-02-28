@@ -62,8 +62,10 @@ function getSpecialOccasion(date: Date): SpecialOccasion | null {
 
 // ===== Floating Emoji Component =====
 function FloatingEmojis({ emojis }: { emojis: string[] }) {
-  const particles = useMemo(() => {
-    return Array.from({ length: 8 }, (_, i) => ({
+  const [particles, setParticles] = useState<any[]>([])
+
+  useEffect(() => {
+    setParticles(Array.from({ length: 8 }, (_, i) => ({
       id: i,
       emoji: emojis[i % emojis.length],
       left: 5 + Math.random() * 90,
@@ -74,7 +76,7 @@ function FloatingEmojis({ emojis }: { emojis: string[] }) {
       endY: -(20 + Math.random() * 50),
       endX: (Math.random() - 0.5) * 30,
       endRotate: (Math.random() - 0.5) * 20,
-    }))
+    })))
   }, [emojis])
 
   return (
