@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Head from "next/head";
 import NextImage from "next/image";
 
 interface CleanRoomFormData {

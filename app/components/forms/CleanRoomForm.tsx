@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import SignaturePad from "../SignaturePad";
+import dynamic from "next/dynamic";
+
+const SignaturePad = dynamic(() => import("../SignaturePad"), { ssr: false });
 
 interface CleanRoomFormData {
     // Description 1

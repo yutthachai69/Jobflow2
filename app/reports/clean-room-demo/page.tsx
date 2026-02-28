@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import CleanRoomReportDemoClient from "./CleanRoomReportDemoClient";
 import { notFound } from "next/navigation";
-
-const prisma = new PrismaClient();
 
 export default async function CleanRoomDemoPage() {
     // Find the most recent DONE PM JobItem to use as a base structure 
