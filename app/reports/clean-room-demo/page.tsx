@@ -51,6 +51,8 @@ export default async function CleanRoomDemoPage() {
     }
 
     // We pass it to a client component to mix in localStorage data on the client side
-    return <CleanRoomReportDemoClient jobItem={jobItem} />;
+    // Convert to strict plain object to avoid Next.js RSC serialization issues with Date/Prisma internal properties
+    const plainJobItem = JSON.parse(JSON.stringify(jobItem));
+    return <CleanRoomReportDemoClient jobItem={plainJobItem} />;
 }
 
