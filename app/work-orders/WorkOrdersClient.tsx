@@ -8,6 +8,16 @@ import EmptyState from '@/app/components/EmptyState'
 import { getWOStatus, getJobStatus } from '@/lib/status-colors'
 import { getWorkOrderDisplayNumber } from '@/lib/work-order-number'
 
+const JOB_TYPE_CONFIG: Record<string, { style: React.CSSProperties; emoji: string }> = {
+  PM: { style: { background: 'linear-gradient(135deg,#1d4ed8,#1e40af)', color: '#fff', boxShadow: '0 2px 8px rgba(37,99,235,0.35)', padding: '2px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700 }, emoji: '🔧' },
+  CM: { style: { background: 'linear-gradient(135deg,#dc2626,#991b1b)', color: '#fff', boxShadow: '0 2px 8px rgba(220,38,38,0.35)', padding: '2px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700 }, emoji: '⚡' },
+  INSTALL: { style: { background: 'linear-gradient(135deg,#059669,#047857)', color: '#fff', boxShadow: '0 2px 8px rgba(5,150,105,0.35)', padding: '2px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700 }, emoji: '🆕' },
+}
+const getJobTypeBadge = (jobType: string) => {
+  const cfg = JOB_TYPE_CONFIG[jobType] || { style: { background: '#475569', color: '#fff', padding: '2px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700 }, emoji: '📋' }
+  return <span style={cfg.style}>{cfg.emoji} {jobType}</span>
+}
+
 interface Site {
   id: string
   name: string
@@ -288,11 +298,11 @@ export default function WorkOrdersClient({
             .filter((wo) => {
               const searchLower = search.toLowerCase()
               const workOrderNumber = getWorkOrderDisplayNumber(wo)
-              const matchesSearch = !search || 
+              const matchesSearch = !search ||
                 workOrderNumber.toLowerCase().includes(searchLower) ||
-                wo.id.toLowerCase().includes(searchLower) || 
-                wo.jobType.toLowerCase().includes(searchLower) || 
-                wo.site.name.toLowerCase().includes(searchLower) || 
+                wo.id.toLowerCase().includes(searchLower) ||
+                wo.jobType.toLowerCase().includes(searchLower) ||
+                wo.site.name.toLowerCase().includes(searchLower) ||
                 wo.site.client.name.toLowerCase().includes(searchLower)
               const matchesStatus = statusFilter === 'ALL' || wo.status === statusFilter
               return matchesSearch && matchesStatus
@@ -306,7 +316,7 @@ export default function WorkOrdersClient({
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="font-mono text-xs text-app-muted mb-1">เลขที่ {workOrderNumber}</div>
-                      <div className="font-bold text-app-heading text-base mb-2">{wo.jobType}</div>
+                      <div className="font-bold text-app-heading text-base mb-2">{getJobTypeBadge(wo.jobType)}</div>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${st.tailwind}`}>{st.label}</span>
                   </div>
@@ -357,7 +367,7 @@ export default function WorkOrdersClient({
                 .filter((wo) => {
                   // Search filter
                   const searchLower = search.toLowerCase()
-                  const matchesSearch = 
+                  const matchesSearch =
                     !search ||
                     wo.id.toLowerCase().includes(searchLower) ||
                     wo.jobType.toLowerCase().includes(searchLower) ||
@@ -376,7 +386,7 @@ export default function WorkOrdersClient({
                   return (
                     <tr key={wo.id} className="hover:bg-app-section/50 transition-colors">
                       <td className="px-6 py-4 font-mono text-xs text-app-muted">{workOrderNumber}</td>
-                      <td className="px-6 py-4"><span className="font-medium text-app-heading">{wo.jobType}</span></td>
+                      <td className="px-6 py-4">{getJobTypeBadge(wo.jobType)}</td>
                       <td className="px-6 py-4">
                         <div className="text-app-heading">{wo.site.name}</div>
                         <div className="text-xs text-app-muted">{wo.site.client.name}</div>
@@ -401,7 +411,7 @@ export default function WorkOrdersClient({
           </table>
           {workOrders.filter((wo) => {
             const searchLower = search.toLowerCase()
-            const matchesSearch = 
+            const matchesSearch =
               !search ||
               wo.id.toLowerCase().includes(searchLower) ||
               wo.jobType.toLowerCase().includes(searchLower) ||
@@ -410,24 +420,24 @@ export default function WorkOrdersClient({
             const matchesStatus = statusFilter === 'ALL' || wo.status === statusFilter
             return matchesSearch && matchesStatus
           }).length === 0 && (
-            <div className="py-8">
-              <EmptyState
-                icon="📋"
-                title={search || statusFilter !== 'ALL' || selectedSiteId
-                  ? "ไม่พบข้อมูลที่ตรงกับเงื่อนไข"
-                  : userRole === 'ADMIN' && selectedSiteId 
-                  ? "ไม่พบใบสั่งงานในสถานที่ที่เลือก"
-                  : "ยังไม่มีใบสั่งงาน"}
-                description={search || statusFilter !== 'ALL' || selectedSiteId
-                  ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง"
-                  : userRole === 'ADMIN' 
-                  ? "เริ่มต้นโดยการสร้างใบสั่งงานใหม่"
-                  : "ยังไม่มีใบสั่งงานในระบบ"}
-                actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && !selectedSiteId ? "+ สร้างใบสั่งงานใหม่" : undefined}
-                actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && !selectedSiteId ? "/work-orders/new" : undefined}
-              />
-            </div>
-          )}
+              <div className="py-8">
+                <EmptyState
+                  icon="📋"
+                  title={search || statusFilter !== 'ALL' || selectedSiteId
+                    ? "ไม่พบข้อมูลที่ตรงกับเงื่อนไข"
+                    : userRole === 'ADMIN' && selectedSiteId
+                      ? "ไม่พบใบสั่งงานในสถานที่ที่เลือก"
+                      : "ยังไม่มีใบสั่งงาน"}
+                  description={search || statusFilter !== 'ALL' || selectedSiteId
+                    ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง"
+                    : userRole === 'ADMIN'
+                      ? "เริ่มต้นโดยการสร้างใบสั่งงานใหม่"
+                      : "ยังไม่มีใบสั่งงานในระบบ"}
+                  actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && !selectedSiteId ? "+ สร้างใบสั่งงานใหม่" : undefined}
+                  actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && !selectedSiteId ? "/work-orders/new" : undefined}
+                />
+              </div>
+            )}
         </div>
 
         {/* Pagination */}

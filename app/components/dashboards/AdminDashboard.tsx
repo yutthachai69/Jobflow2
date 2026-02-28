@@ -66,58 +66,28 @@ export default async function AdminDashboard() {
 
         {/* สถิติการ์ด */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-app-card rounded-lg border border-app p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-app-muted mb-1">แอร์ทั้งหมด</p>
-                <p className="text-2xl font-bold text-app-heading">{totalAssets}</p>
+          {[
+            { label: 'แอร์ทั้งหมด', value: totalAssets, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets' },
+            { label: 'งานที่ดำเนินการ', value: activeWorkOrders, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders' },
+            { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders' },
+            { label: 'งานทั้งหมด', value: totalWorkOrders, emoji: '📊', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/work-orders' },
+          ].map(({ label, value, emoji, from, to, glow, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px ${glow}` }}
+            >
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-2xl">{emoji}</span>
+                </div>
+                <p className="text-white font-bold text-3xl leading-none mb-1">{value}</p>
+                <p className="text-white/70 text-xs font-medium">{label}</p>
               </div>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(91, 124, 153, 0.2)' }}>
-                <svg className="w-5 h-5" style={{ color: '#5B7C99' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-app-card rounded-lg border border-app p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-app-muted mb-1">งานที่ดำเนินการ</p>
-                <p className="text-2xl font-bold text-app-heading">{activeWorkOrders}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(194, 166, 106, 0.2)' }}>
-                <svg className="w-5 h-5" style={{ color: '#C2A66A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-app-card rounded-lg border border-app p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-app-muted mb-1">เสร็จสิ้นวันนี้</p>
-                <p className="text-2xl font-bold text-app-heading">{completedToday}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(94, 143, 117, 0.2)' }}>
-                <svg className="w-5 h-5" style={{ color: '#5E8F75' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-app-card rounded-lg border border-app p-6 shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-app-muted mb-1">งานทั้งหมด</p>
-                <p className="text-2xl font-bold text-app-heading">{totalWorkOrders}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(138, 138, 138, 0.2)' }}>
-                <svg className="w-5 h-5" style={{ color: '#8A8A8A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
+            </Link>
+          ))}
         </div>
 
         {/* ความคืบหน้างาน */}
@@ -190,37 +160,28 @@ export default async function AdminDashboard() {
 
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/work-orders/new" className="btn-app-primary rounded-lg shadow-lg p-4 hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center group">
-            <div className="flex flex-col items-center gap-2">
-              <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              <div>
-                <div className="font-semibold">สร้างใบสั่งงานใหม่</div>
-                <div className="text-sm opacity-90 mt-1">เริ่มต้นงานใหม่</div>
+          {[
+            { href: '/work-orders/new', label: 'สร้างใบสั่งงานใหม่', sub: 'เริ่มต้นงานใหม่', emoji: '➕', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)' },
+            { href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', sub: 'เพิ่ม แก้ไข ลบเครื่อง', emoji: '⚙️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)' },
+            { href: '/locations', label: 'จัดการสถานที่', sub: 'ตั้งค่าสถานที่ทำงาน', emoji: '📍', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)' },
+          ].map(({ href, label, sub, emoji, from, to, glow }) => (
+            <Link
+              key={href}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 20px ${glow}` }}
+            >
+              <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10 text-center">
+                <span className="text-3xl mb-2 block">{emoji}</span>
+                <div className="font-semibold text-white">{label}</div>
+                <div className="text-white/60 text-sm mt-1">{sub}</div>
               </div>
-            </div>
-          </Link>
-          <Link href="/assets" className="bg-app-card text-app-heading rounded-lg border border-app shadow-lg p-4 hover:border-app-muted/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center group">
-            <div className="flex flex-col items-center gap-2">
-              <svg className="w-6 h-6 text-app-muted group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              <div>
-                <div className="font-semibold">จัดการทรัพย์สินและอุปกรณ์</div>
-                <div className="text-sm text-app-muted mt-1">เพิ่ม แก้ไข ลบเครื่อง</div>
-              </div>
-            </div>
-          </Link>
-          <Link href="/locations" className="bg-app-card text-app-heading rounded-lg border border-app shadow-lg p-4 hover:border-app-muted/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center group">
-            <div className="flex flex-col items-center gap-2">
-              <svg className="w-6 h-6 text-app-muted group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              <div>
-                <div className="font-semibold">จัดการสถานที่</div>
-                <div className="text-sm text-app-muted mt-1">ตั้งค่าสถานที่ทำงาน</div>
-              </div>
-            </div>
-          </Link>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
   )
 }
-
 

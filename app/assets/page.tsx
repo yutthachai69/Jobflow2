@@ -1,26 +1,21 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from "@/lib/prisma"; // เรียกตัวเชื่อม Database ที่เราทำไว้
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AssetsClient from "./AssetsClient";
-import Pagination from "@/app/components/Pagination";
 import type { Prisma } from "@prisma/client";
 
-interface Props {
-  searchParams: Promise<{ page?: string }>;
-}
+interface Props { searchParams?: Promise<{ page?: string }> }
 
-export default async function AssetsPage({ searchParams }: Props) {
+
+export default async function AssetsPage(_props: Props) {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  const params = await searchParams;
-  const currentPage = parseInt(params.page || '1', 10);
-  const itemsPerPage = 20;
 
   // สำหรับ CLIENT: ดูเฉพาะแอร์ใน Site ของตัวเอง
   // สำหรับ ADMIN: ดูทั้งหมด
@@ -45,7 +40,7 @@ export default async function AssetsPage({ searchParams }: Props) {
       }
     }
   }>
-  
+
   let assets: AssetWithRoom[] = []
 
   if (user.role === 'CLIENT') {
@@ -54,7 +49,7 @@ export default async function AssetsPage({ searchParams }: Props) {
       where: { id: user.userId },
       select: { siteId: true },
     });
-    
+
     const siteId = dbUser?.siteId ?? null;
 
     if (!siteId) {
@@ -76,16 +71,17 @@ export default async function AssetsPage({ searchParams }: Props) {
               }
             }
           },
-        include: {
-          room: {
-            include: {
-              floor: {
-                include: {
-                  building: {
-                    include: {
-                      site: {
-                        include: {
-                          client: true,
+          include: {
+            room: {
+              include: {
+                floor: {
+                  include: {
+                    building: {
+                      include: {
+                        site: {
+                          include: {
+                            client: true,
+                          },
                         },
                       },
                     },
@@ -94,7 +90,6 @@ export default async function AssetsPage({ searchParams }: Props) {
               },
             },
           },
-        },
           orderBy: {
             qrCode: "asc",
           },
@@ -152,12 +147,9 @@ export default async function AssetsPage({ searchParams }: Props) {
     }
   }
 
-  // Pagination
-  const totalItems = assets.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedAssets = assets.slice(startIndex, endIndex);
+
+  // No server-side pagination — AssetsClient handles filtering + pagination client-side
+
 
   // สำหรับ CLIENT: แสดงชื่อ Site (ลองดึงจาก database ถ้าไม่มี assets)
   let siteName: string | null = null
@@ -169,7 +161,7 @@ export default async function AssetsPage({ searchParams }: Props) {
       try {
         const dbUser = await prisma.user.findUnique({
           where: { id: user.userId },
-          select: { 
+          select: {
             siteId: true,
             site: {
               select: { name: true }
@@ -207,16 +199,8 @@ export default async function AssetsPage({ searchParams }: Props) {
         )}
       </div>
 
-      <AssetsClient assets={paginatedAssets} userRole={user.role} />
-
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-        />
-      )}
+      {/* ส่ง assets ทั้งหมด ไม่ต้อง paginate ที่นี่ — AssetsClient จัดการ pagination + filter เอง */}
+      <AssetsClient assets={assets} userRole={user.role} />
     </div>
   );
 }

@@ -4,6 +4,9 @@ import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import AssetsSearchFilter from './AssetsSearchFilter'
 import EmptyState from '@/app/components/EmptyState'
+import Pagination from '@/app/components/Pagination'
+
+const ITEMS_PER_PAGE = 20
 
 interface Asset {
   id: string
@@ -43,6 +46,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
   const [baseUrl, setBaseUrl] = useState<string>('')
 
   useEffect(() => {
@@ -53,6 +57,11 @@ export default function AssetsClient({ assets, userRole }: Props) {
 
   // ตรวจสอบว่ามี asset ที่เป็น AIR_CONDITIONER หรือไม่
   const hasAirConditioner = assets.some(a => a.assetType === 'AIR_CONDITIONER')
+
+  // Reset page when filters change
+  const handleSearchChange = (v: string) => { setSearch(v); setCurrentPage(1) }
+  const handleStatusChange = (v: string) => { setStatusFilter(v); setCurrentPage(1) }
+  const handleTypeChange = (v: string) => { setTypeFilter(v); setCurrentPage(1) }
 
   const filteredAssets = useMemo(() => {
     return assets.filter((asset) => {
@@ -79,16 +88,44 @@ export default function AssetsClient({ assets, userRole }: Props) {
     })
   }, [assets, search, statusFilter, typeFilter])
 
+  const paginatedAssets = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredAssets.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredAssets, currentPage])
+
   const getStatusBadge = (status: string) => {
     const configs = {
-      ACTIVE: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', text: 'ใช้งาน' },
-      BROKEN: { bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', text: 'ชำรุด' },
-      RETIRED: { bg: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400', text: 'เลิกใช้งาน' },
+      ACTIVE: { style: 'background:linear-gradient(135deg,#059669,#047857);color:#fff;boxShadow:0 2px 8px rgba(5,150,105,0.35)', text: '✅ ใช้งาน' },
+      BROKEN: { style: 'background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;boxShadow:0 2px 8px rgba(220,38,38,0.35)', text: '⚠️ ชำรุด' },
+      RETIRED: { style: 'background:linear-gradient(135deg,#475569,#334155);color:#fff;boxShadow:0 2px 8px rgba(71,85,105,0.35)', text: '⏸️ เลิกใช้งาน' },
     }
     const config = configs[status as keyof typeof configs] || configs.RETIRED
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${config.bg}`}>
+      <span
+        className="px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+        style={Object.fromEntries(config.style.split(';').map(s => { const [k, v] = s.split(':'); return [k, v] })) as React.CSSProperties}
+      >
         {config.text}
+      </span>
+    )
+  }
+
+  const getMachineTypeBadge = (machineType: string | null | undefined) => {
+    if (!machineType) return null
+    const configs: Record<string, { style: string; label: string }> = {
+      AHU: { style: 'background:rgba(37,99,235,0.15);color:#60a5fa;border:1px solid rgba(37,99,235,0.3)', label: '🌀 AHU' },
+      FCU: { style: 'background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.3)', label: '💨 FCU' },
+      VRF: { style: 'background:rgba(14,165,233,0.15);color:#38bdf8;border:1px solid rgba(14,165,233,0.3)', label: '🔄 VRF' },
+      SPLIT_TYPE: { style: 'background:rgba(5,150,105,0.15);color:#34d399;border:1px solid rgba(5,150,105,0.3)', label: '❄️ Split' },
+      EXHAUST: { style: 'background:rgba(217,119,6,0.15);color:#fbbf24;border:1px solid rgba(217,119,6,0.3)', label: '💨 Exhaust' },
+    }
+    const cfg = configs[machineType] || { style: 'background:rgba(71,85,105,0.15);color:#94a3b8;border:1px solid rgba(71,85,105,0.3)', label: `⚙️ ${machineType}` }
+    return (
+      <span
+        className="px-2 py-0.5 rounded-lg text-xs font-semibold"
+        style={Object.fromEntries(cfg.style.split(';').map(s => { const [k, v] = s.split(':'); return [k, v] })) as React.CSSProperties}
+      >
+        {cfg.label}
       </span>
     )
   }
@@ -99,9 +136,9 @@ export default function AssetsClient({ assets, userRole }: Props) {
         searchValue={search}
         statusFilter={statusFilter}
         typeFilter={typeFilter}
-        onSearchChange={setSearch}
-        onStatusFilterChange={setStatusFilter}
-        onTypeFilterChange={setTypeFilter}
+        onSearchChange={handleSearchChange}
+        onStatusFilterChange={handleStatusChange}
+        onTypeFilterChange={handleTypeChange}
       />
 
       {/* Mobile Card View */}
@@ -115,7 +152,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
             actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "/assets/new" : undefined}
           />
         ) : (
-          filteredAssets.map((asset) => {
+          paginatedAssets.map((asset) => {
             const qrCodeUrl = baseUrl
               ? `${baseUrl}/scan/${encodeURIComponent(asset.qrCode)}`
               : `/scan/${encodeURIComponent(asset.qrCode)}`
@@ -229,7 +266,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
                 </td>
               </tr>
             ) : (
-              filteredAssets.map((asset) => {
+              paginatedAssets.map((asset) => {
                 // แปลง assetType enum เป็นชื่อภาษาไทย
                 const assetTypeLabels: Record<string, string> = {
                   'AIR_CONDITIONER': 'เครื่องปรับอากาศ',
@@ -295,8 +332,11 @@ export default function AssetsClient({ assets, userRole }: Props) {
                         )}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-app-body">
-                      {assetTypeDisplay}
+                    <td className="px-4 py-3">
+                      <div className="text-app-body text-sm">{assetTypeName}</div>
+                      {getMachineTypeBadge((asset as any).machineType) && (
+                        <div className="mt-1">{getMachineTypeBadge((asset as any).machineType)}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-app-heading">
@@ -343,10 +383,23 @@ export default function AssetsClient({ assets, userRole }: Props) {
         </table>
       </div>
 
+      {/* Pagination + summary */}
       {filteredAssets.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600">
-          แสดง {filteredAssets.length} จาก {assets.length} รายการ
-        </div>
+        <>
+          <div className="mt-4 text-sm text-app-muted">
+            แสดง {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredAssets.length)}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredAssets.length)} จาก {filteredAssets.length} รายการ
+            {filteredAssets.length < assets.length && ` (กรองจากทั้งหมด ${assets.length} รายการ)`}
+          </div>
+          {Math.ceil(filteredAssets.length / ITEMS_PER_PAGE) > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredAssets.length / ITEMS_PER_PAGE)}
+              totalItems={filteredAssets.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
+          )}
+        </>
       )}
     </>
   )

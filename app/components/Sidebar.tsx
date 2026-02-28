@@ -284,10 +284,11 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                       className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                         ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
                         ${active
-                          ? 'bg-[var(--app-btn-primary)] text-white shadow-md'
+                          ? 'text-white shadow-lg'
                           : 'text-app-body hover:bg-app-card hover:text-app-heading'
                         }
                       `}
+                      style={active ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 4px 12px rgba(37,99,235,0.35)' } : {}}
                       title={isCollapsed ? item.label : undefined}
                     >
                       {(() => {
@@ -409,10 +410,11 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                     className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                       ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
                       ${active
-                        ? 'bg-[var(--app-btn-primary)] text-white shadow-md'
+                        ? 'text-white shadow-lg'
                         : 'text-app-body hover:bg-app-card hover:text-app-heading'
                       }
                     `}
+                    style={active ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 4px 12px rgba(37,99,235,0.35)' } : {}}
                     title={isCollapsed ? item.label : undefined}
                   >
                     {(() => {
@@ -449,10 +451,11 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                     className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
                       ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
                       ${active
-                        ? 'bg-[var(--app-btn-primary)] text-white shadow-md'
+                        ? 'text-white shadow-lg'
                         : 'text-app-body hover:bg-app-card hover:text-app-heading'
                       }
                     `}
+                    style={active ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 4px 12px rgba(37,99,235,0.35)' } : {}}
                     title={isCollapsed ? item.label : undefined}
                   >
                     {(() => {

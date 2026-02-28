@@ -176,48 +176,53 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
         {/* สถิติการ์ดแอร์ */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
           {[
-            { label: 'แอร์ทั้งหมด', value: allAssets.length, icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', color: '#5B7C99', bg: 'rgba(91,124,153,0.2)' },
-            { label: 'AHU', value: ahuCount, icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', color: '#C2A66A', bg: 'rgba(194,166,106,0.2)' },
-            { label: 'FCU', value: fcuCount, icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', color: '#C2A66A', bg: 'rgba(194,166,106,0.2)' },
-            { label: 'Split Type', value: splitCount, icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z', color: '#C2A66A', bg: 'rgba(194,166,106,0.2)' },
-            { label: 'Exhaust', value: exhaustCount, icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4', color: '#C2A66A', bg: 'rgba(194,166,106,0.2)' },
-          ].map(({ label, value, icon, color, bg }) => (
-            <div key={label} className="bg-app-card rounded-xl border border-app p-4 md:p-6 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs md:text-sm font-medium text-app-muted mb-1">{label}</p>
-                  <p className="text-xl md:text-2xl font-bold text-app-heading">{value}</p>
+            { label: 'แอร์ทั้งหมด', value: allAssets.length, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets' },
+            { label: 'AHU', value: ahuCount, emoji: '🌀', from: '#0891b2', to: '#0e7490', glow: 'rgba(8,145,178,0.25)', href: '/assets' },
+            { label: 'FCU', value: fcuCount, emoji: '💨', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/assets' },
+            { label: 'Split Type', value: splitCount, emoji: '❄️', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/assets' },
+            { label: 'Exhaust', value: exhaustCount, emoji: '💨', from: '#b45309', to: '#92400e', glow: 'rgba(180,83,9,0.25)', href: '/assets' },
+          ].map(({ label, value, emoji, from, to, glow, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-4 md:p-5 shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px ${glow}` }}
+            >
+              <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl">{emoji}</span>
+                  <span className="text-white/50 text-[10px] font-medium uppercase tracking-wide">{label}</span>
                 </div>
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: bg }}>
-                  <svg className="w-4 h-4 md:w-5 md:h-5" style={{ color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-                  </svg>
-                </div>
+                <p className="text-white font-bold text-2xl md:text-3xl leading-none">{value}</p>
+                <p className="text-white/60 text-xs mt-1">เครื่อง</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
         {/* สถิติการทำงาน */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'งานที่กำลังดำเนินการ', value: activeWorkOrders.length, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', color: '#C2A66A', bg: 'rgba(194,166,106,0.2)' },
-            { label: 'เสร็จสิ้นวันนี้', value: completedToday, icon: 'M5 13l4 4L19 7', color: '#5E8F75', bg: 'rgba(94,143,117,0.2)' },
-            { label: 'เครื่องที่กำลังซ่อม/บำรุง', value: inProgressJobItems.length, icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', color: '#8A8A8A', bg: 'rgba(138,138,138,0.2)' },
-          ].map(({ label, value, icon, color, bg }) => (
-            <div key={label} className="bg-app-card rounded-xl border border-app p-6 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-app-muted mb-1">{label}</p>
-                  <p className="text-2xl font-bold text-app-heading">{value}</p>
+            { label: 'งานที่กำลังดำเนินการ', value: activeWorkOrders.length, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders' },
+            { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders' },
+            { label: 'เครื่องที่กำลังซ่อม/บำรุง', value: inProgressJobItems.length, emoji: '🔧', from: '#475569', to: '#334155', glow: 'rgba(71,85,105,0.25)', href: '/work-orders' },
+          ].map(({ label, value, emoji, from, to, glow, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px ${glow}` }}
+            >
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-2xl">{emoji}</span>
                 </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: bg }}>
-                  <svg className="w-5 h-5" style={{ color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-                  </svg>
-                </div>
+                <p className="text-white font-bold text-3xl leading-none mb-1">{value}</p>
+                <p className="text-white/70 text-xs font-medium">{label}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -276,23 +281,28 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
 
         {/* Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link href="/assets" className="bg-app-card rounded-xl border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">ทรัพย์สินและอุปกรณ์</h3>
-            <p className="text-sm text-app-muted">ดูรายการแอร์ทั้งหมดในสถานที่</p>
-          </Link>
-          <Link href="/work-orders" className="bg-app-card rounded-xl border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">ประวัติงาน</h3>
-            <p className="text-sm text-app-muted">ดูประวัติการทำงานทั้งหมด</p>
-          </Link>
-          <Link href="/reports/maintenance" className="bg-app-card rounded-xl border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">รายงาน</h3>
-            <p className="text-sm text-app-muted">รายงานการบำรุงรักษา & การซ่อม</p>
-          </Link>
-          <Link href="/contact" className="bg-app-card rounded-xl border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">ติดต่อเรา</h3>
-            <p className="text-sm text-app-muted">แจ้งปัญหาหรือสอบถามข้อมูล</p>
-          </Link>
+          {[
+            { href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', sub: 'ดูรายการแอร์ทั้งหมดในสถานที่', emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.2)' },
+            { href: '/work-orders', label: 'ประวัติงาน', sub: 'ดูประวัติการทำงานทั้งหมด', emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.2)' },
+            { href: '/reports/maintenance', label: 'รายงาน', sub: 'รายงานการบำรุงรักษา & การซ่อม', emoji: '📊', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.2)' },
+            { href: '/contact', label: 'ติดต่อเรา', sub: 'แจ้งปัญหาหรือสอบถามข้อมูล', emoji: '📞', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.2)' },
+          ].map(({ href, label, sub, emoji, from, to, glow }) => (
+            <Link
+              key={href}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 20px ${glow}` }}
+            >
+              <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10">
+                <span className="text-2xl mb-2 block">{emoji}</span>
+                <h3 className="text-base font-semibold text-white mb-1">{label}</h3>
+                <p className="text-white/60 text-xs">{sub}</p>
+              </div>
+            </Link>
+          ))}
         </div>
+
       </div>
     </div>
   )

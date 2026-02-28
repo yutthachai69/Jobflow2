@@ -7,13 +7,19 @@ interface Props {
   totalPages: number
   totalItems: number
   itemsPerPage: number
+  onPageChange?: (page: number) => void
 }
 
-export default function Pagination({ currentPage, totalPages, totalItems, itemsPerPage }: Props) {
+export default function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const handlePageChange = (page: number) => {
+    if (onPageChange) {
+      onPageChange(page)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     const params = new URLSearchParams(searchParams.toString())
     if (page === 1) {
       params.delete('page')
@@ -53,11 +59,10 @@ export default function Pagination({ currentPage, totalPages, totalItems, itemsP
                   {showEllipsis && <span className="px-2 text-app-muted">...</span>}
                   <button
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-2 border rounded-lg transition-colors ${
-                      currentPage === page
+                    className={`px-3 py-2 border rounded-lg transition-colors ${currentPage === page
                         ? 'btn-app-primary border-[var(--app-btn-primary)]'
                         : 'border-app hover:bg-app-card text-app-body bg-app-section'
-                    }`}
+                      }`}
                     aria-label={`ไปหน้า ${page}`}
                     aria-current={currentPage === page ? 'page' : undefined}
                   >

@@ -172,6 +172,13 @@ export default async function ReportsMaintenancePage() {
         >
           → รายงานการซ่อม
         </Link>
+        <Link
+          href="/reports/cleaning-dashboard"
+          className="text-sm font-medium hover:underline"
+          style={{ color: '#38bdf8' }}
+        >
+          ❄️ รายงานการล้างแอร์
+        </Link>
         <Link href="/" className="text-sm font-medium text-app-muted hover:text-app-body">
           ← กลับ Dashboard
         </Link>

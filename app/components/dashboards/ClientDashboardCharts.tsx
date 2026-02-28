@@ -14,9 +14,9 @@ import {
 } from 'recharts'
 
 const COLORS = {
-  PM: '#5E8F75',
-  CM: '#9A5A5A',
-  INSTALL: '#5B7C99',
+  PM: '#3b82f6',   // blue-500 – สีน้ำเงินสด
+  CM: '#ef4444',   // red-500  – สีแดง
+  INSTALL: '#f59e0b',   // amber-500 – สีเหลืองทอง
 }
 
 interface DailyPoint {

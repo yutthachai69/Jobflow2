@@ -58,10 +58,10 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
   const currentJobs = inProgressJobs.slice(0, 5)
 
   const statCards = [
-    { label: 'งานที่รอดำเนินการ', value: pendingJobs.length, color: '#C2A66A', bg: 'rgba(194,166,106,0.2)', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { label: 'งานที่กำลังทำ', value: inProgressJobs.length, color: '#5B7C99', bg: 'rgba(91,124,153,0.2)', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-    { label: 'เสร็จสิ้นวันนี้', value: completedToday, color: '#5E8F75', bg: 'rgba(94,143,117,0.2)', icon: 'M5 13l4 4L19 7' },
-    { label: 'งานที่เสร็จแล้ว', value: doneJobs.length, color: '#5E8F75', bg: 'rgba(94,143,117,0.2)', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { label: 'งานที่รอดำเนินการ', value: pendingJobs.length, emoji: '⏳', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/technician' },
+    { label: 'งานที่กำลังทำ', value: inProgressJobs.length, emoji: '🔨', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/technician' },
+    { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/technician' },
+    { label: 'งานที่เสร็จแล้ว', value: doneJobs.length, emoji: '🏆', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/technician' },
   ]
 
   return (
@@ -78,18 +78,22 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {statCards.map(({ label, value, color, bg, icon }) => (
-            <div key={label} className="bg-app-card rounded-lg border border-app p-6 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-app-muted mb-1">{label}</p>
-                  <p className="text-2xl font-semibold text-app-heading">{value}</p>
+          {statCards.map(({ label, value, emoji, from, to, glow, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px ${glow}` }}
+            >
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-2xl">{emoji}</span>
                 </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: bg }}>
-                  <svg className="w-5 h-5" style={{ color }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} /></svg>
-                </div>
+                <p className="text-white font-bold text-3xl leading-none mb-1">{value}</p>
+                <p className="text-white/70 text-xs font-medium">{label}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -159,18 +163,25 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/technician" className="bg-app-card rounded-lg border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">หน้างาน</h3>
-            <p className="text-sm text-app-muted">ดูรายการงานทั้งหมดที่ต้องทำ</p>
-          </Link>
-          <Link href="/technician/scan" className="bg-app-card rounded-lg border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">สแกน QR Code</h3>
-            <p className="text-sm text-app-muted">สแกน QR Code เพื่อดูข้อมูลเครื่อง</p>
-          </Link>
-          <Link href="/work-orders" className="bg-app-card rounded-lg border border-app shadow-lg p-6 hover:border-app-muted/30 hover:shadow-xl transition-all">
-            <h3 className="text-base font-semibold text-app-heading mb-1">ประวัติงาน</h3>
-            <p className="text-sm text-app-muted">ดูประวัติการทำงานทั้งหมด</p>
-          </Link>
+          {[
+            { href: '/technician', label: 'หน้างาน', sub: 'ดูรายการงานทั้งหมดที่ต้องทำ', emoji: '🔨', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.2)' },
+            { href: '/technician/scan', label: 'สแกน QR Code', sub: 'สแกน QR Code เพื่อดูข้อมูลเครื่อง', emoji: '📷', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.2)' },
+            { href: '/work-orders', label: 'ประวัติงาน', sub: 'ดูประวัติการทำงานทั้งหมด', emoji: '📊', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.2)' },
+          ].map(({ href, label, sub, emoji, from, to, glow }) => (
+            <Link
+              key={href}
+              href={href}
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 block border border-white/5"
+              style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 20px ${glow}` }}
+            >
+              <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full opacity-20" style={{ background: from }} />
+              <div className="relative z-10">
+                <span className="text-2xl mb-2 block">{emoji}</span>
+                <h3 className="text-base font-semibold text-white mb-1">{label}</h3>
+                <p className="text-white/60 text-xs">{sub}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
