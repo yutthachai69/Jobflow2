@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Suspense } from 'react';
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AssetsClient from "./AssetsClient";
@@ -200,7 +201,9 @@ export default async function AssetsPage(_props: Props) {
       </div>
 
       {/* ส่ง assets ทั้งหมด ไม่ต้อง paginate ที่นี่ — AssetsClient จัดการ pagination + filter เอง */}
-      <AssetsClient assets={assets} userRole={user.role} />
+      <Suspense fallback={<div className="p-8 text-center text-app-muted">กำลังโหลดข้อมูล...</div>}>
+        <AssetsClient assets={assets} userRole={user.role} />
+      </Suspense>
     </div>
   );
 }

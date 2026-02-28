@@ -177,10 +177,10 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
           {[
             { label: 'แอร์ทั้งหมด', value: allAssets.length, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets' },
-            { label: 'AHU', value: ahuCount, emoji: '🌀', from: '#0891b2', to: '#0e7490', glow: 'rgba(8,145,178,0.25)', href: '/assets' },
-            { label: 'FCU', value: fcuCount, emoji: '💨', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/assets' },
-            { label: 'Split Type', value: splitCount, emoji: '❄️', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/assets' },
-            { label: 'Exhaust', value: exhaustCount, emoji: '💨', from: '#b45309', to: '#92400e', glow: 'rgba(180,83,9,0.25)', href: '/assets' },
+            { label: 'AHU', value: ahuCount, emoji: '🌀', from: '#0891b2', to: '#0e7490', glow: 'rgba(8,145,178,0.25)', href: '/assets?type=AHU' },
+            { label: 'FCU', value: fcuCount, emoji: '💨', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/assets?type=FCU' },
+            { label: 'Split Type', value: splitCount, emoji: '❄️', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/assets?type=SPLIT_TYPE' },
+            { label: 'Exhaust', value: exhaustCount, emoji: '💨', from: '#b45309', to: '#92400e', glow: 'rgba(180,83,9,0.25)', href: '/assets?type=EXHAUST' },
           ].map(({ label, value, emoji, from, to, glow, href }) => (
             <Link
               key={label}

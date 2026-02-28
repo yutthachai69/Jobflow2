@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import AssetsSearchFilter from './AssetsSearchFilter'
 import EmptyState from '@/app/components/EmptyState'
 import Pagination from '@/app/components/Pagination'
@@ -43,9 +44,11 @@ interface Props {
 }
 
 export default function AssetsClient({ assets, userRole }: Props) {
+  const searchParams = useSearchParams()
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
-  const [typeFilter, setTypeFilter] = useState('ALL')
+  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'ALL')
   const [currentPage, setCurrentPage] = useState(1)
   const [baseUrl, setBaseUrl] = useState<string>('')
 
