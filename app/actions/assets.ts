@@ -9,7 +9,7 @@ import { logSecurityEvent } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
 
-export async function createAsset(formData: FormData) {
+export async function createAsset(formData: FormData): Promise<{ error: string } | void> {
   try {
     await requireAdmin()
 
@@ -24,34 +24,39 @@ export async function createAsset(formData: FormData) {
 
     // Validation
     if (!roomId) {
-      throw new Error('Room ID is required')
+      return { error: 'กรุณาเลือกห้องก่อนบันทึก' }
     }
-    if (!serialNo) {
-      throw new Error('Serial Number is required')
+    if (assetType === 'AIR_CONDITIONER' && !serialNo) {
+      return { error: 'กรุณากรอก Serial Number / QR Code' }
     }
 
     // Check if QR Code (serialNo) already exists
-    const existingAsset = await prisma.asset.findUnique({
-      where: { qrCode: serialNo },
-    })
-    if (existingAsset) {
-      throw new Error('QR Code already exists')
+    if (serialNo) {
+      const existingAsset = await prisma.asset.findUnique({
+        where: { qrCode: serialNo },
+      })
+      if (existingAsset) {
+        return { error: `Serial Number "${serialNo}" มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น` }
+      }
     }
 
     const btu = btuStr ? parseInt(btuStr, 10) : null
     if (btuStr && (isNaN(btu!) || btu! < 0 || btu! > 1000000)) {
-      throw new Error('Invalid BTU value')
+      return { error: 'ค่า BTU ไม่ถูกต้อง' }
     }
 
     const installDate = installDateStr ? new Date(installDateStr) : null
     if (installDateStr && (!installDate || isNaN(installDate.getTime()))) {
-      throw new Error('Invalid date format')
+      return { error: 'รูปแบบวันที่ไม่ถูกต้อง' }
     }
+
+    // For non-air-conditioner assets without serialNo, generate a unique qrCode
+    const qrCode = serialNo || `ASSET-${Date.now()}`
 
     await prisma.asset.create({
       data: {
         roomId,
-        qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
+        qrCode,
         assetType: assetType as any,
         machineType: assetType === 'AIR_CONDITIONER' ? (machineType as any) : null,
         brand: brand || null,
@@ -66,7 +71,7 @@ export async function createAsset(formData: FormData) {
     revalidatePath('/assets')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
-    throw error
+    return { error: 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง' }
   }
   redirect('/assets')
 }

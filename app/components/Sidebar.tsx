@@ -57,8 +57,6 @@ const adminItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
   { type: 'link', href: '/admin/checklists', label: 'ตรวจสอบ (PM)', icon: 'checklist' },
-  { type: 'link', href: '/reports/clean-room-demo/form', label: 'ตัวอย่างกรอก Clean Room', icon: 'survey' },
-  { type: 'link', href: '/reports/clean-room-demo', label: 'ตัวอย่างใบรายงาน Clean Room', icon: 'reports' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
@@ -100,8 +98,6 @@ const technicianItems: NavItem[] = [
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/technician', label: 'หน้างาน', icon: 'wrench' },
   { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
-  { type: 'link', href: '/reports/clean-room-demo/form', label: 'ตัวอย่างกรอก Clean Room', icon: 'survey' },
-  { type: 'link', href: '/reports/clean-room-demo', label: 'ตัวอย่างใบรายงาน Clean Room', icon: 'reports' },
   // [OLD LIFF] คอมเม้นไว้ - ถ้าอยากใช้ LIFF login กลับ ให้ uncomment
   // { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },
 ]
@@ -407,7 +403,7 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                     key={linkItem.href}
                     href={linkItem.href}
                     onClick={() => isMobileOpen && handleToggle()}
-                    className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
+                    className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative min-w-0
                       ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
                       ${active
                         ? 'text-white shadow-lg'
@@ -417,13 +413,15 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                     style={active ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 4px 12px rgba(37,99,235,0.35)' } : {}}
                     title={isCollapsed ? item.label : undefined}
                   >
-                    {(() => {
-                      const Icon = iconMap[item.icon]
-                      return Icon ? <Icon active={active} /> : null
-                    })()}
+                    <div className="flex-shrink-0">
+                      {(() => {
+                        const Icon = iconMap[item.icon]
+                        return Icon ? <Icon active={active} /> : null
+                      })()}
+                    </div>
 
                     {!isCollapsed && (
-                      <span className="whitespace-nowrap transition-all duration-300">
+                      <span className="truncate transition-all duration-300 w-full">
                         {item.label}
                       </span>
                     )}
@@ -448,7 +446,7 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                     key={item.href}
                     href={item.href}
                     onClick={() => isMobileOpen && handleToggle()}
-                    className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative
+                    className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative min-w-0
                       ${isCollapsed ? 'justify-center p-3 w-full' : 'px-4 py-3 gap-3'}
                       ${active
                         ? 'text-white shadow-lg'
@@ -458,13 +456,15 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                     style={active ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 4px 12px rgba(37,99,235,0.35)' } : {}}
                     title={isCollapsed ? item.label : undefined}
                   >
-                    {(() => {
-                      const Icon = iconMap[item.icon]
-                      return Icon ? <Icon active={active} /> : null
-                    })()}
+                    <div className="flex-shrink-0">
+                      {(() => {
+                        const Icon = iconMap[item.icon]
+                        return Icon ? <Icon active={active} /> : null
+                      })()}
+                    </div>
 
                     {!isCollapsed && (
-                      <span className="whitespace-nowrap transition-all duration-300">
+                      <span className="truncate transition-all duration-300 w-full">
                         {item.label}
                       </span>
                     )}
@@ -527,7 +527,7 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                   </button>
 
                   {reportsExpanded && (
-                    <div className="ml-4 pl-3 border-l-2 border-app space-y-1 mt-1">
+                    <div className="ml-4 pl-3 border-l-2 border-app space-y-1 mt-1 overflow-x-hidden">
                       {group.subItems.map((sub) => {
                         const subActive = isActive(sub.href)
                         return (
@@ -535,12 +535,13 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
                             key={sub.href}
                             href={sub.href}
                             onClick={() => isMobileOpen && handleToggle()}
-                            className={`block px-3 py-2 text-sm rounded-lg transition-all
+                            className={`block w-full px-3 py-2 text-sm rounded-lg transition-all truncate
                               ${subActive
                                 ? 'text-[var(--app-btn-primary)] font-semibold bg-[var(--app-btn-primary)]/5'
                                 : 'text-app-muted hover:text-app-heading hover:bg-app-card'
                               }
                             `}
+                            title={sub.label}
                           >
                             {sub.label}
                           </Link>

@@ -27,11 +27,11 @@ export default function CleanRoomFormDemoPage() {
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto">
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">ตัวอย่างแบบฟอร์ม Clean Room พารามิเตอร์</h1>
-                <p className="text-gray-500 mt-2">หน้านี้คือแบบฟอร์มจำลอง (Demo) ข้อมูลที่กรอกที่นี่จะถูกนำไปแสดงผลพรีวิวในหน้าตัวอย่างรายงาน ไม่มีการบันทึกลงฐานข้อมูลจริงทางฝั่งเซิร์ฟเวอร์</p>
+                <h1 className="text-2xl font-bold text-app-heading">ตัวอย่างแบบฟอร์ม Clean Room พารามิเตอร์</h1>
+                <p className="text-app-muted mt-2">หน้านี้คือแบบฟอร์มจำลอง (Demo) ข้อมูลที่กรอกที่นี่จะถูกนำไปแสดงผลพรีวิวในหน้าตัวอย่างรายงาน ไม่มีการบันทึกลงฐานข้อมูลจริงทางฝั่งเซิร์ฟเวอร์</p>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-6">
+            <div className="bg-app-card rounded-2xl shadow-xl overflow-hidden border border-app p-6">
                 <CleanRoomForm
                     jobItemId="demo-1234"
                     initialData=""

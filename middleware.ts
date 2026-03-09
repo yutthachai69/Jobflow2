@@ -117,6 +117,35 @@ export async function middleware(request: NextRequest) {
   }
   // ------------------------------------
 
+  // --- Role-Based Routing ---
+  // Decode JWT payload to get role (token is already verified above)
+  let userRole: string | null = null
+  if (token) {
+    try {
+      const secretKey = getSecretKey()
+      const { payload } = await jwtVerify(token, secretKey)
+      userRole = (payload.role as string) || null
+    } catch {
+      // already verified above, ignore
+    }
+  }
+
+  // Admin-only routes
+  const adminOnlyRoutes = ['/users', '/locations', '/security-incidents', '/messages']
+  const isAdminOnlyRoute = adminOnlyRoutes.some(route => pathname.startsWith(route))
+
+  // Technician-only routes
+  const technicianOnlyRoutes = ['/technician']
+  const isTechnicianOnlyRoute = technicianOnlyRoutes.some(route => pathname.startsWith(route))
+
+  if (userRole === 'TECHNICIAN' && isAdminOnlyRoute) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  if (userRole === 'CLIENT' && (isAdminOnlyRoute || isTechnicianOnlyRoute)) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
   // 2. สร้าง Response
   const response = NextResponse.next()
 

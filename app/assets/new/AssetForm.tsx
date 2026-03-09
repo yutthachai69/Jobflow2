@@ -44,6 +44,7 @@ export default function AssetForm({ sites }: Props) {
   const [assetType, setAssetType] = useState<string>('AIR_CONDITIONER')
   const [machineType, setMachineType] = useState<string>('SPLIT_TYPE')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [serverError, setServerError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const selectedSite = sites.find(s => s.id === selectedSiteId)
@@ -110,12 +111,26 @@ export default function AssetForm({ sites }: Props) {
     }
 
     setErrors({})
+    setServerError('')
     formData.set('roomId', selectedRoomId)
-    await createAsset(formData)
+    const result = await createAsset(formData)
+    if (result?.error) {
+      setServerError(result.error)
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-100">
+      {serverError && (
+        <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3" role="alert">
+          <span className="text-red-500 text-lg">⚠️</span>
+          <div>
+            <p className="font-semibold text-red-700">เกิดข้อผิดพลาด</p>
+            <p className="text-sm text-red-600 mt-0.5">{serverError}</p>
+          </div>
+        </div>
+      )}
       <div className="space-y-6">
         {/* เลือกสถานที่ */}
         <div>

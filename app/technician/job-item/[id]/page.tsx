@@ -9,6 +9,8 @@ import ChecklistSection from "@/app/work-orders/[id]/ChecklistSection";
 import RequestRepairButton from "./RequestRepairButton";
 import SendApprovalButton from "./SendApprovalButton";
 import CleanRoomForm from "@/app/components/forms/CleanRoomForm";
+import AssetHistoryTimeline from "@/app/components/AssetHistoryTimeline";
+import CustomerSignoff from "./CustomerSignoff";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -35,6 +37,8 @@ export default async function TechnicianJobItemPage({ params }: Props) {
       startTime: true,
       endTime: true,
       checklist: true,
+      customerSignature: true,
+      signedAt: true,
       asset: {
         include: {
           room: {
@@ -403,6 +407,27 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Customer Sign-off */}
+        <div className="mb-6">
+          <CustomerSignoff
+            jobItemId={id}
+            status={jobItem.status}
+            hasBeforePhoto={hasBefore}
+            hasAfterPhoto={hasAfter}
+            customerSignature={jobItem.customerSignature}
+            signedAt={jobItem.signedAt?.toISOString()}
+          />
+        </div>
+
+        {/* Asset History Timeline */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">📜</span>
+            <h2 className="text-lg font-bold text-gray-900">ประวัติเครื่อง</h2>
+          </div>
+          <AssetHistoryTimeline assetId={jobItem.assetId} currentJobItemId={id} />
         </div>
 
         {/* Time Info */}

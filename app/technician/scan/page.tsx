@@ -199,25 +199,25 @@ export default function ScanQRPage() {
   return (
     <>
       <ConfirmDialog />
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="min-h-screen bg-app-bg p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-app-heading mb-2">
               สแกน QR Code
             </h1>
-            <p className="text-gray-600">
+            <p className="text-app-body">
               สแกน QR Code บนตัวแอร์เพื่อดูประวัติเครื่อง
             </p>
           </div>
 
           {/* Scanner Area */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
             <div id="qr-reader" className="w-full mb-4"></div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                <p className="text-red-800 text-sm">{error}</p>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
 
@@ -226,7 +226,7 @@ export default function ScanQRPage() {
                 <>
                   <button
                     onClick={startScanning}
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium text-lg"
+                    className="flex-1 btn-app-primary px-6 py-3 rounded-lg hover:shadow-md font-medium text-lg transition-all"
                   >
                     เปิดกล้องสแกน
                   </button>
@@ -240,7 +240,7 @@ export default function ScanQRPage() {
                     />
                     <button
                       onClick={handleSelectImage}
-                      className="w-full bg-white border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 font-medium text-lg flex items-center justify-center gap-2"
+                      className="w-full bg-app-card border-2 border-[var(--app-btn-primary)] text-[var(--app-btn-primary)] px-6 py-3 rounded-lg hover:bg-app-section font-medium text-lg flex items-center justify-center gap-2 transition-all"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -252,7 +252,7 @@ export default function ScanQRPage() {
               ) : (
                 <button
                   onClick={stopScanning}
-                  className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium text-lg"
+                  className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium text-lg transition-colors"
                 >
                   หยุดสแกน
                 </button>
@@ -261,8 +261,8 @@ export default function ScanQRPage() {
           </div>
 
           {/* Manual Input */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
+          <div className="bg-app-card rounded-xl shadow-lg border border-app p-6">
+            <h2 className="text-lg font-bold text-app-heading mb-4">
               หรือพิมพ์รหัส QR Code
             </h2>
             <form
@@ -273,11 +273,11 @@ export default function ScanQRPage() {
                 type="text"
                 name="qrCode"
                 placeholder="พิมพ์รหัส QR Code"
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder:text-gray-400"
+                className="flex-1 border border-app rounded-lg px-4 py-3 text-lg bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all font-mono"
               />
               <button
                 type="submit"
-                className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium whitespace-nowrap"
+                className="btn-app-primary px-6 py-3 rounded-lg font-medium whitespace-nowrap"
               >
                 ค้นหา
               </button>

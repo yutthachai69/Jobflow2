@@ -210,7 +210,7 @@ export default function CleanRoomForm({ jobItemId, initialData, onSaveAction }: 
                     value={(formData as any)[remarkName]}
                     onChange={handleChange}
                     placeholder="หมายเหตุ (ถ้ามี)..."
-                    className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors"
+                    className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 transition-colors outline-none"
                 />
             </div>
         </div>
@@ -236,111 +236,111 @@ export default function CleanRoomForm({ jobItemId, initialData, onSaveAction }: 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">ROOM TEMPERATURE (°C)</label>
-                            <input type="text" name="roomTemp" value={formData.roomTemp} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="roomTemp" value={formData.roomTemp} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">ROOM HUMIDITY (%RH)</label>
-                            <input type="text" name="roomHumidity" value={formData.roomHumidity} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="roomHumidity" value={formData.roomHumidity} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">PATIENT ROOM PRESSURE (Pa)</label>
-                            <input type="text" name="patientRoomPressure" value={formData.patientRoomPressure} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="patientRoomPressure" value={formData.patientRoomPressure} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SPEED CONTROL SUPPLY</label>
-                            <input type="text" name="speedControlSupply" value={formData.speedControlSupply} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="speedControlSupply" value={formData.speedControlSupply} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SPEED CONTROL (NPU)</label>
-                            <input type="text" name="speedControlNpu" value={formData.speedControlNpu} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="speedControlNpu" value={formData.speedControlNpu} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SUCTION PRESSURE (PSIG)</label>
-                            <input type="text" name="suctionPressure" value={formData.suctionPressure} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="suctionPressure" value={formData.suctionPressure} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">DISCHARGE PRESSURE (PSIG)</label>
-                            <input type="text" name="dischargePressure" value={formData.dischargePressure} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="dischargePressure" value={formData.dischargePressure} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SATURATE SUCTION TEMP (°C)</label>
-                            <input type="text" name="saturateSuctionTemp" value={formData.saturateSuctionTemp} onChange={handleChange} className="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors" />
+                            <input type="text" name="saturateSuctionTemp" value={formData.saturateSuctionTemp} onChange={handleChange} className="mt-1 block w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors outline-none" />
                         </div>
                     </div>
 
                     <h4 className="text-md font-semibold mt-6 mb-2 text-gray-800 dark:text-white">POWER SUPPLY/VOLTAGE</h4>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">11-12 (≥ 380V)</label>
-                            <input type="text" name="volt11_12" value={formData.volt11_12} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">11-12 (≥ 380V)</label>
+                            <input type="text" name="volt11_12" value={formData.volt11_12} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">12-13 (≥ 380V)</label>
-                            <input type="text" name="volt12_13" value={formData.volt12_13} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">12-13 (≥ 380V)</label>
+                            <input type="text" name="volt12_13" value={formData.volt12_13} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">13-L1 (≥ 380V)</label>
-                            <input type="text" name="volt13_l1" value={formData.volt13_l1} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">13-L1 (≥ 380V)</label>
+                            <input type="text" name="volt13_l1" value={formData.volt13_l1} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">-N (≥ 220V)</label>
-                            <input type="text" name="voltN" value={formData.voltN} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">-N (≥ 220V)</label>
+                            <input type="text" name="voltN" value={formData.voltN} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                     </div>
 
                     <h4 className="text-md font-semibold mt-6 mb-2 text-gray-800 dark:text-white">COMPRESSOR CURRENT</h4>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L1 (≤ 9A)</label>
-                            <input type="text" name="compL1" value={formData.compL1} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L1 (≤ 9A)</label>
+                            <input type="text" name="compL1" value={formData.compL1} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L2 (≤ 9A)</label>
-                            <input type="text" name="compL2" value={formData.compL2} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L2 (≤ 9A)</label>
+                            <input type="text" name="compL2" value={formData.compL2} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L3 (≤ 9A)</label>
-                            <input type="text" name="compL3" value={formData.compL3} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L3 (≤ 9A)</label>
+                            <input type="text" name="compL3" value={formData.compL3} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                     </div>
 
                     <h4 className="text-md font-semibold mt-6 mb-2 text-gray-800 dark:text-white">MOTOR CURRENT (AIR SIDE)</h4>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L1 (≤ 17A)</label>
-                            <input type="text" name="motorAirL1" value={formData.motorAirL1} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L1 (≤ 17A)</label>
+                            <input type="text" name="motorAirL1" value={formData.motorAirL1} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L2 (≤ 17A)</label>
-                            <input type="text" name="motorAirL2" value={formData.motorAirL2} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L2 (≤ 17A)</label>
+                            <input type="text" name="motorAirL2" value={formData.motorAirL2} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L3 (≤ 17A)</label>
-                            <input type="text" name="motorAirL3" value={formData.motorAirL3} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L3 (≤ 17A)</label>
+                            <input type="text" name="motorAirL3" value={formData.motorAirL3} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                     </div>
 
                     <h4 className="text-md font-semibold mt-6 mb-2 text-gray-800 dark:text-white">MOTOR CURRENT (FCDU)</h4>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L1 (≤ 5A)</label>
-                            <input type="text" name="motorFcduL1" value={formData.motorFcduL1} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L1 (≤ 5A)</label>
+                            <input type="text" name="motorFcduL1" value={formData.motorFcduL1} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L2 (≤ 5A)</label>
-                            <input type="text" name="motorFcduL2" value={formData.motorFcduL2} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L2 (≤ 5A)</label>
+                            <input type="text" name="motorFcduL2" value={formData.motorFcduL2} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L3 (≤ 5A)</label>
-                            <input type="text" name="motorFcduL3" value={formData.motorFcduL3} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L3 (≤ 5A)</label>
+                            <input type="text" name="motorFcduL3" value={formData.motorFcduL3} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                     </div>
 
                     <h4 className="text-md font-semibold mt-6 mb-2 text-gray-800 dark:text-white">MOTOR CURRENT (Exhaust)</h4>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 mb-1">L1</label>
-                            <input type="text" name="motorExL1" value={formData.motorExL1} onChange={handleChange} className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white transition-colors mt-1" />
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">L1</label>
+                            <input type="text" name="motorExL1" value={formData.motorExL1} onChange={handleChange} className="w-full rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-2 px-3 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-colors mt-1 outline-none" />
                         </div>
                     </div>
                 </div>
@@ -380,7 +380,7 @@ export default function CleanRoomForm({ jobItemId, initialData, onSaveAction }: 
                     </div>
 
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-semibold text-gray-800 dark:text-white mb-2">
                             REMARKS (หมายเหตุเพิ่มเติม)
                         </label>
                         <textarea
@@ -389,7 +389,7 @@ export default function CleanRoomForm({ jobItemId, initialData, onSaveAction }: 
                             value={formData.remarksGeneral}
                             onChange={handleChange}
                             placeholder="ระบุหมายเหตุ หรือข้อเสนอแนะเพิ่มเติมที่นี่..."
-                            className="block w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 px-4 bg-gray-50 hover:bg-white transition-colors"
+                            className="block w-full rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm py-3 px-4 bg-gray-50 hover:bg-white dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 transition-colors outline-none"
                         ></textarea>
                     </div>
                 </div>

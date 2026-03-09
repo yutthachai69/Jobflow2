@@ -8,13 +8,10 @@ interface TechnicianDashboardProps {
 }
 
 export default async function TechnicianDashboard({ userId }: TechnicianDashboardProps) {
-  // ดึงข้อมูลงานทั้งหมดของช่าง
+  // ดึงข้อมูลงานของช่างคนนี้
   const allJobItems = await prisma.jobItem.findMany({
     where: {
-      OR: [
-        { technicianId: userId },
-        { technicianId: null }, // งานที่ยังไม่ได้มอบหมาย
-      ],
+      technicianId: userId,
     },
     include: {
       workOrder: {
@@ -28,6 +25,14 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
       photos: true,
     },
     orderBy: { id: 'desc' },
+  })
+
+  // นับงานที่ยังไม่ assign (แยกต่างหาก)
+  const unassignedCount = await prisma.jobItem.count({
+    where: {
+      technicianId: null,
+      status: { in: ['PENDING', 'IN_PROGRESS'] },
+    },
   })
 
   // คำนวณสถิติ
@@ -62,6 +67,7 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
     { label: 'งานที่กำลังทำ', value: inProgressJobs.length, emoji: '🔨', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/technician' },
     { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/technician' },
     { label: 'งานที่เสร็จแล้ว', value: doneJobs.length, emoji: '🏆', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/technician' },
+    ...(unassignedCount > 0 ? [{ label: 'งานที่ยังไม่มีคนรับ', value: unassignedCount, emoji: '📋', from: '#d97706', to: '#b45309', glow: 'rgba(217,119,6,0.25)', href: '/technician' }] : []),
   ]
 
   return (

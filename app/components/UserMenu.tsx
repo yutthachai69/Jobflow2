@@ -46,7 +46,7 @@ export default function UserMenu({ username, fullName, role, siteName }: UserMen
       const viewportWidth = window.innerWidth
       const spaceOnRight = viewportWidth - buttonRect.right
       const spaceOnLeft = buttonRect.left
-      
+
       // วาง dropdown ให้อยู่ใต้ปุ่ม โดยยึดขอบขวาของปุ่ม
       // ถ้าพื้นที่ด้านขวาไม่พอ ให้วางให้ขอบขวาของ dropdown อยู่ที่ขอบขวาของ viewport
       if (spaceOnRight < dropdownWidth) {
@@ -97,43 +97,47 @@ export default function UserMenu({ username, fullName, role, siteName }: UserMen
   return (
     <>
       <div className="relative z-50" ref={menuRef}>
-        {/* User Button */}
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg bg-app-card hover:bg-app-card/80 active:bg-app-card/90 border border-app transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:ring-offset-2 focus:ring-offset-[var(--app-section)] touch-manipulation"
+          className="flex items-center gap-2 sm:gap-3 pl-1.5 pr-3 sm:pl-2 sm:pr-4 py-1.5 sm:py-2 rounded-full bg-app-card hover:bg-app-card/80 border border-app shadow-sm hover:shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:ring-offset-2 focus:ring-offset-[var(--app-section)] touch-manipulation group"
           aria-label="เมนูผู้ใช้"
           aria-expanded={isOpen}
         >
-          {/* Avatar */}
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[var(--app-btn-primary)] flex items-center justify-center text-[var(--app-btn-primary-text)] font-semibold text-sm sm:text-base flex-shrink-0">
-            {displayName.charAt(0).toUpperCase()}
+          {/* Avatar (with gradient & glow) */}
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#92761a] to-[#c2a66a] blur-[3px] opacity-40 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#c2a66a] to-[#92761a] border border-white/20 flex items-center justify-center text-white font-bold text-sm sm:text-lg flex-shrink-0 shadow-inner">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
           </div>
-          
+
           {/* User Info (hidden on mobile) */}
-          <div className="hidden md:block text-left min-w-0">
-            <div className="text-sm font-medium text-app-heading leading-tight truncate">
+          <div className="hidden md:flex flex-col text-left min-w-0 mr-1 sm:mr-2">
+            <div className="text-sm font-semibold text-app-heading leading-tight truncate">
               {displayName}
             </div>
-            <div className="text-xs text-app-muted leading-tight truncate">
+            <div className="text-[11px] font-medium text-[#c2a66a] leading-tight truncate mt-0.5 tracking-wide uppercase">
               {displayRole}
             </div>
           </div>
 
           {/* Dropdown Icon */}
-          <svg
-            className={`w-4 h-4 sm:w-5 sm:h-5 text-app-muted transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <div className="w-5 h-5 rounded-full bg-app-section flex items-center justify-center group-hover:bg-[#c2a66a]/10 transition-colors">
+            <svg
+              className={`w-3.5 h-3.5 text-app-muted group-hover:text-[#c2a66a] transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </button>
 
         {/* Dropdown Menu */}
         {isOpen && dropdownPosition && (
-          <div 
+          <div
             className="fixed w-[calc(100vw-2rem)] max-w-72 sm:w-72 bg-app-card rounded-xl shadow-2xl border border-app overflow-hidden z-[100] origin-top-right"
             style={{
               top: `${dropdownPosition.top}px`,
@@ -142,21 +146,24 @@ export default function UserMenu({ username, fullName, role, siteName }: UserMen
             }}
           >
             {/* User Info Header */}
-            <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-app bg-app-section/50">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[var(--app-btn-primary)] flex items-center justify-center text-[var(--app-btn-primary-text)] font-bold text-sm sm:text-base shadow-lg flex-shrink-0">
+            <div className="px-4 sm:px-5 py-4 sm:py-5 border-b border-app bg-app-section/30 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#c2a66a]/10 to-transparent pointer-events-none"></div>
+              <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-[#c2a66a] to-[#92761a] border-2 border-white/20 flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-[0_4px_12px_rgba(194,166,106,0.3)] flex-shrink-0">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-app-heading truncate leading-tight">{displayName}</div>
-                  <div className="text-xs text-app-muted truncate mt-0.5">{displayRole}</div>
+                  <div className="text-sm sm:text-base font-bold text-app-heading truncate leading-tight">{displayName}</div>
+                  <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#c2a66a]/15 text-[#c2a66a] mt-1.5 border border-[#c2a66a]/30">
+                    {displayRole}
+                  </div>
                   {siteName && (
-                    <div className="text-xs text-app-muted truncate mt-1 flex items-center gap-1">
-                      <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-xs text-app-muted truncate mt-1.5 flex items-center gap-1.5 bg-black/20 dark:bg-white/5 px-2 py-1 rounded-md w-fit border border-app">
+                      <svg className="w-3.5 h-3.5 flex-shrink-0 text-[#c2a66a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <span className="truncate">{siteName}</span>
+                      <span className="truncate font-medium">{siteName}</span>
                     </div>
                   )}
                 </div>
@@ -164,37 +171,27 @@ export default function UserMenu({ username, fullName, role, siteName }: UserMen
             </div>
 
             {/* Menu Items */}
-            <div className="py-2">
-              <button
-                onClick={() => {
-                  setIsOpen(false)
-                  // TODO: Navigate to profile page if exists
-                }}
-                className="w-full flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 text-sm font-medium text-app-body hover:bg-app-section active:bg-app-section/80 transition-colors group touch-manipulation min-h-[44px]"
-              >
-                <div className="w-8 h-8 rounded-lg bg-app-section group-hover:bg-app-card flex items-center justify-center transition-colors">
-                  <svg className="w-4 h-4 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <span>โปรไฟล์ของฉัน</span>
-              </button>
-
-              <div className="mx-4 my-2 border-t border-app"></div>
+            <div className="py-2.5 flex flex-col gap-1 px-2">
 
               <button
                 onClick={() => {
                   setShowLogoutConfirm(true)
                   setIsOpen(false)
                 }}
-                className="w-full flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 text-sm font-medium text-red-400 hover:bg-red-500/10 active:bg-red-500/20 transition-colors group touch-manipulation min-h-[44px]"
+                className="w-full relative flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-app-body hover:bg-gradient-to-r hover:from-red-500/10 hover:to-transparent active:bg-red-500/20 transition-all duration-300 group touch-manipulation overflow-hidden border border-transparent hover:border-red-500/10"
               >
-                <div className="w-8 h-8 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 flex items-center justify-center transition-colors">
-                  <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-1 bg-gradient-to-b from-red-500 to-red-600 rounded-r-full group-hover:h-3/4 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+
+                <div className="w-10 h-10 rounded-[10px] bg-red-500/5 group-hover:bg-red-500/10 border border-transparent group-hover:border-red-500/20 flex items-center justify-center transition-all duration-300 shadow-sm group-hover:shadow-[0_0_12px_rgba(239,68,68,0.2)] flex-shrink-0 relative">
+                  <div className="absolute inset-0 rounded-[10px] bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <svg className="w-5 h-5 text-red-500/70 group-hover:text-red-500 transition-colors duration-300 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                 </div>
-                <span>ออกจากระบบ</span>
+                <div className="flex flex-col items-start min-w-0">
+                  <span className="font-bold text-red-500/90 group-hover:text-red-500 transition-colors duration-300 text-[13px] leading-tight">ออกจากระบบ</span>
+                  <span className="text-[10px] text-red-500/50 font-medium mt-0.5 group-hover:text-red-500/70 transition-colors truncate w-full">ยุติการใช้งานและออกจากระบบ</span>
+                </div>
               </button>
             </div>
           </div>

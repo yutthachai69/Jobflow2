@@ -189,6 +189,10 @@ model JobItem {
   startTime DateTime?
   endTime   DateTime?
 
+  // Customer sign-off
+  customerSignature String? // Base64 data URL of signature image
+  signedAt          DateTime?
+
   photos JobPhoto[]
 
   @@index([technicianId])
