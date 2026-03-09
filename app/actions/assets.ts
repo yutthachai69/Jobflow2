@@ -71,7 +71,7 @@ export async function createAsset(formData: FormData): Promise<{ error: string }
     revalidatePath('/assets')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
-    return { error: 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง' }
+    return { error: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : String(error)}` }
   }
   redirect('/assets')
 }
