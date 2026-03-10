@@ -89,6 +89,8 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+}
+
 // Hook for programmatic usage
 export function useConfirm() {
   const [isOpen, setIsOpen] = useState(false);
