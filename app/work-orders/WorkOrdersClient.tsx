@@ -35,8 +35,6 @@ interface Technician {
 interface Asset {
   id: string
   qrCode: string
-  brand: string | null
-  model: string | null
   room: {
     name: string
     floor: {

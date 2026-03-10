@@ -121,44 +121,24 @@ async function main() {
     const randomRoom = rooms[Math.floor(Math.random() * rooms.length)]
     
     let qrCode = ''
-    let brand: string | null = null
-    let model: string | null = null
-    let serialNo: string | null = null
     let btu: number | null = null
     
     if (assetType === 'AIR_CONDITIONER') {
       // เครื่องปรับอากาศ - ต้องมี QR Code
       qrCode = `AC-2024-${String(i).padStart(3, '0')}`
-      brand = airBrands[Math.floor(Math.random() * airBrands.length)]
-      model = `Model-${['X', 'Y', 'Z'][Math.floor(Math.random() * 3)]}${Math.floor(Math.random() * 10) + 1}`
-      serialNo = `SN-${brand.substring(0, 3).toUpperCase()}-${String(i).padStart(5, '0')}`
       btu = btuRanges[Math.floor(Math.random() * btuRanges.length)]
     } else if (assetType === 'REFRIGERANT') {
       // น้ำยาแอร์ - ไม่มี QR Code
       qrCode = `REF-2024-${String(i).padStart(3, '0')}`
-      brand = refrigerantBrands[Math.floor(Math.random() * refrigerantBrands.length)]
-      model = `${brand} ${Math.floor(Math.random() * 5) + 1}kg`
-      serialNo = `REF-${String(i).padStart(5, '0')}`
     } else if (assetType === 'SPARE_PART') {
       // อะไหล่ - ไม่มี QR Code
       qrCode = `PART-2024-${String(i).padStart(3, '0')}`
-      const partType = sparePartTypes[Math.floor(Math.random() * sparePartTypes.length)]
-      brand = partType
-      model = `Size-${['S', 'M', 'L'][Math.floor(Math.random() * 3)]}`
-      serialNo = `PART-${String(i).padStart(5, '0')}`
     } else if (assetType === 'TOOL') {
       // เครื่องมือ - ไม่มี QR Code
       qrCode = `TOOL-2024-${String(i).padStart(3, '0')}`
-      const toolType = toolTypes[Math.floor(Math.random() * toolTypes.length)]
-      brand = toolType
-      model = `Pro-${Math.floor(Math.random() * 10) + 1}`
-      serialNo = `TOOL-${String(i).padStart(5, '0')}`
     } else {
       // อื่นๆ - ไม่มี QR Code
       qrCode = `OTHER-2024-${String(i).padStart(3, '0')}`
-      brand = 'Generic'
-      model = `Item-${i}`
-      serialNo = `OTH-${String(i).padStart(5, '0')}`
     }
     
     // สุ่มวันที่ติดตั้ง (เฉพาะเครื่องปรับอากาศ)
@@ -176,9 +156,6 @@ async function main() {
       data: {
         qrCode,
         assetType: assetType as any,
-        brand,
-        model,
-        serialNo,
         btu,
         installDate,
         status: status as any,
