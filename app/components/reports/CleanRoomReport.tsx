@@ -222,7 +222,7 @@ export default function CleanRoomReport({ jobItem }: CleanRoomReportProps) {
             border: 1px solid #000;
             padding: 4px;
             text-align: center;
-            width: 50%;
+            width: 33.33%;
         }
         @media print {
             .no-print { display: none !important; }
@@ -383,13 +383,19 @@ export default function CleanRoomReport({ jobItem }: CleanRoomReportProps) {
                                 <table className="footer-table">
                                     <tbody>
                                         <tr>
-                                            <td className="bg-yellow bold w-1/2">CUSTOMER SIGNATURE</td>
-                                            <td className="bg-yellow bold w-1/2">SERVICE SIGNATURE</td>
+                                            <td className="bg-yellow bold w-1/3">CUSTOMER SIGNATURE</td>
+                                            <td className="bg-yellow bold w-1/3">WARD NURSE SIGNATURE</td>
+                                            <td className="bg-yellow bold w-1/3">SERVICE SIGNATURE</td>
                                         </tr>
                                         <tr>
                                             <td height="80px" className="align-middle text-center p-2">
                                                 {data.customerSignature ? (
                                                     <NextImage src={data.customerSignature} alt="Customer Sig" width={200} height={64} className="max-h-16 w-auto mx-auto object-contain" unoptimized />
+                                                ) : null}
+                                            </td>
+                                            <td className="align-middle text-center p-2">
+                                                {data.wardNurseSignature ? (
+                                                    <NextImage src={data.wardNurseSignature} alt="Ward Nurse Sig" width={200} height={64} className="max-h-16 w-auto mx-auto object-contain" unoptimized />
                                                 ) : null}
                                             </td>
                                             <td className="align-middle text-center p-2">
@@ -399,6 +405,7 @@ export default function CleanRoomReport({ jobItem }: CleanRoomReportProps) {
                                             </td>
                                         </tr>
                                         <tr>
+                                            <td>DATE: {jobItem?.workOrder?.scheduledDate ? new Date(jobItem.workOrder.scheduledDate).toLocaleDateString('th-TH') : "....../....../......"}</td>
                                             <td>DATE: {jobItem?.workOrder?.scheduledDate ? new Date(jobItem.workOrder.scheduledDate).toLocaleDateString('th-TH') : "....../....../......"}</td>
                                             <td>DATE: {jobItem?.workOrder?.scheduledDate ? new Date(jobItem.workOrder.scheduledDate).toLocaleDateString('th-TH') : "....../....../......"}</td>
                                         </tr>

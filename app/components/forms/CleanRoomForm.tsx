@@ -97,6 +97,7 @@ interface CleanRoomFormData {
     remarksGeneral: string;
 
     customerSignature: string | null;
+    wardNurseSignature: string | null;
     serviceSignature: string | null;
 }
 
@@ -137,6 +138,7 @@ export default function CleanRoomForm({ jobItemId, initialData, onSaveAction }: 
 
             remarksGeneral: "",
             customerSignature: null,
+            wardNurseSignature: null,
             serviceSignature: null,
         };
     });
@@ -399,11 +401,16 @@ export default function CleanRoomForm({ jobItemId, initialData, onSaveAction }: 
             <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-xl font-bold text-center mb-8 text-gray-800 dark:text-white">ลงลายมือชื่อ (Signatures)</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <SignaturePad
                         label="CUSTOMER SIGNATURE (ลายเซ็นลูกค้า)"
                         initialDataUrl={formData.customerSignature}
                         onSave={(data) => setFormData(prev => ({ ...prev, customerSignature: data }))}
+                    />
+                    <SignaturePad
+                        label="WARD NURSE SIGNATURE (ลายเซ็นพยาบาลหัวหน้าวอร์ด)"
+                        initialDataUrl={formData.wardNurseSignature}
+                        onSave={(data) => setFormData(prev => ({ ...prev, wardNurseSignature: data }))}
                     />
                     <SignaturePad
                         label="SERVICE SIGNATURE (ลายเซ็นช่างผู้ปฏิบัติงาน)"
