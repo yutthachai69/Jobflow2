@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -89,4 +89,70 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+// Hook for programmatic usage
+export function useConfirm() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [options, setOptions] = useState<{
+    title: string;
+    description: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: "primary" | "danger" | "warning";
+    icon?: string;
+  } | null>(null);
+  const [resolver, setResolver] = useState<{ resolve: (value: boolean) => void } | null>(null);
+
+  const confirm = async (opts: {
+    title: string;
+    message?: string; // backwards compatibility
+    description?: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: "primary" | "danger" | "warning" | "info"; // allow info
+    icon?: string;
+  }) => {
+    // map info to primary, map message to description
+    setOptions({
+      title: opts.title,
+      description: opts.description || opts.message || '',
+      confirmText: opts.confirmText,
+      cancelText: opts.cancelText,
+      variant: (opts.variant === 'info' ? 'primary' : opts.variant) as "primary" | "danger" | "warning",
+      icon: opts.icon
+    });
+    setIsOpen(true);
+    return new Promise<boolean>((resolve) => {
+      setResolver({ resolve });
+    });
+  };
+
+  const handleConfirm = () => {
+    setIsOpen(false);
+    resolver?.resolve(true);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    resolver?.resolve(false);
+  };
+
+  const ConfirmDialog = () => {
+    if (!isOpen || !options) return null;
+    return (
+      <ConfirmModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        title={options.title}
+        description={options.description}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
+        icon={options.icon}
+      />
+    );
+  };
+
+  return { confirm, ConfirmDialog };
 }
+
