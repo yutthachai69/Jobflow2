@@ -132,11 +132,11 @@ export async function createWorkOrder(formData: FormData) {
         throw new Error('New assets data and room ID are required for INSTALL')
       }
 
-      const newAssets: Array<{ brand: string; model: string; serialNo: string; btu: string }> = JSON.parse(newAssetsJson)
-      const validAssets = newAssets.filter(a => a.brand.trim() !== '')
+      const newAssets: Array<{ qrCode: string; btu: string }> = JSON.parse(newAssetsJson)
+      const validAssets = newAssets.filter(a => (a.qrCode || '').trim() !== '')
 
       if (validAssets.length === 0) {
-        throw new Error('At least one asset with a brand is required')
+        throw new Error('At least one asset with QR Code is required')
       }
 
       // สร้าง Work Order
@@ -153,18 +153,12 @@ export async function createWorkOrder(formData: FormData) {
 
       // สร้าง Asset แต่ละตัว + JobItem
       for (const assetData of validAssets) {
-        // Auto-generate unique QR code
-        const timestamp = Date.now()
-        const random = Math.random().toString(36).substring(2, 6).toUpperCase()
-        const qrCode = `INST-${timestamp}-${random}`
+        const qrCode = assetData.qrCode.trim()
 
         const asset = await prisma.asset.create({
           data: {
             qrCode,
             assetType: 'AIR_CONDITIONER',
-            brand: assetData.brand.trim(),
-            model: assetData.model.trim() || null,
-            serialNo: assetData.serialNo.trim() || null,
             btu: assetData.btu ? parseInt(assetData.btu) : null,
             installDate: scheduledDate,
             roomId,
@@ -1276,10 +1270,8 @@ export async function createAsset(formData: FormData) {
     }
 
     const roomId = sanitizeString(formData.get('roomId') as string)
-    const serialNo = sanitizeString(formData.get('serialNo') as string)
+    const qrCode = sanitizeString((formData.get('qrCode') as string) || (formData.get('serialNo') as string))
     const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
-    const brand = sanitizeString(formData.get('brand') as string)
-    const model = sanitizeString(formData.get('model') as string)
     const btuStr = formData.get('btu') as string
     const installDateStr = formData.get('installDate') as string
 
@@ -1287,13 +1279,13 @@ export async function createAsset(formData: FormData) {
     if (!roomId) {
       throw new Error('Room ID is required')
     }
-    if (!serialNo) {
-      throw new Error('Serial Number is required')
+    if (!qrCode) {
+      throw new Error('รหัสทรัพย์สิน / QR Code is required')
     }
 
-    // Check if QR Code (serialNo) already exists
+    // Check if QR Code already exists
     const existingAsset = await prisma.asset.findUnique({
-      where: { qrCode: serialNo },
+      where: { qrCode },
     })
     if (existingAsset) {
       throw new Error('QR Code already exists')
@@ -1312,11 +1304,8 @@ export async function createAsset(formData: FormData) {
     await prisma.asset.create({
       data: {
         roomId,
-        qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
+        qrCode,
         assetType: assetType as any,
-        brand: brand || null,
-        model: model || null,
-        serialNo: serialNo || null,
         btu: btu || null,
         installDate: installDate || null,
         status: 'ACTIVE',
@@ -1340,10 +1329,8 @@ export async function updateAsset(formData: FormData) {
 
   const assetId = sanitizeString(formData.get('assetId') as string)
   const roomId = sanitizeString(formData.get('roomId') as string)
-  const serialNo = sanitizeString(formData.get('serialNo') as string)
+  const qrCode = sanitizeString((formData.get('qrCode') as string) || (formData.get('serialNo') as string))
   const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
-  const brand = sanitizeString(formData.get('brand') as string)
-  const model = sanitizeString(formData.get('model') as string)
   const btuStr = formData.get('btu') as string
   const installDateStr = formData.get('installDate') as string
   const status = formData.get('status') as 'ACTIVE' | 'BROKEN' | 'RETIRED'
@@ -1355,8 +1342,8 @@ export async function updateAsset(formData: FormData) {
   if (!roomId) {
     throw new Error('Room ID is required')
   }
-  if (!serialNo) {
-    throw new Error('Serial Number is required')
+  if (!qrCode) {
+    throw new Error('รหัสทรัพย์สิน / QR Code is required')
   }
   if (!status || !['ACTIVE', 'BROKEN', 'RETIRED'].includes(status)) {
     throw new Error('Invalid status')
@@ -1370,10 +1357,10 @@ export async function updateAsset(formData: FormData) {
     throw new Error('Asset not found')
   }
 
-  // Check if QR Code (serialNo) already exists for different asset
-  if (serialNo !== existingAsset.qrCode) {
+  // Check if QR Code already exists for different asset
+  if (qrCode !== existingAsset.qrCode) {
     const duplicateAsset = await prisma.asset.findUnique({
-      where: { qrCode: serialNo },
+      where: { qrCode },
     })
     if (duplicateAsset) {
       throw new Error('QR Code already exists')
@@ -1394,11 +1381,8 @@ export async function updateAsset(formData: FormData) {
     where: { id: assetId },
     data: {
       roomId,
-      qrCode: serialNo,
+      qrCode,
       assetType: assetType as any,
-      brand: brand || null,
-      model: model || null,
-      serialNo: serialNo || null,
       btu: btu || null,
       installDate: installDate || null,
       status,

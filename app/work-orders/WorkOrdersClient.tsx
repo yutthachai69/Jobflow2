@@ -155,7 +155,7 @@ export default function WorkOrdersClient({
   if (userRole === 'TECHNICIAN') {
     return (
       <div className="p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-full">
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-app-heading mb-2">📋 ประวัติการทำงานของฉัน</h1>
             <p className="text-app-muted">รายการงานทั้งหมดที่คุณเคยรับผิดชอบ ({technicianJobItems.length} รายการ)</p>
@@ -173,7 +173,7 @@ export default function WorkOrdersClient({
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <span className="text-2xl">{jobItem.workOrder.jobType === 'PM' ? '🔧' : jobItem.workOrder.jobType === 'CM' ? '⚡' : '🆕'}</span>
-                          <h3 className="text-lg font-bold text-app-heading">{jobItem.asset.brand} {jobItem.asset.model}</h3>
+                          <h3 className="text-lg font-bold text-app-heading">{jobItem.asset.qrCode}</h3>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${st.tailwind}`}>{st.label}</span>
                         </div>
                         <div className="text-sm text-app-body space-y-1">
@@ -228,7 +228,7 @@ export default function WorkOrdersClient({
   // สำหรับ ADMIN และ CLIENT: แสดง Work Orders
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-app-heading">

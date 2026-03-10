@@ -26,7 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ siteId?: string }> }) {
+  const { siteId } = await searchParams;
   const user = await getCurrentUser();
 
   // ถ้ายังไม่ได้ login หรือ token หมดอายุ ให้ไปหน้า login
@@ -88,5 +89,5 @@ export default async function DashboardPage() {
   }
 
   // ADMIN
-  return <AdminDashboard />;
+  return <AdminDashboard siteId={siteId} />;
 }

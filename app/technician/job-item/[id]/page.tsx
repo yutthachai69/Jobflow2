@@ -5,7 +5,6 @@ import { updateJobItemStatus, updateJobItemNote } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
 import PhotoUpload from "./PhotoUpload";
 import DeletePhotoButton from "./DeletePhotoButton";
-import ChecklistSection from "@/app/work-orders/[id]/ChecklistSection";
 import RequestRepairButton from "./RequestRepairButton";
 import SendApprovalButton from "./SendApprovalButton";
 import CleanRoomForm from "@/app/components/forms/CleanRoomForm";
@@ -93,7 +92,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full max-w-full">
         {/* Back Link */}
         <Link
           href={`/technician/work-order/${jobItem.workOrderId}`}
@@ -111,7 +110,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                  {jobItem.asset.brand} {jobItem.asset.model}
+                  {jobItem.asset.qrCode}
                 </h1>
                 <p className="text-sm text-gray-500">ข้อมูลเครื่องปรับอากาศ</p>
               </div>
@@ -253,7 +252,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   assetId={jobItem.assetId}
                   userId={user.id}
                   jobStatus={jobItem.status}
-                  assetName={`${jobItem.asset.brand} - ${jobItem.asset.model}`}
+                  assetName={jobItem.asset.qrCode}
                   assetLocation={`${jobItem.asset.room.name} (${jobItem.asset.room.floor.building.name})`}
                   assetCode={jobItem.asset.qrCode}
                   sourceJobItemId={jobItem.id}
@@ -275,19 +274,6 @@ export default async function TechnicianJobItemPage({ params }: Props) {
           )}
         </div>
 
-
-
-        {/* Checklist Section — General PM */}
-        {jobItem.workOrder.jobType === 'PM' && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6">
-            <ChecklistSection
-              jobItemId={id}
-              initialData={jobItem.checklist}
-              isEditable={jobItem.status !== 'DONE'}
-              jobType={jobItem.workOrder.jobType}
-            />
-          </div>
-        )}
 
         {/* Clean Room Report Form Section (Only for PM as an alternative or additional form) */}
         {jobItem.workOrder.jobType === 'PM' && (

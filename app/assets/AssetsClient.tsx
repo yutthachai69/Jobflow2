@@ -14,9 +14,6 @@ interface Asset {
   qrCode: string
   assetType: string
   machineType?: string | null
-  brand: string | null
-  model: string | null
-  serialNo: string | null
   btu: number | null
   installDate: Date | null
   status: string
@@ -41,12 +38,14 @@ interface Asset {
 interface Props {
   assets: Asset[]
   userRole: string
+  defaultSiteName: string | null
 }
 
-export default function AssetsClient({ assets, userRole }: Props) {
+export default function AssetsClient({ assets, userRole, defaultSiteName }: Props) {
   const searchParams = useSearchParams()
 
   const [search, setSearch] = useState('')
+  const [siteFilter, setSiteFilter] = useState(searchParams.get('site') || 'ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'ALL')
   const [currentPage, setCurrentPage] = useState(1)
@@ -61,21 +60,29 @@ export default function AssetsClient({ assets, userRole }: Props) {
   // ตรวจสอบว่ามี asset ที่เป็น AIR_CONDITIONER หรือไม่
   const hasAirConditioner = assets.some(a => a.assetType === 'AIR_CONDITIONER')
 
+  // ดึงรายการ Site (สถานที่) ทั้งหมดที่ไม่ซ้ำกัน
+  const availableSites = useMemo(() => {
+    const sites = new Set<string>()
+    assets.forEach(asset => {
+      const siteName = asset.room?.floor?.building?.site?.name
+      if (siteName) sites.add(siteName)
+    })
+    return Array.from(sites).sort()
+  }, [assets])
+
   // Reset page when filters change
   const handleSearchChange = (v: string) => { setSearch(v); setCurrentPage(1) }
+  const handleSiteChange = (v: string) => { setSiteFilter(v); setCurrentPage(1) }
   const handleStatusChange = (v: string) => { setStatusFilter(v); setCurrentPage(1) }
   const handleTypeChange = (v: string) => { setTypeFilter(v); setCurrentPage(1) }
 
   const filteredAssets = useMemo(() => {
-    return assets.filter((asset) => {
+    const result = assets.filter((asset) => {
       // Search filter
       const searchLower = search.toLowerCase()
       const matchesSearch =
         !search ||
         asset.qrCode.toLowerCase().includes(searchLower) ||
-        asset.brand?.toLowerCase().includes(searchLower) ||
-        asset.model?.toLowerCase().includes(searchLower) ||
-        asset.serialNo?.toLowerCase().includes(searchLower) ||
         asset.room.name.toLowerCase().includes(searchLower) ||
         asset.room.floor.name.toLowerCase().includes(searchLower) ||
         asset.room.floor.building.name.toLowerCase().includes(searchLower) ||
@@ -85,11 +92,38 @@ export default function AssetsClient({ assets, userRole }: Props) {
       const matchesStatus = statusFilter === 'ALL' || asset.status === statusFilter
 
       // Type filter
-      const matchesType = typeFilter === 'ALL' || (asset as any).machineType === typeFilter
+      let matchesType = false
+      if (typeFilter === 'ALL') {
+        matchesType = true
+      } else if (['AIR_CONDITIONER', 'EXHAUST', 'OTHER'].includes(typeFilter)) {
+        matchesType = asset.assetType === typeFilter
+      } else {
+        matchesType = (asset as any).machineType === typeFilter
+      }
 
-      return matchesSearch && matchesStatus && matchesType
+      // Site filter
+      const matchesSite = siteFilter === 'ALL' || asset.room?.floor?.building?.site?.name === siteFilter
+
+      return matchesSearch && matchesStatus && matchesType && matchesSite
     })
-  }, [assets, search, statusFilter, typeFilter])
+
+    // Sort by type (AIR_CONDITIONER first) and then naturally by qrCode
+    return result.sort((a, b) => {
+      const typeOrder: Record<string, number> = {
+        'AIR_CONDITIONER': 1,
+        'EXHAUST': 2,
+        'OTHER': 3,
+      }
+      const orderA = typeOrder[a.assetType] || 99
+      const orderB = typeOrder[b.assetType] || 99
+      
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+      
+      return a.qrCode.localeCompare(b.qrCode, undefined, { numeric: true, sensitivity: 'base' })
+    })
+  }, [assets, search, statusFilter, typeFilter, siteFilter])
 
   const paginatedAssets = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE
@@ -133,13 +167,46 @@ export default function AssetsClient({ assets, userRole }: Props) {
     )
   }
 
+  // คำนวณชื่อ Site ที่แสดงบน Header
+  let displaySiteName = defaultSiteName
+  if (siteFilter !== 'ALL') {
+    displaySiteName = siteFilter
+  } else if (availableSites.length === 1) {
+    displaySiteName = availableSites[0]
+  }
+
   return (
     <>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-app-heading mb-1 select-none">
+            📋 {displaySiteName ? `รายการทรัพย์สิน: ${displaySiteName}` : 'ทรัพย์สินและอุปกรณ์'} ({filteredAssets.length})
+          </h1>
+          {displaySiteName && filteredAssets.length > 0 && (
+            <p className="text-sm text-app-muted">จำนวนทั้งหมด {filteredAssets.length} รายการ (จากทั้งหมด {assets.length})</p>
+          )}
+          {filteredAssets.length === 0 && userRole === 'CLIENT' && (
+            <p className="text-sm text-app-muted">ยังไม่มีทรัพย์สินในระบบ</p>
+          )}
+        </div>
+        {userRole === 'ADMIN' && (
+          <Link
+            href="/assets/new"
+            className="w-full sm:w-auto btn-app-primary px-4 py-2 rounded-lg hover:shadow-md font-medium text-sm sm:text-base text-center transition-all"
+          >
+            + เพิ่มทรัพย์สินใหม่
+          </Link>
+        )}
+      </div>
+
       <AssetsSearchFilter
         searchValue={search}
+        siteFilter={siteFilter}
         statusFilter={statusFilter}
         typeFilter={typeFilter}
+        sites={availableSites}
         onSearchChange={handleSearchChange}
+        onSiteFilterChange={handleSiteChange}
         onStatusFilterChange={handleStatusChange}
         onTypeFilterChange={handleTypeChange}
       />
@@ -168,17 +235,9 @@ export default function AssetsClient({ assets, userRole }: Props) {
                     <div className="font-mono font-medium text-[var(--app-btn-primary)] text-sm mb-1">
                       {asset.qrCode}
                     </div>
-                    <div className="font-bold text-app-heading text-base mb-1">
-                      {asset.brand || '-'}
-                    </div>
                     <div className="text-xs text-app-muted mb-1">
-                      {asset.model || '-'} {asset.btu && `(${asset.btu.toLocaleString()} BTU)`}
+                      {asset.btu ? `${asset.btu.toLocaleString()} BTU` : ''}
                     </div>
-                    {asset.serialNo && (
-                      <div className="text-xs text-app-muted font-mono">
-                        SN: {asset.serialNo}
-                      </div>
-                    )}
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     {getStatusBadge(asset.status)}
@@ -244,9 +303,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
                 <th className="px-4 py-3 text-app-heading font-semibold">QR Code</th>
               )}
               <th className="px-4 py-3 text-app-heading font-semibold">ประเภททรัพย์สิน</th>
-              <th className="px-4 py-3 text-app-heading font-semibold">ยี่ห้อ / รุ่น</th>
               <th className="px-4 py-3 text-app-heading font-semibold">BTU</th>
-              <th className="px-4 py-3 text-app-heading font-semibold">Serial No.</th>
               <th className="px-4 py-3 text-app-heading font-semibold">อาคาร</th>
               <th className="px-4 py-3 text-app-heading font-semibold">ชั้น</th>
               <th className="px-4 py-3 text-app-heading font-semibold">ห้อง (แผนก)</th>
@@ -258,7 +315,7 @@ export default function AssetsClient({ assets, userRole }: Props) {
           <tbody className="divide-y divide-app-border bg-app-card">
             {filteredAssets.length === 0 ? (
               <tr>
-                <td colSpan={hasAirConditioner ? 12 : 11} className="px-6 py-12">
+                <td colSpan={hasAirConditioner ? 10 : 9} className="px-6 py-12">
                   <EmptyState
                     icon="🔍"
                     title={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
@@ -273,22 +330,12 @@ export default function AssetsClient({ assets, userRole }: Props) {
                 // แปลง assetType enum เป็นชื่อภาษาไทย
                 const assetTypeLabels: Record<string, string> = {
                   'AIR_CONDITIONER': 'เครื่องปรับอากาศ',
-                  'REFRIGERANT': 'น้ำยาแอร์',
-                  'SPARE_PART': 'อะไหล่',
-                  'TOOL': 'เครื่องมือ',
+                  'EXHAUST': 'พัดลมดูดอากาศ (Exhaust)',
                   'OTHER': 'อื่นๆ',
                 }
-                const assetTypeName = assetTypeLabels[asset.assetType] || 'เครื่องปรับอากาศ'
+                const assetTypeName = assetTypeLabels[asset.assetType] || 'อื่นๆ'
 
                 // กำหนดประเภททรัพย์สินจาก assetType และ brand/model
-                const assetTypeDisplay = asset.brand && asset.model
-                  ? `${assetTypeName} - ${asset.brand} ${asset.model}`.trim()
-                  : asset.brand
-                    ? `${assetTypeName} - ${asset.brand}`.trim()
-                    : asset.model
-                      ? `${assetTypeName} - ${asset.model}`.trim()
-                      : assetTypeName
-
                 // Format วันที่ติดตั้ง
                 const installDateFormatted = asset.installDate
                   ? new Date(asset.installDate).toLocaleDateString('th-TH', {
@@ -341,19 +388,8 @@ export default function AssetsClient({ assets, userRole }: Props) {
                         <div className="mt-1">{getMachineTypeBadge((asset as any).machineType)}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-app-heading">
-                        {asset.brand || '-'}
-                      </div>
-                      <div className="text-xs text-app-muted">
-                        {asset.model || '-'}
-                      </div>
-                    </td>
                     <td className="px-4 py-3 text-app-body">
                       {asset.btu ? `${asset.btu.toLocaleString()} BTU` : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-app-body font-mono text-xs">
-                      {asset.serialNo || '-'}
                     </td>
                     <td className="px-4 py-3 text-app-body">
                       {asset.room.floor.building.name}

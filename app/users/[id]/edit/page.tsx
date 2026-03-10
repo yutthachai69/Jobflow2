@@ -50,7 +50,7 @@ export default async function EditUserPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 font-sans">
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full max-w-full">
         <Breadcrumbs
           items={[
             { label: 'Dashboard', href: '/' },

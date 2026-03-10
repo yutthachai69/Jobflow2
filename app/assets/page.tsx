@@ -178,31 +178,9 @@ export default async function AssetsPage(_props: Props) {
 
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8 font-sans">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-app-heading mb-1">
-            📋 {siteName ? `รายการทรัพย์สิน: ${siteName}` : 'ทรัพย์สินและอุปกรณ์'} ({assets.length})
-          </h1>
-          {siteName && assets.length > 0 && (
-            <p className="text-sm text-app-muted">จำนวนทั้งหมด {assets.length} รายการ</p>
-          )}
-          {assets.length === 0 && user.role === 'CLIENT' && (
-            <p className="text-sm text-app-muted">ยังไม่มีทรัพย์สินในระบบ</p>
-          )}
-        </div>
-        {user.role === 'ADMIN' && (
-          <Link
-            href="/assets/new"
-            className="w-full sm:w-auto btn-app-primary px-4 py-2 rounded-lg hover:shadow-md font-medium text-sm sm:text-base text-center transition-all"
-          >
-            + เพิ่มทรัพย์สินใหม่
-          </Link>
-        )}
-      </div>
-
       {/* ส่ง assets ทั้งหมด ไม่ต้อง paginate ที่นี่ — AssetsClient จัดการ pagination + filter เอง */}
       <Suspense fallback={<div className="p-8 text-center text-app-muted">กำลังโหลดข้อมูล...</div>}>
-        <AssetsClient assets={assets} userRole={user.role} />
+        <AssetsClient assets={assets} userRole={user.role} defaultSiteName={siteName} />
       </Suspense>
     </div>
   );

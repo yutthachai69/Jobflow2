@@ -74,6 +74,7 @@ model Site {
   users      User[] // User ที่ดูแล Site นี้ (CLIENT role)
   buildings  Building[]
   workOrders WorkOrder[]
+  pmContracts PMContract[]
 }
 
 model Building {
@@ -118,6 +119,7 @@ enum AssetType {
   REFRIGERANT
   SPARE_PART
   TOOL
+  EXHAUST
   OTHER
 }
 
@@ -135,9 +137,6 @@ model Asset {
   qrCode      String       @unique
   assetType   AssetType    @default(AIR_CONDITIONER)
   machineType MachineType? // ประเภทความเย็น (AHU, FCU, etc.) - จะมีค่าเมื่อ assetType เป็น AIR_CONDITIONER
-  brand       String?
-  model       String?
-  serialNo    String?
   btu         Int?
   installDate DateTime?
   status      AssetStatus @default(ACTIVE)
@@ -146,6 +145,7 @@ model Asset {
   room   Room   @relation(fields: [roomId], references: [id])
 
   jobItems JobItem[]
+  pmSchedules PMSchedule[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -240,6 +240,9 @@ model JobItem {
   // Link to a created CM (Corrective Maintenance) WorkOrder if one was generated from this item
   generatedWorkOrderId String? @unique
   generatedWorkOrder   WorkOrder? @relation("SourceJobItem", fields: [generatedWorkOrderId], references: [id])
+
+  pmScheduleId String? @unique
+  pmSchedule   PMSchedule? @relation(fields: [pmScheduleId], references: [id])
 
   @@index([technicianId])
   @@index([status])
@@ -382,6 +385,56 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
   @@index([type])
+}
+
+// ==========================================
+// 8.5 Preventive Maintenance (PM)
+// ==========================================
+
+enum PMType {
+  MAJOR
+  MINOR
+}
+
+model PMContract {
+  id          String   @id @default(cuid())
+  name        String
+  year        Int
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  
+  schedules   PMSchedule[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([siteId])
+  @@index([year])
+}
+
+model PMSchedule {
+  id          String    @id @default(cuid())
+  contractId  String
+  contract    PMContract @relation(fields: [contractId], references: [id])
+  
+  assetId     String
+  asset       Asset     @relation(fields: [assetId], references: [id])
+  
+  pmType      PMType
+  roundIndex  Int       // 1-6
+  targetMonth Int       // 1-12
+  targetYear  Int
+  
+  jobItem     JobItem?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([contractId])
+  @@index([assetId])
+  @@index([targetYear, targetMonth])
 }
 
 // ==========================================

@@ -118,7 +118,7 @@ export default async function TechnicianPage() {
                   <span className="text-lg">❄️</span>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-app-heading truncate">
-                      {jobItem.asset.brand} {jobItem.asset.model}
+                      {jobItem.asset.qrCode}
                     </div>
                     <div className="text-xs text-app-muted font-mono bg-app-card px-2 py-0.5 rounded inline-block mt-1">
                       {jobItem.asset.qrCode}
@@ -142,7 +142,7 @@ export default async function TechnicianPage() {
 
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-full">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">

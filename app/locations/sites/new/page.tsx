@@ -31,7 +31,7 @@ export default async function NewSitePage({ searchParams }: Props) {
   if (!clientId && clients.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="w-full max-w-full">
           <Link
             href="/locations"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
@@ -60,7 +60,7 @@ export default async function NewSitePage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full max-w-full">
         {/* Back Link */}
         <Link
           href="/locations"

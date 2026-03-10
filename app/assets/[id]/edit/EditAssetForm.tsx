@@ -37,9 +37,6 @@ interface Asset {
   qrCode: string
   assetType: string
   machineType?: string | null
-  brand: string | null
-  model: string | null
-  serialNo: string | null
   btu: number | null
   installDate: Date | null
   status: 'ACTIVE' | 'BROKEN' | 'RETIRED'
@@ -147,16 +144,22 @@ export default function EditAssetForm({ asset, sites }: Props) {
       const submitFormData = new FormData()
       submitFormData.append('assetId', asset.id)
       submitFormData.append('roomId', selectedRoomId)
+      submitFormData.append('qrCode', serialNo)
       submitFormData.append('serialNo', serialNo)
       submitFormData.append('assetType', (formData.get('assetType') as string) || asset.assetType || 'AIR_CONDITIONER')
       submitFormData.append('machineType', machineTypeValue)
-      submitFormData.append('brand', (formData.get('brand') as string) || '')
-      submitFormData.append('model', (formData.get('model') as string) || '')
       submitFormData.append('btu', (formData.get('btu') as string) || '')
       submitFormData.append('installDate', (formData.get('installDate') as string) || '')
       submitFormData.append('status', (formData.get('status') as string) || 'ACTIVE')
 
-      await updateAsset(submitFormData)
+      const result = await updateAsset(submitFormData)
+      
+      if (result && result.error) {
+        setErrors({ submit: result.error })
+        setIsSubmitting(false)
+        return
+      }
+      
       router.push(`/assets/${asset.id}`)
       router.refresh()
     } catch (error: any) {
@@ -180,9 +183,7 @@ export default function EditAssetForm({ asset, sites }: Props) {
             className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
           >
             <option value="AIR_CONDITIONER">เครื่องปรับอากาศ</option>
-            <option value="REFRIGERANT">น้ำยาแอร์</option>
-            <option value="SPARE_PART">อะไหล่</option>
-            <option value="TOOL">เครื่องมือ</option>
+            <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
             <option value="OTHER">อื่นๆ</option>
           </select>
         </div>
@@ -202,7 +203,6 @@ export default function EditAssetForm({ asset, sites }: Props) {
               <option value="SPLIT_TYPE">แอร์แบบแยกส่วน (Split Type)</option>
               <option value="FCU">เครื่องเป่าลมเย็น (FCU)</option>
               <option value="AHU">เครื่องส่งลมเย็นขนาดใหญ่ (AHU)</option>
-              <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
               <option value="VRF">เครื่องปรับอากาศแบบ VRF</option>
               <option value="OTHER">อื่นๆ</option>
             </select>
@@ -332,34 +332,6 @@ export default function EditAssetForm({ asset, sites }: Props) {
                 <p className="mt-1 text-xs text-red-600">{errors.roomId}</p>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Brand and Model */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              ยี่ห้อ
-            </label>
-            <input
-              type="text"
-              name="brand"
-              defaultValue={asset.brand || ''}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400"
-              placeholder="เช่น Daikin, Mitsubishi"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              รุ่น
-            </label>
-            <input
-              type="text"
-              name="model"
-              defaultValue={asset.model || ''}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400"
-              placeholder="เช่น FTXS25LVMA"
-            />
           </div>
         </div>
 

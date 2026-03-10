@@ -31,7 +31,7 @@ export default async function ContactPage() {
 
     return (
       <div className="min-h-screen bg-app-bg p-4 md:p-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="w-full max-w-full">
           {/* Back Button */}
           <Link
             href="/"
@@ -113,7 +113,7 @@ export default async function ContactPage() {
 
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full max-w-full">
 
         {/* Back Button (ปรับดีไซน์ใหม่) */}
         <Link

@@ -90,14 +90,14 @@ export default function AssetForm({ sites }: Props) {
     }
 
     const formData = new FormData(e.currentTarget)
-    const serialNo = formData.get('serialNo') as string
+    const qrCode = (formData.get('qrCode') as string) || (formData.get('serialNo') as string)
     const assetTypeValue = formData.get('assetType') as string || 'AIR_CONDITIONER'
     const machineTypeValue = formData.get('machineType') as string || 'SPLIT_TYPE'
 
     // QR Code/Serial Number เป็น required เฉพาะเครื่องปรับอากาศ
     if (assetTypeValue === 'AIR_CONDITIONER') {
-      if (!serialNo || serialNo.trim() === '') {
-        newErrors.serialNo = 'กรุณากรอก Serial Number / QR Code'
+      if (!qrCode || qrCode.trim() === '') {
+        newErrors.serialNo = 'กรุณากรอกรหัสทรัพย์สิน / QR Code'
       }
     }
 
@@ -309,9 +309,7 @@ export default function AssetForm({ sites }: Props) {
             className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900"
           >
             <option value="AIR_CONDITIONER">เครื่องปรับอากาศ</option>
-            <option value="REFRIGERANT">น้ำยาแอร์</option>
-            <option value="SPARE_PART">อะไหล่</option>
-            <option value="TOOL">เครื่องมือ</option>
+            <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
             <option value="OTHER">อื่นๆ</option>
           </select>
           <p className="mt-2 text-xs text-gray-500">
@@ -334,7 +332,6 @@ export default function AssetForm({ sites }: Props) {
               <option value="SPLIT_TYPE">แอร์แบบแยกส่วน (Split Type)</option>
               <option value="FCU">เครื่องเป่าลมเย็น (FCU)</option>
               <option value="AHU">เครื่องส่งลมเย็นขนาดใหญ่ (AHU)</option>
-              <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
               <option value="VRF">เครื่องปรับอากาศแบบ VRF</option>
               <option value="OTHER">อื่นๆ</option>
             </select>
@@ -344,34 +341,7 @@ export default function AssetForm({ sites }: Props) {
           </div>
         )}
 
-        {/* Brand และ Model */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              ยี่ห้อ
-            </label>
-            <input
-              type="text"
-              name="brand"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-              placeholder="เช่น Daikin, Carrier"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              รุ่น
-            </label>
-            <input
-              type="text"
-              name="model"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-              placeholder="เช่น Model-X1"
-            />
-          </div>
-        </div>
-
-        {/* Serial Number และ BTU */}
+        {/* รหัสทรัพย์สิน / QR Code และ BTU */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {assetType === 'AIR_CONDITIONER' ? (
             <div data-error={errors.serialNo ? 'true' : undefined}>

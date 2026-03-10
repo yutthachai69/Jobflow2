@@ -112,9 +112,6 @@ enum AssetStatus {
 model Asset {
   id          String      @id @default(cuid())
   qrCode      String      @unique
-  brand       String?
-  model       String?
-  serialNo    String?
   btu         Int?
   installDate DateTime?
   status      AssetStatus @default(ACTIVE)

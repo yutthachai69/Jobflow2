@@ -36,7 +36,7 @@ export default async function NewUserPage() {
         ← กลับไปหน้ารายการ
       </Link>
 
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full max-w-full">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             เพิ่มผู้ใช้ใหม่

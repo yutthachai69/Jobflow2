@@ -166,15 +166,9 @@ export async function POST(request: NextRequest) {
       })
 
       // Create assets - 50 รายการคละประเภท
-      const airBrands = ['Daikin', 'Carrier', 'Mitsubishi', 'LG', 'Samsung', 'Toshiba', 'Panasonic', 'Hitachi']
-      const refrigerantBrands = ['R-410A', 'R-22', 'R-32', 'R-134a', 'R-407C']
-      const sparePartTypes = ['Filter', 'Compressor', 'Fan Motor', 'Capacitor', 'Thermostat', 'Coil', 'Drain Pan']
-      const toolTypes = ['Vacuum Pump', 'Gauges Set', 'Refrigerant Scale', 'Leak Detector', 'Multimeter', 'Drill', 'Wrench Set']
-      
       const assetTypes = ['AIR_CONDITIONER', 'REFRIGERANT', 'SPARE_PART', 'TOOL', 'OTHER'] as const
       const statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'BROKEN', 'RETIRED'] as const
       const btuRanges = [12000, 18000, 24000, 30000, 36000]
-      
       const rooms = [roomLobby, roomServer]
       
       for (let i = 1; i <= 50; i++) {
@@ -183,39 +177,19 @@ export async function POST(request: NextRequest) {
         const randomRoom = rooms[Math.floor(Math.random() * rooms.length)]
         
         let qrCode = ''
-        let brand: string | null = null
-        let model: string | null = null
-        let serialNo: string | null = null
         let btu: number | null = null
         
         if (assetType === 'AIR_CONDITIONER') {
           qrCode = `AC-2024-${String(i).padStart(3, '0')}`
-          brand = airBrands[Math.floor(Math.random() * airBrands.length)]
-          model = `Model-${['X', 'Y', 'Z'][Math.floor(Math.random() * 3)]}${Math.floor(Math.random() * 10) + 1}`
-          serialNo = `SN-${brand.substring(0, 3).toUpperCase()}-${String(i).padStart(5, '0')}`
           btu = btuRanges[Math.floor(Math.random() * btuRanges.length)]
         } else if (assetType === 'REFRIGERANT') {
           qrCode = `REF-2024-${String(i).padStart(3, '0')}`
-          brand = refrigerantBrands[Math.floor(Math.random() * refrigerantBrands.length)]
-          model = `${brand} ${Math.floor(Math.random() * 5) + 1}kg`
-          serialNo = `REF-${String(i).padStart(5, '0')}`
         } else if (assetType === 'SPARE_PART') {
           qrCode = `PART-2024-${String(i).padStart(3, '0')}`
-          const partType = sparePartTypes[Math.floor(Math.random() * sparePartTypes.length)]
-          brand = partType
-          model = `Size-${['S', 'M', 'L'][Math.floor(Math.random() * 3)]}`
-          serialNo = `PART-${String(i).padStart(5, '0')}`
         } else if (assetType === 'TOOL') {
           qrCode = `TOOL-2024-${String(i).padStart(3, '0')}`
-          const toolType = toolTypes[Math.floor(Math.random() * toolTypes.length)]
-          brand = toolType
-          model = `Pro-${Math.floor(Math.random() * 10) + 1}`
-          serialNo = `TOOL-${String(i).padStart(5, '0')}`
         } else {
           qrCode = `OTHER-2024-${String(i).padStart(3, '0')}`
-          brand = 'Generic'
-          model = `Item-${i}`
-          serialNo = `OTH-${String(i).padStart(5, '0')}`
         }
         
         const installDate = assetType === 'AIR_CONDITIONER' && Math.random() > 0.3
@@ -232,9 +206,6 @@ export async function POST(request: NextRequest) {
           data: {
             qrCode,
             assetType: assetType as any,
-            brand,
-            model,
-            serialNo,
             btu,
             installDate,
             status: status as any,

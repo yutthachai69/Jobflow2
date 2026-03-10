@@ -41,7 +41,7 @@ export async function sendForApproval(workOrderId: string) {
         // Prepare LINE Message
         // Prepare LINE Message
         const jobItem = workOrder.jobItems[0]
-        const assetName = jobItem?.asset ? `${jobItem.asset.brand} - ${jobItem.asset.model}` : 'Unknown Asset'
+        const assetName = jobItem?.asset ? jobItem.asset.qrCode : 'Unknown Asset'
         const issue = workOrder.jobItems[0]?.techNote || workOrder.jobItems[0]?.checklist || 'ไม่ระบุรายละเอียด'
 
         // Send to Admin Group / Technician

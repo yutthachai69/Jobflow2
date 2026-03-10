@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     const roomId = sanitizeString(body.roomId)
-    const serialNo = sanitizeString(body.serialNo)
-    const brand = sanitizeString(body.brand)
-    const model = sanitizeString(body.model)
+    const qrCode = sanitizeString(body.qrCode || body.serialNo)
+    const assetType = body.assetType || 'AIR_CONDITIONER'
+    const machineType = body.machineType || null
     const btuStr = body.btu
     const installDateStr = body.installDate
 
@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID is required' }, { status: 400 })
     }
-    if (!serialNo) {
-      return NextResponse.json({ error: 'Serial Number is required' }, { status: 400 })
+    if (!qrCode) {
+      return NextResponse.json({ error: 'QR Code is required' }, { status: 400 })
     }
 
-    // Check if QR Code (serialNo) already exists
+    // Check if QR Code already exists
     const existingAsset = await prisma.asset.findUnique({
-      where: { qrCode: serialNo },
+      where: { qrCode },
     })
     if (existingAsset) {
       return NextResponse.json({ error: 'QR Code already exists' }, { status: 400 })
@@ -56,10 +56,9 @@ export async function POST(request: NextRequest) {
     const newAsset = await prisma.asset.create({
       data: {
         roomId,
-        qrCode: serialNo, // ใช้ Serial Number เป็น QR Code
-        brand: brand || null,
-        model: model || null,
-        serialNo: serialNo || null,
+        qrCode,
+        assetType: assetType as any,
+        machineType: machineType as any || null,
         btu: btu || null,
         installDate: installDate || null,
         status: 'ACTIVE',
@@ -73,8 +72,6 @@ export async function POST(request: NextRequest) {
       asset: {
         id: newAsset.id,
         qrCode: newAsset.qrCode,
-        brand: newAsset.brand,
-        model: newAsset.model,
       },
     }, { status: 201 })
   } catch (error) {

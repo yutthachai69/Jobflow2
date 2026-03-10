@@ -1,0 +1,302 @@
+1	AHU/180,000BTU	AC-PTS1-A-F2-001
+2	AHU/180,000BTU	AC-PTS1-A-F2-002
+3	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-003
+4	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-004
+5	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-005
+6	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-006
+7	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-007
+8	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-008
+9	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-009
+10	FCU(Wall type)/16,000BTU	AC-PTS1-A-F2-010
+11	FCU(แอร์แขวน)/24,000BTU	AC-PTS1-A-F2-011
+12	FCU(แอร์แขวน)/24,000BTU	AC-PTS1-A-F2-012
+13	FCU(แอร์แขวน)/24,000BTU	AC-PTS1-A-F2-013
+14	FCU(แอร์แขวน)/24,000BTU	AC-PTS1-A-F2-014
+15	FCU(แอร์แขวน)/33,000BTU	AC-PTS1-A-F2-015
+16	FCU(แอร์แขวน)/9,000BTU	AC-PTS1-A-F2-016
+17	FCU(แอร์แขวน)/13,000BTU	AC-PTS1-A-F2-017
+18	FCU(แอร์แขวน)/16,000BTU	AC-PTS1-A-F2-018
+19	FCU(แอร์แขวน)/16,000BTU	AC-PTS1-A-F2-019
+20	AHU/180,000BTU	AC-PTS1-A-F2-020
+21	FCU(แอร์แขวน)/16,000BTU	AC-PTS1-A-F2-021
+22	FCU(แอร์แขวน)/16,000BTU	AC-PTS1-A-F2-022
+23	FCU(แอร์แขวน)/36,000BTU	AC-PTS1-A-F2-023
+24	Split type(Wall type)/16,000BTU	AC-PTS1-A-F2-024
+25	Split type(Wall type)/16,000BTU	AC-PTS1-A-F2-025
+26	Split type(Wall type)/16,000BTU	AC-PTS1-A-F2-026
+27	Split type(Wall type)/16,000BTU	AC-PTS1-A-F2-027
+28	AHU/180,000BTU	AC-PTS1-A-F2-028
+29	AHU/180,000BTU	AC-PTS1-A-F2-029
+30	FCU/24,000BTU	AC-PTS1-A-F2-030
+31	FCU/24,000BTU	AC-PTS1-A-F2-031
+32	FCU/24,000BTU	AC-PTS1-A-F2-032
+33	FCU/24,000BTU	AC-PTS1-A-F2-033
+34	FCU/24,000BTU	AC-PTS1-A-F2-034
+35	FCU/24,000BTU	AC-PTS1-A-F2-035
+36	FCU/24,000BTU	AC-PTS1-A-F2-036
+37	FCU/24,000BTU	AC-PTS1-A-F2-037
+38	FCU/24,000BTU	AC-PTS1-A-F2-038
+39	FCU/24,000BTU	AC-PTS1-A-F2-039
+40	FCU(แอร์แขวน)/12,000BTU	AC-PTS1-A-F2-040
+41	FCU(Wall type)/12,000BTU	AC-PTS1-A-F2-041
+42	AHU/235,000BTU(ตั้งพื้น)	AC-PTS1-A-F2-042
+43	FCU/24,000BTU	AC-PTS1-A-F2-043
+44	FCU/24,000BTU	AC-PTS1-A-F2-044
+45	Split Type(Wall type)/22,000BTU	AC-PTS1-A-F2-045
+46	Split Type(Wall type)/24,000BTU	AC-PTS1-A-F2-046
+47	AHU/180,000BTU	AC-PTS1-A-F2-047
+48	FCU/24,000BTU	AC-PTS1-A-F2-048
+49	FCU 4ทิศทาง/12,000BTU	AC-PTS1-A-F2-049
+50	FCU 4ทิศทาง/12,000BTU	AC-PTS1-A-F2-050
+51	AHU/180,000BTU	AC-PTS1-A-F2-051
+52	FCU(แอร์แขวน)/28,000BTU	AC-PTS1-A-F2-052
+53	FCU(แอร์แขวน)/12,000BTU	AC-PTS1-A-F2-053
+54	FCU(แอร์แขวน)/12,000BTU	AC-PTS1-A-F2-054
+55	FCU(แอร์แขวน)/12,000BTU	AC-PTS1-A-F2-055
+56	FCU(แอร์แขวน)/33,000BTU	AC-PTS1-A-F2-056
+57	AHU/180,000BTU	AC-PTS1-A-F2-057
+58	AHU/180,000BTU	AC-PTS1-A-F2-058
+59	FCU/24,000BTU	AC-PTS1-A-F2-059
+60	FCU/24,000BTU	AC-PTS1-A-F2-060
+61	FCU/24,000BTU	AC-PTS1-A-F2-061
+62	FCU(Wall type)/12,000BTU	AC-PTS1-A-F2-062
+63	FCU/24,000BTU	AC-PTS1-A-F2-063
+64	AHU/180,000BTU	AC-PTS1-A-F2-064
+65	AHU/235,000BTU(ตั้งพื้น)	AC-PTS1-A-F2-065
+66	FCU(แอร์แขวน)/18,000BTU	AC-PTS1-A-F2-066
+67	Split Type/24,000BTU	AC-PTS1-A-F2-067
+68	FCU/24,000BTU	AC-PTS1-A-F2-068
+69	FCU/24,000BTU	AC-PTS1-A-F2-069
+70	FCU/24,000BTU	AC-PTS1-A-F2-070
+71	FCU/24,000BTU	AC-PTS1-A-F2-071
+72	FCU(Wall type)/12,000BTU	AC-PTS1-A-F2-072
+73	AHU/235,000BTU(ตั้งพื้น)	AC-PTS1-A-F2-073
+74	AHU/180,000BTU	AC-PTS1-A-F2-074
+75	Exhaust Duct	
+76	Exhaust Duct	
+77	พัดลมฝังฝ้า	
+78	พัดลมติดผนังกระจก	
+79	พัดลมติดผนังกระจก	
+80	พัดลมติดผนังกระจก	
+81	พัดลมติดผนังกระจก	
+82	พัดลมติดผนังกระจก	
+83	พัดลมติดผนังกระจก	
+84	พัดลมติดผนังกระจก	
+85	พัดลมติดผนังกระจก	
+86	พัดลมติดผนังกระจก	
+87	พัดลมติดผนังกระจก	
+88	พัดลมติดผนังกระจก	
+89	พัดลมติดผนังกระจก	
+90	พัดลมติดผนังกระจก	
+91	พัดลมติดผนังกระจก	
+92	พัดลมติดผนังกระจก	
+93	พัดลมติดผนังกระจก	
+94	พัดลมติดผนังกระจก	
+95	พัดลมติดผนังกระจก	
+96	พัดลมติดผนังกระจก	
+97	พัดลมติดผนังกระจก	
+98	พัดลมฝังฝ้า	
+99	พัดลมฝังฝ้า	
+100	พัดลมติดผนังกระจก	
+101	พัดลมฝังฝ้า	
+102	พัดลมฝังฝ้า	
+103	Exhaust Duct	
+104	Exhaust Duct	
+105	พัดลมฝังฝ้า	
+106	พัดลมฝังฝ้า	
+107	พัดลมฝังฝ้า	
+108	พัดลมฝังฝ้า	
+109	พัดลมฝังฝ้า	
+110	พัดลมฝังฝ้า	
+111	พัดลมฝังฝ้า	
+112	Exhaust Duct	
+113	พัดลมฝังฝ้า	
+114	Exhaust Duct	
+115	Fresh air	
+116	พัดลมฝังฝ้า	
+117	พัดลมฝังฝ้า	
+118	พัดลมฝังฝ้า	
+119	พัดลมฝังฝ้า	
+120	พัดลมติดผนังกระจก	
+121	พัดลมฝังฝ้า	
+122	พัดลมติดผนังกระจก	
+123	พัดลมติดผนังกระจก	
+124	พัดลมฝังฝ้า	
+125	พัดลมฝังฝ้า	
+126	Exhaust Duct	
+127	พัดลมฝังฝ้า	
+128	พัดลมฝังฝ้า	
+129	พัดลมฝังฝ้า	
+130	พัดลมฝังฝ้า	
+131	พัดลมฝังฝ้า	
+132	พัดลมฝังฝ้า	
+133	พัดลมฝังฝ้า	
+134	พัดลมฝังฝ้า	
+135	พัดลมฝังฝ้า	
+136	พัดลมฝังฝ้า	
+137	พัดลมฝังฝ้า	
+138	พัดลมฝังฝ้า	
+139	พัดลมฝังฝ้า	
+140	พัดลมฝังฝ้า	
+141	พัดลมฝังฝ้า	
+142	Exhaust Duct	
+143	พัดลมฝังฝ้า	
+144	พัดลมฝังฝ้า	
+145	พัดลมฝังฝ้า	
+146	พัดลมฝังฝ้า	
+147	พัดลมฝังฝ้า	
+148	พัดลมฝังฝ้า	
+149	พัดลมฝังฝ้า	
+150	พัดลมฝังฝ้า	
+151	พัดลมฝังฝ้า	
+152	พัดลมฝังฝ้า	
+153	พัดลมฝังฝ้า	
+154	พัดลมฝังฝ้า	
+155	พัดลมฝังฝ้า	
+156	Exhaust Duct	
+157	พัดลมฝังฝ้า	
+158	พัดลมฝังฝ้า	
+159	พัดลมฝังฝ้า	
+160	พัดลมฝังฝ้า	
+161	พัดลมฝังฝ้า	
+162	พัดลมฝังฝ้า	
+163	พัดลมฝังฝ้า	
+164	พัดลมฝังฝ้า	
+165	พัดลมฝังฝ้า	
+166	พัดลมฝังฝ้า	
+167	พัดลมฝังฝ้า	
+168	พัดลมฝังฝ้า	
+169	Exhaust Duct	
+170	Exhaust Duct	
+171	Exhaust Duct	
+172	Exhaust Duct	
+173	Exhaust Duct	
+174	Exhaust Duct	
+175	Exhaust Duct	
+176	Exhaust Duct	
+177	พัดลมฝังฝ้า	
+178	พัดลมฝังฝ้า	
+179	พัดลมฝังฝ้า	
+180	พัดลมฝังฝ้า	
+181	พัดลมฝังฝ้า	
+182	พัดลมฝังฝ้า	
+183	Exhaust Duct	
+184	พัดลมฝังฝ้า	
+185	พัดลมฝังฝ้า	
+186	พัดลมฝังฝ้า	
+187	พัดลมฝังฝ้า	
+188	พัดลมฝังฝ้า	
+189	พัดลมฝังฝ้า	
+190	พัดลมฝังฝ้า	
+191	พัดลมฝังฝ้า	
+192	พัดลมติดผนังกระจก	
+193	พัดลมติดผนังกระจก	
+194	พัดลมฝังฝ้า	
+195	พัดลมฝังฝ้า	
+196	พัดลมฝังฝ้า	
+197	พัดลมฝังฝ้า	
+198	AHU/160,000BTU	AC-PTS1-A-F3-001
+199	AHU/160,000BTU	AC-PTS1-A-F3-002
+200	FCU(Wall type)/24,000BTU	AC-PTS1-A-F3-003
+201	FCU(Wall type)/24,000BTU	AC-PTS1-A-F3-004
+202	FCU(Wall type)/24,000BTU	AC-PTS1-A-F3-005
+203	FCU(Wall type)/24,000BTU	AC-PTS1-A-F3-006
+204	AHU/160,000BTU	AC-PTS1-A-F3-007
+205	AHU/160,000BTU	AC-PTS1-A-F3-008
+206	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-009
+207	Split Type(แอร์แขวน)/36,000BTU	AC-PTS1-A-F3-010
+208	Split Type(แอร์แขวน)/36,000BTU	AC-PTS1-A-F3-011
+209	Split type(Wall type)/15,000BTU	AC-PTS1-A-F3-012
+210	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-013
+211	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-014
+212	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-015
+213	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-016
+214	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-017
+215	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-018
+216	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-019
+217	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-020
+218	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-021
+219	Split type(Wall type)/12,000BTU	AC-PTS1-A-F3-022
+220	AHU	AC-PTS1-A-F3-023
+221	AHU	AC-PTS1-A-F3-024
+222	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-025
+223	FCU 4ทิศทาง/14,000BTU	AC-PTS1-A-F3-026
+224	FCU 4ทิศทาง/14,000BTU	AC-PTS1-A-F3-027
+225	FCU(Wall type)/7,000BTU	AC-PTS1-A-F3-028
+226	FCU(แอร์แขวน)/43,000BTU	AC-PTS1-A-F3-029
+227	FCU(Wall type)/16,000BTU	AC-PTS1-A-F3-030
+228	FCU(Wall type)/16,000BTU	AC-PTS1-A-F3-031
+229	FCU(Wall type)/16,000BTU	AC-PTS1-A-F3-032
+230	FCU(Wall type)/16,000BTU	AC-PTS1-A-F3-033
+231	FCU(แอร์แขวน)/20,000BTU	AC-PTS1-A-F3-034
+232	FCU(Wall type)/16,000BTU	AC-PTS1-A-F3-035
+233	FCU(Wall type)/16,000BTU	AC-PTS1-A-F3-036
+234	FCU(แอร์แขวน)/43,000BTU	AC-PTS1-A-F3-037
+235	FCU(แอร์แขวน)/9,000BTU	AC-PTS1-A-F3-038
+236	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-039
+237	FCU(Wall type)/25,000BTU	AC-PTS1-A-F3-040
+238	FCU(Wall type)/25,000BTU	AC-PTS1-A-F3-041
+239	AHU/120,000BTU	AC-PTS1-A-F3-042
+240	FCU(แอร์แขวน)/43,000BTU	AC-PTS1-A-F3-043
+241	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-044
+242	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-045
+243	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-046
+244	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-047
+245	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-048
+246	FCU(Wall type)/12,000BTU	AC-PTS1-A-F3-049
+247	AHU/180,000BTU	AC-PTS1-A-F3-050
+248	AHU/180,000BTU	AC-PTS1-A-F3-051
+249	AHU/180,000BTU	AC-PTS1-A-F3-052
+250	FCU/24,000BTU	AC-PTS1-A-F3-053
+251	AHU/180,000BTU	AC-PTS1-A-F3-054
+252	AHU/180,000BTU	AC-PTS1-A-F3-055
+253	FCU/24,000BTU	AC-PTS1-A-F3-056
+254	FCU/24,000BTU	AC-PTS1-A-F3-057
+255	FCU/24,000BTU	AC-PTS1-A-F3-058
+256	FCU/24,000BTU	AC-PTS1-A-F3-059
+257	FCU/24,000BTU	AC-PTS1-A-F3-060
+258	FCU/24,000BTU	AC-PTS1-A-F3-061
+259	FCU/24,000BTU	AC-PTS1-A-F3-062
+260	FCU/24,000BTU	AC-PTS1-A-F3-063
+261	FCU/24,000BTU	AC-PTS1-A-F3-064
+262	Split Type(แอร์แขวน)/13,000BTU	AC-PTS1-A-F3-065
+263	Split Type(แอร์แขวน)/13,000BTU	AC-PTS1-A-F3-066
+264	Split Type(Wall type)/12,000BTU	AC-PTS1-A-F3-067
+265	Split Type(Wall type)/12,000BTU	AC-PTS1-A-F3-068
+266	AHU/180,000BTU	AC-PTS1-A-F3-069
+267	AHU/180,000BTU	AC-PTS1-A-F3-070
+268	AHU/318,500BTU	AC-PTS1-A-F3-071
+269	AHU/318,500BTU	AC-PTS1-A-F3-072
+270	FCU/24,000BTU	AC-PTS1-A-F3-073
+271	FCU/24,000BTU	AC-PTS1-A-F3-074
+272	FCU	
+273	FCU	
+274	FCU	
+275	Exhaust Duct	
+276	Fresh air	
+277	พัดลมฝังฝ้า	
+278	พัดลมฝังฝ้า	
+279	พัดลมฝังฝ้า	
+280	พัดลมฝังฝ้า	
+281	พัดลมฝังฝ้า	
+282	Fresh air	
+283	Exhaust Duct	
+284	Exhaust Duct	
+285	พัดลมฝังฝ้า	
+286	Exhaust Duct	
+287	Exhaust Duct	
+288	Exhaust Duct	
+289	Exhaust Duct	
+290	Exhaust Duct	
+291	Exhaust Duct	
+292	Exhaust Duct	
+293	Exhaust Duct	
+294	พัดลมฝังฝ้า	
+295	พัดลมฝังฝ้า	
+296	พัดลมฝังฝ้า	
+297	Exhaust Duct	
+298	พัดลมฝังฝ้า	
+299	พัดลมฝังฝ้า	
+300	พัดลมฝังฝ้า	
+301	พัดลมฝังฝ้า	
+302	พัดลมฝังฝ้า	

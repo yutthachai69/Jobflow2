@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import QRCodeDisplay from "./QRCodeDisplay";
 import DeleteAssetButton from "./DeleteButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
+import JobHistoryPanel from "./JobHistoryPanel";
 import type { Metadata } from "next";
 
 interface Props {
@@ -18,44 +19,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     include: {
       room: {
         include: {
-          floor: {
-            include: {
-              building: {
-                include: { site: true },
-              },
-            },
-          },
+          floor: { include: { building: { include: { site: true } } } },
         },
       },
     },
   });
 
-  if (!asset) {
-    return {
-      title: "ไม่พบข้อมูล - LMT air service",
-    };
-  }
+  if (!asset) return { title: "ไม่พบข้อมูล - LMT air service" };
 
-  const title = `${asset.brand} ${asset.model} - LMT air service`;
-  const description = `รายละเอียดเครื่องปรับอากาศ ${asset.brand} ${asset.model} | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
+  const title = `${asset.qrCode} - LMT air service`;
+  const description = `รายละเอียดทรัพย์สิน | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
 
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-    },
-    robots: {
-      index: false,
-      follow: false,
-    },
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary", title, description },
+    robots: { index: false, follow: false },
   };
 }
 
@@ -63,108 +43,104 @@ export default async function AssetDetailPage({ params }: Props) {
   const { id } = await params;
   const user = await getCurrentUser();
 
-  if (!user) {
-    notFound();
-  }
+  if (!user) notFound();
 
   const asset = await prisma.asset.findUnique({
     where: { id },
     include: {
       room: {
         include: {
-          floor: {
-            include: {
-              building: {
-                include: { site: true },
-              },
-            },
-          },
+          floor: { include: { building: { include: { site: true } } } },
         },
       },
       jobItems: {
         include: {
           workOrder: {
-            include: {
-              site: {
-                include: { client: true },
-              },
-            },
+            include: { site: { include: { client: true } } },
           },
           technician: true,
           photos: true,
         },
         orderBy: { startTime: "desc" },
       },
-    },
+      pmSchedules: {
+        where: { targetYear: new Date().getFullYear() },
+        include: { jobItem: { select: { status: true, id: true } } },
+        orderBy: { roundIndex: "asc" },
+      },
+    } as any,
   });
 
-  if (!asset) {
-    notFound();
-  }
+  if (!asset) notFound();
 
-  // Access Control: CLIENT can only view assets within their assigned site
-  if (user.role === 'CLIENT') {
-    let siteId = user.siteId
+  const a = asset as any;
+
+  // Access Control
+  if (user.role === "CLIENT") {
+    let siteId = user.siteId;
     if (!siteId) {
       const dbUser = await prisma.user.findUnique({
         where: { id: user.userId },
         select: { siteId: true },
-      })
-      siteId = dbUser?.siteId ?? null
+      });
+      siteId = dbUser?.siteId ?? null;
     }
-    if (!siteId || siteId !== asset.room.floor.building.siteId) {
-      notFound()
-    }
+    if (!siteId || siteId !== a.room.floor.building.siteId) notFound();
   }
 
-  // สำหรับช่าง: ค้นหางานที่รอทำ (PENDING/IN_PROGRESS)
-  const pendingJobItems = asset.jobItems.filter(
-    (ji) => ji.status === 'PENDING' || ji.status === 'IN_PROGRESS'
+  const pendingJobItems = a.jobItems.filter(
+    (ji: any) => ji.status === "PENDING" || ji.status === "IN_PROGRESS"
   );
 
+  const pmDoneCount = (a.pmSchedules as any[]).filter(
+    (s: any) => s.jobItem?.status === "DONE"
+  ).length;
+
   return (
-    <div className="min-h-screen bg-app-bg p-4 md:p-8 max-w-4xl mx-auto font-sans">
+    <div className="min-h-screen bg-app-bg p-4 md:p-8 w-full max-w-full font-sans">
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: '/' },
-          { label: 'ทรัพย์สินและอุปกรณ์', href: '/assets' },
-          { label: `${asset.brand} ${asset.model}`, href: undefined },
+          { label: "Dashboard", href: "/" },
+          { label: "ทรัพย์สินและอุปกรณ์", href: "/assets" },
+          { label: a.qrCode, href: undefined },
         ]}
       />
 
+      {/* Asset Info Card */}
       <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${asset.status === 'ACTIVE'
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-              : asset.status === 'BROKEN'
-                ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
-              }`}>
-              {asset.status === 'ACTIVE' && 'ใช้งาน'}
-              {asset.status === 'BROKEN' && 'ชำรุด'}
-              {asset.status === 'RETIRED' && 'เลิกใช้งาน'}
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                a.status === "ACTIVE"
+                  ? "bg-green-100 text-green-800"
+                  : a.status === "BROKEN"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {a.status === "ACTIVE" && "ใช้งาน"}
+              {a.status === "BROKEN" && "ชำรุด"}
+              {a.status === "RETIRED" && "เลิกใช้งาน"}
             </span>
-            <h1 className="text-3xl font-bold mt-2 text-app-heading">
-              {asset.brand} - {asset.model}
-            </h1>
+            <h1 className="text-3xl font-bold mt-2 text-app-heading">{a.qrCode}</h1>
           </div>
           <div className="flex flex-col items-end gap-3">
             <div className="text-right">
               <div className="text-sm text-app-muted">ขนาด BTU</div>
               <div className="text-2xl font-bold text-blue-600">
-                {asset.btu ? `${asset.btu.toLocaleString()} BTU` : '-'}
+                {a.btu ? `${a.btu.toLocaleString()} BTU` : "-"}
               </div>
             </div>
-            {user.role === 'ADMIN' && (
+            {user.role === "ADMIN" && (
               <div className="flex flex-wrap justify-end gap-2">
                 <Link
-                  href={`/assets/${asset.id}/edit`}
-                  className="inline-flex items-center px-4 py-2 rounded-lg border border-app bg-app-card text-app-body text-sm font-medium hover:bg-app-section hover:border-app-border-glow transition-colors"
+                  href={`/assets/${a.id}/edit`}
+                  className="inline-flex items-center px-4 py-2 rounded-lg border border-app bg-app-card text-app-body text-sm font-medium hover:bg-app-section transition-colors"
                 >
                   แก้ไข
                 </Link>
-                <DeleteAssetButton assetId={asset.id} />
+                <DeleteAssetButton assetId={a.id} />
               </div>
             )}
           </div>
@@ -175,30 +151,89 @@ export default async function AssetDetailPage({ params }: Props) {
         <div className="grid grid-cols-2 gap-4 text-sm mb-6">
           <div>
             <p className="text-app-muted">สถานที่ติดตั้ง</p>
-            <p className="font-semibold text-lg text-app-heading">{asset.room.floor.building.site.name}</p>
-            <p className="text-app-body">{asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}</p>
+            <p className="font-semibold text-lg text-app-heading">
+              {a.room.floor.building.site.name}
+            </p>
+            <p className="text-app-body">
+              {a.room.floor.building.name} → {a.room.floor.name} → {a.room.name}
+            </p>
           </div>
           <div>
             <p className="text-app-muted">ข้อมูลเครื่อง</p>
-            <p className="text-app-body">S/N: {asset.serialNo || "-"}</p>
-            <p className="text-app-body">วันที่ติดตั้ง: {asset.installDate ? asset.installDate.toLocaleDateString('th-TH') : "-"}</p>
+            <p className="text-app-body">
+              วันที่ติดตั้ง:{" "}
+              {a.installDate ? new Date(a.installDate).toLocaleDateString("th-TH") : "-"}
+            </p>
           </div>
         </div>
 
-        {/* QR Code Display - แสดงเฉพาะเครื่องปรับอากาศ */}
-        {asset.assetType === 'AIR_CONDITIONER' && (
+        {a.assetType === "AIR_CONDITIONER" && (
           <div className="mt-6">
-            <QRCodeDisplay
-              qrCode={asset.qrCode}
-              assetName={`${asset.brand || ''} ${asset.model || ''}`.trim() || asset.qrCode}
-            />
+            <QRCodeDisplay qrCode={a.qrCode} assetName={a.qrCode} />
           </div>
         )}
       </div>
 
-      {/* สำหรับช่าง: แสดงงานที่รอทำ */}
-      {user.role === 'TECHNICIAN' && pendingJobItems.length > 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
+      {/* PM Progress */}
+      {a.assetType === "AIR_CONDITIONER" && a.pmSchedules.length > 0 && (
+        <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-app-heading flex items-center gap-2">
+                <span>🗓️</span> แผนบำรุงรักษาประจำปี {new Date().getFullYear()}
+              </h2>
+              <p className="text-sm text-app-muted">โควต้าล้างใหญ่ 2 ครั้ง และล้างย่อย 4 ครั้ง</p>
+            </div>
+            <div className="text-right">
+              <span className="text-2xl font-black text-blue-600">
+                {pmDoneCount}
+                <span className="text-sm text-app-muted font-normal ml-1">/ 6 ครั้งเสร็จสิ้น</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {(a.pmSchedules as any[]).map((schedule: any) => {
+              const isDone = schedule.jobItem?.status === "DONE";
+              const isInProgress =
+                schedule.jobItem?.status === "IN_PROGRESS" ||
+                schedule.jobItem?.status === "PENDING";
+
+              return (
+                <div
+                  key={schedule.id}
+                  className={`relative p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center gap-1 ${
+                    isDone
+                      ? "bg-green-50 border-green-500 text-green-700 shadow-sm"
+                      : isInProgress
+                      ? "bg-blue-50 border-blue-400 text-blue-700 animate-pulse"
+                      : "bg-app-section border-app text-app-muted opacity-60"
+                  }`}
+                >
+                  <div className="text-[10px] uppercase font-black opacity-60 mb-1">
+                    รอบที่ {schedule.roundIndex}
+                  </div>
+                  <div className="text-xs font-bold whitespace-nowrap">
+                    {schedule.pmType === "MAJOR" ? "ล้างใหญ่" : "ล้างย่อย"}
+                  </div>
+                  <div className="text-[10px] mt-1">
+                    {isDone ? "✅ เสร็จเรียบร้อย" : `📅 เดือน ${schedule.targetMonth}`}
+                  </div>
+                  <div
+                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
+                      isDone ? "bg-green-500" : isInProgress ? "bg-blue-500" : "bg-gray-300"
+                    }`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Technician: Pending Jobs */}
+      {user.role === "TECHNICIAN" && pendingJobItems.length > 0 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">⚡</span>
             <h2 className="text-xl font-bold text-app-heading">
@@ -206,7 +241,7 @@ export default async function AssetDetailPage({ params }: Props) {
             </h2>
           </div>
           <div className="space-y-3">
-            {pendingJobItems.map((jobItem) => (
+            {pendingJobItems.map((jobItem: any) => (
               <Link
                 key={jobItem.id}
                 href={`/technician/job-item/${jobItem.id}`}
@@ -221,21 +256,21 @@ export default async function AssetDetailPage({ params }: Props) {
                       {jobItem.workOrder.site.client.name}
                     </div>
                     <div className="text-xs text-app-muted">
-                      วันนัดหมาย: {new Date(jobItem.workOrder.scheduledDate).toLocaleDateString('th-TH')}
+                      วันนัดหมาย:{" "}
+                      {new Date(jobItem.workOrder.scheduledDate).toLocaleDateString("th-TH")}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${jobItem.status === 'PENDING'
-                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                        }`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        jobItem.status === "PENDING"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
                     >
-                      {jobItem.status === 'PENDING' ? 'รอดำเนินการ' : 'กำลังทำงาน'}
+                      {jobItem.status === "PENDING" ? "รอดำเนินการ" : "กำลังทำงาน"}
                     </span>
-                    <span className="text-xs text-blue-600 font-medium">
-                      เริ่มงาน →
-                    </span>
+                    <span className="text-xs text-blue-600 font-medium">เริ่มงาน →</span>
                   </div>
                 </div>
               </Link>
@@ -244,9 +279,8 @@ export default async function AssetDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* สำหรับช่าง: แสดงข้อความเมื่อไม่มีงานรอทำ */}
-      {user.role === 'TECHNICIAN' && pendingJobItems.length === 0 && (
-        <div className="bg-green-50 dark:bg-green-900/10 border-l-4 border-green-500 rounded-lg p-6 mb-6">
+      {user.role === "TECHNICIAN" && pendingJobItems.length === 0 && (
+        <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-6 mb-6">
           <div className="flex items-center gap-2">
             <span className="text-2xl">✅</span>
             <div>
@@ -257,86 +291,15 @@ export default async function AssetDetailPage({ params }: Props) {
         </div>
       )}
 
+      {/* Job History */}
       <h2 className="text-xl font-bold text-app-heading mb-4 flex items-center">
         ประวัติการบำรุงรักษา
-        <span className="ml-2 text-sm font-normal text-app-muted">({asset.jobItems.length} รายการ)</span>
+        <span className="ml-2 text-sm font-normal text-app-muted">
+          ({a.jobItems.length} รายการ)
+        </span>
       </h2>
 
-      <div className="space-y-4">
-        {asset.jobItems.length === 0 ? (
-          <div className="text-center py-10 bg-app-section rounded-lg border border-dashed border-app text-app-muted">
-            ยังไม่มีประวัติการซ่อมบำรุง
-          </div>
-        ) : (
-          asset.jobItems.map((job) => (
-            <div key={job.id} className="bg-app-card p-4 rounded-lg border border-app shadow-sm hover:shadow-md transition">
-              <div className="flex justify-between mb-2">
-                <div className="font-bold text-blue-600 dark:text-blue-400">
-                  {job.workOrder.jobType} - {job.status}
-                </div>
-                <div className="text-sm text-app-muted">
-                  {job.startTime ? new Date(job.startTime).toLocaleDateString('th-TH') : "ไม่ระบุวัน"}
-                </div>
-              </div>
-              <p className="text-app-body mb-3">{job.techNote || "ไม่มีบันทึกเพิ่มเติม"}</p>
-
-              {/* แสดงรูปภาพ Before/After */}
-              {job.photos && job.photos.length > 0 && (
-                <div className="mt-4 mb-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    {job.photos
-                      .filter((photo) => photo.type === 'BEFORE' || photo.type === 'AFTER')
-                      .map((photo) => (
-                        <div key={photo.id} className="relative">
-                          <div className="text-xs font-semibold mb-1 text-gray-600 uppercase">
-                            {photo.type === 'BEFORE' ? 'ก่อนทำ' : 'หลังทำ'}
-                          </div>
-                          <img
-                            src={photo.url}
-                            alt={photo.type}
-                            className="w-full h-48 object-cover rounded-lg border border-app"
-                          />
-                          <div className="text-xs text-app-muted mt-1">
-                            {new Date(photo.createdAt).toLocaleString('th-TH')}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-
-                  {/* แสดงรูปภาพอื่นๆ (DEFECT, METER) */}
-                  {job.photos.some((p) => p.type === 'DEFECT' || p.type === 'METER') && (
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      {job.photos
-                        .filter((photo) => photo.type === 'DEFECT' || photo.type === 'METER')
-                        .map((photo) => (
-                          <div key={photo.id} className="relative">
-                            <div className="text-xs font-semibold mb-1 text-gray-600">
-                              {photo.type === 'DEFECT' ? 'จุดชำรุด' : 'ค่าเกจ'}
-                            </div>
-                            <img
-                              src={photo.url}
-                              alt={photo.type}
-                              className="w-full h-40 object-cover rounded-lg border border-app"
-                            />
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-2 text-xs text-app-muted border-t border-app pt-2">
-                โดยช่าง: {job.technician?.fullName || "System Admin"}
-                {job.startTime && job.endTime && (
-                  <span className="ml-2">
-                    • ใช้เวลา: {Math.round((new Date(job.endTime).getTime() - new Date(job.startTime).getTime()) / 60000)} นาที
-                  </span>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <JobHistoryPanel jobItems={a.jobItems} />
     </div>
   );
 }

@@ -25,7 +25,7 @@ export default function CleanRoomFormDemoPage() {
     }
 
     return (
-        <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        <div className="p-4 md:p-8 w-full max-w-full">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-app-heading">ตัวอย่างแบบฟอร์ม Clean Room พารามิเตอร์</h1>
                 <p className="text-app-muted mt-2">หน้านี้คือแบบฟอร์มจำลอง (Demo) ข้อมูลที่กรอกที่นี่จะถูกนำไปแสดงผลพรีวิวในหน้าตัวอย่างรายงาน ไม่มีการบันทึกลงฐานข้อมูลจริงทางฝั่งเซิร์ฟเวอร์</p>

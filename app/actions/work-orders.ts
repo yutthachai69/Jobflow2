@@ -316,7 +316,7 @@ export async function assignTechnicianToJobItem(jobItemId: string, technicianId:
             message: `ช่าง ${technician?.fullName || 'ทีมงาน'} กำลังเดินทางเข้าตรวจสอบ`,
             details: [
               { label: 'ใบงาน', value: workOrder.workOrderNumber || '' },
-              { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
+              { label: 'สินทรัพย์', value: jobItem.asset?.qrCode || '' }
             ],
             actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
             color: '#06C755' // Green
@@ -390,7 +390,7 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
               message: `ช่าง ${jobItem.technician?.fullName || user.username || 'ทีมงาน'} รับงานและเริ่มดำเนินการแล้ว`,
               details: [
                 { label: 'ใบงาน', value: workOrder.workOrderNumber || '' },
-                { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
+                { label: 'สินทรัพย์', value: jobItem.asset?.qrCode || '' }
               ],
               actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
               color: '#00B900'
@@ -491,7 +491,7 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
                 message: `งานเลขที่ ${getWorkOrderDisplayNumber(workOrder)} ดำเนินการเรียบร้อยแล้ว`,
                 details: [
                   { label: 'สถานที่', value: workOrder.site.name },
-                  { label: 'สินทรัพย์', value: `${jobItem.asset?.brand || ''} ${jobItem.asset?.model || ''}` }
+                  { label: 'สินทรัพย์', value: jobItem.asset?.qrCode || '' }
                 ],
                 actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,
                 imageUrl: workOrder.jobItems[0]?.photos?.find(p => p.type === 'AFTER')?.url,
@@ -787,7 +787,7 @@ export async function createRepairRequest(assetId: string, description: string, 
       if (adminGroupId) {
         const message = `🚨 มีการแจ้งซ่อมใหม่ (New Repair Request)\n\n` +
           `เลขที่: ${workOrderNumber}\n` +
-          `สินทรัพย์: ${asset.brand} - ${asset.model}\n` +
+          `สินทรัพย์: ${asset.qrCode}\n` +
           `สถานที่: ${asset.room.name} (${asset.room.floor.building.name})\n` +
           `อาการ: ${description}\n\n` +
           `กรุณาตรวจสอบและดำเนินการ: ${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`
@@ -803,7 +803,7 @@ export async function createRepairRequest(assetId: string, description: string, 
           title: 'รับเรื่องแจ้งซ่อมแล้ว',
           message: `ใบงานเลขที่ ${workOrderNumber}`,
           details: [
-            { label: 'สินทรัพย์', value: `${asset.brand} - ${asset.model}` },
+            { label: 'สินทรัพย์', value: asset.qrCode },
             { label: 'สถานที่', value: asset.room.name }
           ],
           actionUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work-orders/${workOrder.id}`,

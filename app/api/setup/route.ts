@@ -184,15 +184,12 @@ export async function POST(request: NextRequest) {
           })
 
           // Create assets
-          const airBrands = ['Daikin', 'Carrier', 'Mitsubishi']
           for (let i = 1; i <= 5; i++) {
             await setupPrisma.asset.create({
               data: {
                 qrCode: `AC-2024-00${i}`,
-                brand: airBrands[i % 3],
-                model: `Model-X${i}`,
+                assetType: 'AIR_CONDITIONER',
                 btu: 18000 + (i * 1000),
-                serialNo: `SN-0000${i}`,
                 status: 'ACTIVE',
                 roomId: i <= 2 ? roomServer.id : roomLobby.id
               }

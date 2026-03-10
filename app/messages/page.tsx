@@ -60,7 +60,7 @@ export default async function MessagesPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">กล่องข้อความ</h1>

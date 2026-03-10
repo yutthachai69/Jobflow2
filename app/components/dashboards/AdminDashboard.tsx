@@ -3,44 +3,56 @@ import Link from "next/link"
 import EmptyState from "@/app/components/EmptyState"
 import { getWOStatus } from "@/lib/status-colors"
 import DateTimeDisplay from "@/app/components/DateTimeDisplay"
+import SiteFilter from "./SiteFilter"
+import { Suspense } from "react"
 
-export default async function AdminDashboard() {
+interface Props {
+  siteId?: string;
+}
+
+export default async function AdminDashboard({ siteId }: Props) {
+  // Fetch sites for the filter dropdown
+  const sites = await prisma.site.findMany({
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true }
+  });
+
+  // Build site filter condition
+  const siteWhere = siteId ? { siteId } : {};
+  const assetWhere = siteId
+    ? { room: { floor: { building: { siteId } } } }
+    : {};
+
   const [
     totalAssets,
     activeWorkOrders,
     completedToday,
     totalWorkOrders,
   ] = await Promise.all([
-    prisma.asset.count(),
-    prisma.workOrder.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] } } }),
+    prisma.asset.count({ where: assetWhere }),
+    prisma.workOrder.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] }, ...siteWhere } }),
     prisma.workOrder.count({
       where: {
         status: "COMPLETED",
-        updatedAt: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-        },
+        updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        ...siteWhere,
       },
     }),
-    prisma.workOrder.count(),
+    prisma.workOrder.count({ where: siteWhere }),
   ])
 
-  // ดึงงานล่าสุด
   const recentWorkOrders = await prisma.workOrder.findMany({
     take: 5,
     orderBy: { createdAt: "desc" },
+    where: siteWhere,
     include: {
-      site: {
-        include: { client: true },
-      },
-      jobItems: {
-        include: { asset: true },
-      },
+      site: { include: { client: true } },
+      jobItems: { include: { asset: true } },
     },
   })
 
-  // คำนวณความคืบหน้า
   const progressData = await prisma.workOrder.findMany({
-    where: { status: "IN_PROGRESS" },
+    where: { status: "IN_PROGRESS", ...siteWhere },
     include: {
       site: true,
       jobItems: true,
@@ -53,11 +65,24 @@ export default async function AdminDashboard() {
     return { total, done, workOrder: wo }
   })
 
+  const selectedSite = sites.find(s => s.id === siteId);
+
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-semibold text-app-heading mb-2">Dashboard</h1>
-        <p className="text-sm text-app-muted mb-6">ภาพรวมระบบ</p>
+      <div className="w-full max-w-full">
+
+        {/* Header + Filter */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-app-heading mb-1">Dashboard</h1>
+            <p className="text-sm text-app-muted">
+              {selectedSite ? `ภาพรวม: ${selectedSite.name}` : 'ภาพรวมทั้งระบบ'}
+            </p>
+          </div>
+          <Suspense>
+            <SiteFilter sites={sites} selectedSiteId={siteId ?? ''} />
+          </Suspense>
+        </div>
 
         {/* ปฏิทินและเวลา */}
         <div className="mb-6">
@@ -107,7 +132,7 @@ export default async function AdminDashboard() {
                     <span className="text-sm font-medium text-app-body">{info.done}/{info.total}</span>
                   </div>
                   <div className="w-full rounded-full h-3 bg-app-section">
-                    <div className="h-3 rounded-full transition-all" style={{ width: `${(info.done / info.total) * 100}%`, backgroundColor: '#5B7C99' }} />
+                    <div className="h-3 rounded-full transition-all" style={{ width: `${info.total > 0 ? (info.done / info.total) * 100 : 0}%`, backgroundColor: '#5B7C99' }} />
                   </div>
                 </div>
               ))}
@@ -142,7 +167,9 @@ export default async function AdminDashboard() {
                     const st = getWOStatus(wo.status)
                     return (
                       <tr key={wo.id} className="hover:bg-app-section/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-app-heading">{wo.jobType}</td>
+                        <td className="px-4 py-3 font-medium text-app-heading">
+                          <Link href={`/work-orders/${wo.id}`} className="hover:underline">{wo.jobType}</Link>
+                        </td>
                         <td className="px-4 py-3 text-app-body">{wo.site.name} ({wo.site.client.name})</td>
                         <td className="px-4 py-3 text-app-body">{new Date(wo.scheduledDate).toLocaleDateString("th-TH")}</td>
                         <td className="px-4 py-3">
@@ -180,8 +207,8 @@ export default async function AdminDashboard() {
             </Link>
           ))}
         </div>
+
       </div>
     </div>
   )
 }
-

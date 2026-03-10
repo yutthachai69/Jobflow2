@@ -76,7 +76,7 @@ export async function createAsset(formData: FormData): Promise<{ error: string }
   redirect('/assets')
 }
 
-export async function updateAsset(formData: FormData) {
+export async function updateAsset(formData: FormData): Promise<{ error: string } | void> {
   try {
     const user = await requireAdmin()
 
@@ -93,16 +93,16 @@ export async function updateAsset(formData: FormData) {
 
     // Validation
     if (!assetId) {
-      throw new Error('Asset ID is required')
+      return { error: 'Asset ID is required' }
     }
     if (!roomId) {
-      throw new Error('Room ID is required')
+      return { error: 'Room ID is required' }
     }
     if (!serialNo) {
-      throw new Error('Serial Number is required')
+      return { error: 'Serial Number is required' }
     }
     if (!status || !['ACTIVE', 'BROKEN', 'RETIRED'].includes(status)) {
-      throw new Error('Invalid status')
+      return { error: 'Invalid status' }
     }
 
     // Check if asset exists
@@ -110,7 +110,7 @@ export async function updateAsset(formData: FormData) {
       where: { id: assetId },
     })
     if (!existingAsset) {
-      throw new Error('Asset not found')
+      return { error: 'Asset not found' }
     }
 
     // Check if QR Code (serialNo) already exists (excluding current asset)
@@ -119,30 +119,27 @@ export async function updateAsset(formData: FormData) {
         where: { qrCode: serialNo },
       })
       if (duplicateAsset) {
-        throw new Error('QR Code already exists')
+        return { error: 'QR Code already exists' }
       }
     }
 
     const btu = btuStr ? parseInt(btuStr, 10) : null
     if (btuStr && (isNaN(btu!) || btu! < 0 || btu! > 1000000)) {
-      throw new Error('Invalid BTU value')
+      return { error: 'Invalid BTU value' }
     }
 
     const installDate = installDateStr ? new Date(installDateStr) : null
     if (installDateStr && (!installDate || isNaN(installDate.getTime()))) {
-      throw new Error('Invalid date format')
+      return { error: 'Invalid date format' }
     }
 
     await prisma.asset.update({
       where: { id: assetId },
       data: {
-        roomId,
+        room: { connect: { id: roomId } },
         qrCode: serialNo,
         assetType: assetType as any,
         machineType: assetType === 'AIR_CONDITIONER' ? (machineType as any) : null,
-        brand: brand || null,
-        model: model || null,
-        serialNo: serialNo || null,
         btu: btu || null,
         installDate: installDate || null,
         status,
@@ -160,7 +157,7 @@ export async function updateAsset(formData: FormData) {
     revalidatePath('/assets')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
-    throw error
+    return { error: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : String(error)}` }
   }
   redirect(`/assets/${(formData.get('assetId') as string)}`)
 }

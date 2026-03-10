@@ -50,7 +50,7 @@ export default function AppLayout({ role, username, fullName, siteName, lineUser
 
         {/* 🔥 Main Scroll Area: ให้ Scroll เฉพาะเนื้อหาตรงนี้ */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth" key={pathname} style={{ viewTransitionName: 'main-content' }}>
-          <div className="max-w-7xl mx-auto min-h-full">
+          <div className="w-full max-w-full min-h-full">
             {/* Breadcrumb Navigation - แสดงในทุกหน้า */}
             <AutoBreadcrumbs />
             {children}

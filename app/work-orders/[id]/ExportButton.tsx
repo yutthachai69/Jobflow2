@@ -176,7 +176,7 @@ export default function ExportButton({ workOrder }: Props) {
         <tr>
           <td class="text-center">${index + 1}</td>
           <td>${item.asset.qrCode}</td>
-          <td>${`${item.asset.brand || ''} ${item.asset.model || ''}`.trim() || '-'}</td>
+          <td>${item.asset.qrCode || '-'}</td>
           <td>${item.technician?.fullName || item.technician?.username || '-'}</td>
           <td class="text-center">${jobItemStatusLabels[item.status] || item.status}</td>
         </tr>
@@ -249,7 +249,7 @@ export default function ExportButton({ workOrder }: Props) {
         ...workOrder.jobItems.map((item, index) => [
           index + 1,
           item.asset.qrCode,
-          `${item.asset.brand || ''} ${item.asset.model || ''}`.trim(),
+          item.asset.qrCode || '-',
           item.technician?.fullName || item.technician?.username || '-',
           item.status,
         ]),

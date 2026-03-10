@@ -200,7 +200,7 @@ export default function ScanQRPage() {
     <>
       <ConfirmDialog />
       <div className="min-h-screen bg-app-bg p-4 md:p-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="w-full max-w-full">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-app-heading mb-2">

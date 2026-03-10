@@ -72,7 +72,7 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
 
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-app-heading mb-1">Dashboard</h1>
           <p className="text-sm text-app-muted">ภาพรวมงานของช่าง</p>
@@ -117,7 +117,7 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="font-medium text-app-heading">{job.asset.brand} {job.asset.model}</span>
+                          <span className="font-medium text-app-heading">{job.asset.qrCode}</span>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${st.tailwind}`}>{job.workOrder.jobType}</span>
                         </div>
                         <div className="text-sm text-app-body">
@@ -149,7 +149,7 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="font-medium text-app-heading">{job.asset.brand} {job.asset.model}</span>
+                          <span className="font-medium text-app-heading">{job.asset.qrCode}</span>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${st.tailwind}`}>กำลังทำ</span>
                         </div>
                         <div className="text-sm text-app-body">

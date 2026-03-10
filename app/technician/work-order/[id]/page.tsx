@@ -65,7 +65,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
 
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-full">
         <Link href="/technician" className="text-app-muted hover:text-blue-600 mb-4 inline-block">
           ← กลับ
         </Link>
@@ -142,7 +142,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="font-bold text-app-heading mb-1">
-                          {jobItem.asset.brand} {jobItem.asset.model}
+                          {jobItem.asset.qrCode}
                         </div>
                         <div className="text-sm text-app-muted font-mono mb-1">
                           QR: {jobItem.asset.qrCode}
@@ -180,7 +180,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="font-bold text-app-heading mb-1">
-                          {jobItem.asset.brand} {jobItem.asset.model}
+                          {jobItem.asset.qrCode}
                         </div>
                         <div className="text-sm text-app-muted font-mono mb-1">
                           QR: {jobItem.asset.qrCode}
@@ -212,7 +212,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="font-bold text-app-heading mb-1">
-                          {jobItem.asset.brand} {jobItem.asset.model}
+                          {jobItem.asset.qrCode}
                         </div>
                         <div className="text-sm text-app-muted font-mono mb-1">
                           QR: {jobItem.asset.qrCode}

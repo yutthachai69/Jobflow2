@@ -156,7 +156,7 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
 
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full">
         {/* Welcome + สรุปสั้นๆ ให้ไม่งง */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-app-heading mb-2">แดชบอร์ด</h1>

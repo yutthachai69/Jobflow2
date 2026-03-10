@@ -152,7 +152,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 backdrop-blur-sm" style={{ borderTopColor: 'var(--app-border)', borderTopWidth: '1px', borderTopStyle: 'solid', backgroundColor: 'var(--app-section)' }}>
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--app-text-muted)' }}>
+        <div className="w-full max-w-full px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--app-text-muted)' }}>
           <div className="order-2 md:order-1">
             {/* © {currentYear} Flomac Co., Ltd. All rights reserved. */}
             © {currentYear} LMT air service. All rights reserved.

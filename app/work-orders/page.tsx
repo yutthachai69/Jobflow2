@@ -85,8 +85,6 @@ export default async function WorkOrdersPage({
     asset: {
       id: string;
       qrCode: string;
-      brand: string | null;
-      model: string | null;
       room: {
         name: string;
         floor: {

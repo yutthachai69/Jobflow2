@@ -7,9 +7,7 @@ import Tooltip from '@/app/components/Tooltip'
 import toast from 'react-hot-toast'
 
 interface NewAssetEntry {
-  brand: string
-  model: string
-  serialNo: string
+  qrCode: string
   btu: string
 }
 
@@ -43,8 +41,6 @@ interface Room {
 interface Asset {
   id: string
   qrCode: string
-  brand: string | null
-  model: string | null
   btu: number | null
 }
 
@@ -66,7 +62,7 @@ export default function WorkOrderForm({ sites }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [jobType, setJobType] = useState<string>('')
-  const [newAssets, setNewAssets] = useState<NewAssetEntry[]>([{ brand: '', model: '', serialNo: '', btu: '' }])
+  const [newAssets, setNewAssets] = useState<NewAssetEntry[]>([{ qrCode: '', btu: '' }])
 
   const selectedSite = sites.find(s => s.id === selectedSiteId)
   const selectedBuilding = selectedSite?.buildings.find(b => b.id === selectedBuildingId)
@@ -245,9 +241,9 @@ export default function WorkOrderForm({ sites }: Props) {
 
     if (jobType === 'INSTALL') {
       // INSTALL: ต้องกรอกข้อมูลเครื่องใหม่อย่างน้อย 1 เครื่อง
-      const validAssets = newAssets.filter(a => a.brand.trim() !== '')
+      const validAssets = newAssets.filter(a => (a.qrCode || '').trim() !== '')
       if (validAssets.length === 0) {
-        newErrors.newAssets = 'กรุณากรอกรายละเอียดเครื่องที่จะติดตั้งอย่างน้อย 1 เครื่อง'
+        newErrors.newAssets = 'กรุณากรอกรหัสทรัพย์สิน/QR Code อย่างน้อย 1 เครื่อง'
       }
       if (!selectedRoomId) {
         newErrors.roomId = 'กรุณาเลือกห้องสำหรับติดตั้งเครื่องใหม่'
@@ -273,7 +269,7 @@ export default function WorkOrderForm({ sites }: Props) {
 
     // สำหรับ INSTALL ส่ง newAssets + roomId
     if (jobType === 'INSTALL') {
-      const validAssets = newAssets.filter(a => a.brand.trim() !== '')
+      const validAssets = newAssets.filter(a => (a.qrCode || '').trim() !== '')
       formData.set('newAssets', JSON.stringify(validAssets))
       formData.set('roomId', selectedRoomId)
     }
@@ -425,7 +421,7 @@ export default function WorkOrderForm({ sites }: Props) {
               if (errors.jobType) setErrors({ ...errors, jobType: '' })
               // Reset newAssets when switching to INSTALL
               if (val === 'INSTALL') {
-                setNewAssets([{ brand: '', model: '', serialNo: '', btu: '' }])
+                setNewAssets([{ qrCode: '', btu: '' }])
               }
             }}
             className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 ${errors.jobType ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
@@ -559,45 +555,17 @@ export default function WorkOrderForm({ sites }: Props) {
                       {/* Fields Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">ยี่ห้อ <span className="text-red-500">*</span></label>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">รหัสทรัพย์สิน / QR Code <span className="text-red-500">*</span></label>
                           <input
                             type="text"
-                            value={entry.brand}
+                            value={entry.qrCode}
                             onChange={(e) => {
                               const updated = [...newAssets]
-                              updated[index] = { ...updated[index], brand: e.target.value }
+                              updated[index] = { ...updated[index], qrCode: e.target.value }
                               setNewAssets(updated)
                               if (errors.newAssets) setErrors({ ...errors, newAssets: '' })
                             }}
-                            placeholder="เช่น Daikin, Mitsubishi"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">รุ่น</label>
-                          <input
-                            type="text"
-                            value={entry.model}
-                            onChange={(e) => {
-                              const updated = [...newAssets]
-                              updated[index] = { ...updated[index], model: e.target.value }
-                              setNewAssets(updated)
-                            }}
-                            placeholder="เช่น FTKM09XV2S"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Serial No.</label>
-                          <input
-                            type="text"
-                            value={entry.serialNo}
-                            onChange={(e) => {
-                              const updated = [...newAssets]
-                              updated[index] = { ...updated[index], serialNo: e.target.value }
-                              setNewAssets(updated)
-                            }}
-                            placeholder="หมายเลขเครื่อง (ถ้ามี)"
+                            placeholder="เช่น AC-2024-001"
                             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           />
                         </div>
@@ -623,7 +591,7 @@ export default function WorkOrderForm({ sites }: Props) {
                 {/* ปุ่มเพิ่มเครื่อง */}
                 <button
                   type="button"
-                  onClick={() => setNewAssets([...newAssets, { brand: '', model: '', serialNo: '', btu: '' }])}
+                  onClick={() => setNewAssets([...newAssets, { qrCode: '', btu: '' }])}
                   className="mt-3 w-full border-2 border-dashed border-blue-300 rounded-xl py-3 text-blue-600 font-semibold hover:bg-blue-50 hover:border-blue-400 transition-colors flex items-center justify-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -721,7 +689,7 @@ export default function WorkOrderForm({ sites }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="font-semibold text-gray-900">
-                            {item.asset.brand || 'ไม่มียี่ห้อ'} {item.asset.model || ''}
+                            {item.asset.qrCode}
                           </div>
                           <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
                             {item.asset.qrCode}

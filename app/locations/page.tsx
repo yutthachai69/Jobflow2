@@ -65,7 +65,7 @@ export default async function LocationsPage() {
 
   return (
     <div className="min-h-screen bg-app-bg p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-app-heading">จัดการสถานที่</h1>
           <Link

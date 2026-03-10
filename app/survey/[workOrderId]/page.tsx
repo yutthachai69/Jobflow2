@@ -63,7 +63,7 @@ export default async function SurveyPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full max-w-full">
         <div className="bg-app-card rounded-lg shadow-lg border border-app p-6 md:p-8">
           <h1 className="text-2xl font-bold text-app-heading mb-2">
             📋 แบบสำรวจความพึงพอใจ

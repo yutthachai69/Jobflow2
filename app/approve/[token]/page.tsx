@@ -46,7 +46,7 @@ export default async function CustomerApprovalPage({ params }: { params: { token
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 font-sans">
-            <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div className="w-full max-w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
 
                 {/* Header */}
                 <div className="bg-[#2c3e50] text-white p-6 tex-center md:text-left md:flex justify-between items-center">
@@ -76,7 +76,7 @@ export default async function CustomerApprovalPage({ params }: { params: { token
                             </div>
                             <div>
                                 <p className="text-gray-500 text-xs uppercase">ชื่อรายการ</p>
-                                <p className="font-semibold text-gray-900">{jobItem?.asset?.brand || ''} - {jobItem?.asset?.model || ''}</p>
+                                <p className="font-semibold text-gray-900">{jobItem?.asset?.qrCode || '-'}</p>
                             </div>
                             <div className="md:col-span-2">
                                 <p className="text-gray-500 text-xs uppercase">สถานที่ติดตั้ง</p>

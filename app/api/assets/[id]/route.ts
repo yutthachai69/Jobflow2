@@ -116,9 +116,7 @@ export async function PUT(
     const body = await request.json()
 
     const roomId = sanitizeString(body.roomId)
-    const serialNo = sanitizeString(body.serialNo)
-    const brand = sanitizeString(body.brand)
-    const model = sanitizeString(body.model)
+    const qrCode = sanitizeString(body.qrCode || body.serialNo)
     const btuStr = body.btu
     const installDateStr = body.installDate
     const status = body.status as 'ACTIVE' | 'BROKEN' | 'RETIRED'
@@ -127,8 +125,8 @@ export async function PUT(
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID is required' }, { status: 400 })
     }
-    if (!serialNo) {
-      return NextResponse.json({ error: 'Serial Number is required' }, { status: 400 })
+    if (!qrCode) {
+      return NextResponse.json({ error: 'QR Code is required' }, { status: 400 })
     }
     if (!status || !['ACTIVE', 'BROKEN', 'RETIRED'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
@@ -143,10 +141,10 @@ export async function PUT(
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
-    // Check if QR Code (serialNo) already exists (excluding current asset)
-    if (serialNo !== existingAsset.qrCode) {
+    // Check if QR Code already exists (excluding current asset)
+    if (qrCode !== existingAsset.qrCode) {
       const duplicateAsset = await prisma.asset.findUnique({
-        where: { qrCode: serialNo },
+        where: { qrCode },
       })
       if (duplicateAsset) {
         return NextResponse.json({ error: 'QR Code already exists' }, { status: 400 })
@@ -167,10 +165,7 @@ export async function PUT(
       where: { id },
       data: {
         roomId,
-        qrCode: serialNo,
-        brand: brand || null,
-        model: model || null,
-        serialNo: serialNo || null,
+        qrCode,
         btu: btu || null,
         installDate: installDate || null,
         status,

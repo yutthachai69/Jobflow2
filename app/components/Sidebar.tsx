@@ -56,7 +56,7 @@ const SIDEBAR_COLLAPSED_KEY = 'airservice-sidebar-collapsed'
 const adminItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
-  { type: 'link', href: '/admin/checklists', label: 'ตรวจสอบ (PM)', icon: 'checklist' },
+  { type: 'link', href: '/admin/pm-planning', label: 'แผนงาน PM', icon: 'checklist' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },

@@ -36,7 +36,7 @@ export default function WelcomePage() {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center py-12 z-10">
-        <div className="relative max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 w-full">
+        <div className="relative w-full max-w-full px-6 sm:px-8 lg:px-12">
           <div className="text-center w-full">
 
             {/* Hero Section */}
@@ -80,7 +80,7 @@ export default function WelcomePage() {
             </div>
 
             {/* Features Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 w-full max-w-full">
               {/* Feature 1 */}
               <div className="group opacity-0 backdrop-blur-md rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative overflow-hidden animate-card-enter delay-300" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full opacity-30 group-hover:scale-150 transition-transform duration-500" style={{ backgroundColor: 'var(--app-btn-primary)' }}></div>
@@ -158,7 +158,7 @@ export default function WelcomePage() {
 
       {/* Standard Footer */}
       <footer className="border-t backdrop-blur-sm z-10" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-section)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="md:flex md:items-center md:justify-between">
             <div className="flex justify-center md:justify-start space-x-6 md:order-2">
               <span className="transition-colors cursor-pointer text-sm hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>

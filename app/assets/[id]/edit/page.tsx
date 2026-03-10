@@ -67,7 +67,7 @@ export default async function EditAssetPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-full">
         <Link 
           href={`/assets/${id}`} 
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"

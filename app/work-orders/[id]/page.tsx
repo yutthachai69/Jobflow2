@@ -10,7 +10,6 @@ import ExportButton from "./ExportButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import { getWOStatus, getJobStatus } from "@/lib/status-colors";
 import { getWorkOrderDisplayNumber } from "@/lib/work-order-number";
-import ChecklistSection from "./ChecklistSection";
 import type { Metadata } from "next";
 
 interface Props {
@@ -157,7 +156,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
 
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-full">
         <Breadcrumbs
           items={[
             { label: 'Dashboard', href: '/' },
@@ -271,7 +270,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <Link href={`/assets/${jobItem.asset.id}`} className="font-bold hover:underline text-lg" style={{ color: '#C2A66A' }}>
-                          {jobItem.asset.brand} {jobItem.asset.model}
+                          {jobItem.asset.qrCode}
                         </Link>
                         <span className="font-mono text-sm bg-app-section px-3 py-1 rounded-lg text-app-muted">{jobItem.asset.qrCode}</span>
                       </div>
@@ -287,18 +286,6 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                       {jobItem.techNote && (
                         <div className="rounded-xl p-3 mt-3 border border-app" style={{ backgroundColor: 'rgba(194,166,106,0.1)' }}>
                           <p className="text-app-body text-sm flex-1">{jobItem.techNote}</p>
-                        </div>
-                      )}
-
-                      {/* Checklist Section — เฉพาะงาน PM */}
-                      {workOrder.jobType === 'PM' && (
-                        <div className="mt-4">
-                          <ChecklistSection
-                            jobItemId={jobItem.id}
-                            initialData={jobItem.checklist}
-                            isEditable={(user.role === 'ADMIN' || (user.role === 'TECHNICIAN' && jobItem.technicianId === user.id)) && jobItem.status !== 'DONE'}
-                            jobType={workOrder.jobType}
-                          />
                         </div>
                       )}
                     </div>
