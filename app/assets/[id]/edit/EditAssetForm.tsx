@@ -144,7 +144,6 @@ export default function EditAssetForm({ asset, sites }: Props) {
       const submitFormData = new FormData()
       submitFormData.append('assetId', asset.id)
       submitFormData.append('roomId', selectedRoomId)
-      submitFormData.append('qrCode', serialNo)
       submitFormData.append('serialNo', serialNo)
       submitFormData.append('assetType', (formData.get('assetType') as string) || asset.assetType || 'AIR_CONDITIONER')
       submitFormData.append('machineType', machineTypeValue)

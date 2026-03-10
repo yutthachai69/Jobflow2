@@ -112,8 +112,15 @@ export default function AssetForm({ sites }: Props) {
 
     setErrors({})
     setServerError('')
-    formData.set('roomId', selectedRoomId)
-    const result = await createAsset(formData)
+    const submitFormData = new FormData()
+    submitFormData.set('roomId', selectedRoomId)
+    submitFormData.set('serialNo', qrCode)
+    submitFormData.set('assetType', assetTypeValue)
+    submitFormData.set('machineType', machineTypeValue)
+    submitFormData.set('btu', (formData.get('btu') as string) || '')
+    submitFormData.set('installDate', (formData.get('installDate') as string) || '')
+
+    const result = await createAsset(submitFormData)
     if (result?.error) {
       setServerError(result.error)
       setIsSubmitting(false)
