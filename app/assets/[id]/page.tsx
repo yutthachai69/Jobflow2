@@ -135,6 +135,12 @@ export default async function AssetDetailPage({ params }: Props) {
             {user.role === "ADMIN" && (
               <div className="flex flex-wrap justify-end gap-2">
                 <Link
+                  href={`/work-orders/new?assetId=${a.id}`}
+                  className="inline-flex items-center px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors"
+                >
+                  สร้างใบสั่งงาน
+                </Link>
+                <Link
                   href={`/assets/${a.id}/edit`}
                   className="inline-flex items-center px-4 py-2 rounded-lg border border-app bg-app-card text-app-body text-sm font-medium hover:bg-app-section transition-colors"
                 >

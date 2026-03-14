@@ -126,8 +126,9 @@ export default async function NewFloorPage({ searchParams }: Props) {
         </form>
 
         {/* Helper Text */}
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>หลังจากสร้างชั้นแล้ว คุณสามารถเพิ่มห้องต่างๆ ภายในชั้นนี้ได้</p>
+        <div className="mt-6 rounded-xl p-4 bg-emerald-50 border border-emerald-200 text-sm text-gray-700">
+          <p className="font-semibold mb-1">บันทึกทีละขั้นตอน</p>
+          <p>หลังกดบันทึก ระบบจะบันทึกชั้นแล้วพาคุณไปหน้า <strong>เพิ่มห้อง</strong> ภายในชั้นนี้ต่อได้เลย</p>
         </div>
       </div>
     </div>

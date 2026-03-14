@@ -61,6 +61,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
 
   const pendingJobs = workOrder.jobItems.filter((j) => j.status === "PENDING");
   const inProgressJobs = workOrder.jobItems.filter((j) => j.status === "IN_PROGRESS");
+  const issueFoundJobs = workOrder.jobItems.filter((j) => j.status === "ISSUE_FOUND");
   const doneJobs = workOrder.jobItems.filter((j) => j.status === "DONE");
 
   return (
@@ -96,6 +97,11 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
             <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-semibold">
               กำลังทำ: {inProgressJobs.length}
             </span>
+            {issueFoundJobs.length > 0 && (
+              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full text-xs font-semibold">
+                พบปัญหา: {issueFoundJobs.length}
+              </span>
+            )}
             <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full text-xs font-semibold">
               เสร็จแล้ว: {doneJobs.length}
             </span>
@@ -157,6 +163,45 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                         )}
                       </div>
                       <div className="text-blue-600 font-medium ml-4">→</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Issue Found - รอดำเนินการต่อ */}
+          {issueFoundJobs.length > 0 && (
+            <div>
+              <h2 className="text-lg font-bold text-app-heading mb-3">
+                พบปัญหา — รอดำเนินการต่อ ({issueFoundJobs.length})
+              </h2>
+              <div className="space-y-2">
+                {issueFoundJobs.map((jobItem) => (
+                  <Link
+                    key={jobItem.id}
+                    href={`/technician/job-item/${jobItem.id}`}
+                    className="block bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-lg p-4 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-bold text-app-heading mb-1">
+                          {jobItem.asset.qrCode}
+                        </div>
+                        <div className="text-sm text-app-muted font-mono mb-1">
+                          QR: {jobItem.asset.qrCode}
+                        </div>
+                        <div className="text-xs text-app-muted mt-1">
+                          {jobItem.asset.room.floor.building.site.name} → {jobItem.asset.room.floor.building.name} → {jobItem.asset.room.floor.name} → {jobItem.asset.room.name}
+                        </div>
+                        {jobItem.technician && (
+                          <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            ช่าง: {jobItem.technician.fullName || jobItem.technician.username}
+                          </div>
+                        )}
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">กดเข้าไปแล้วกดปุ่ม &quot;ดำเนินการต่อ (Resume)&quot; เพื่อกลับไปทำงานต่อ</p>
+                      </div>
+                      <div className="text-amber-600 font-medium ml-4">→</div>
                     </div>
                   </Link>
                 ))}

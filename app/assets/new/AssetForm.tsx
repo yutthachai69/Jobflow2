@@ -382,16 +382,18 @@ export default function AssetForm({ sites }: Props) {
           ) : (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                รหัสทรัพย์สิน
+                รหัสทรัพย์สิน {assetType === 'EXHAUST' ? '(ถ้าว่าง ระบบจะสร้าง EX-YYYY-NNN ให้)' : ''}
               </label>
               <input
                 type="text"
                 name="serialNo"
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-                placeholder="เช่น REF-001, PART-001"
+                placeholder={assetType === 'EXHAUST' ? 'เว้นว่าง = สร้าง EX-2025-001 ให้อัตโนมัติ' : 'เช่น REF-001, PART-001'}
               />
               <p className="mt-2 text-xs text-gray-500">
-                รหัสสำหรับระบุทรัพย์สิน (ไม่จำเป็นต้องมี QR Code)
+                {assetType === 'EXHAUST'
+                  ? 'พัดลมดูดอากาศไม่ใช้ QR Code — รหัสใช้สำหรับระบุในระบบเท่านั้น'
+                  : 'รหัสสำหรับระบุทรัพย์สิน (ไม่จำเป็นต้องมี QR Code)'}
               </p>
             </div>
           )}

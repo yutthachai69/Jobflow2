@@ -3,8 +3,16 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import WorkOrderForm from "./WorkOrderForm";
 
-export default async function NewWorkOrderPage() {
-  const sites = await prisma.site.findMany({
+interface Props {
+  searchParams?: Promise<{ assetId?: string }>;
+}
+
+export default async function NewWorkOrderPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const assetIdFromUrl = params?.assetId?.trim() || null;
+
+  const [sites, technicians] = await Promise.all([
+    prisma.site.findMany({
     include: {
       client: true,
       buildings: {
@@ -23,7 +31,36 @@ export default async function NewWorkOrderPage() {
         },
       },
     },
-  });
+  }),
+    prisma.user.findMany({
+      where: { role: 'TECHNICIAN', locked: false },
+      select: { id: true, fullName: true, username: true },
+      orderBy: [{ fullName: 'asc' }, { username: 'asc' }],
+    }),
+  ]);
+
+  let prefill: { siteId: string; buildingId: string; floorId: string; roomId: string; assetId: string } | null = null;
+  if (assetIdFromUrl) {
+    const asset = await prisma.asset.findUnique({
+      where: { id: assetIdFromUrl },
+      include: {
+        room: {
+          include: {
+            floor: { include: { building: { include: { site: true } } } },
+          },
+        },
+      },
+    });
+    if (asset?.status === 'ACTIVE' && asset?.room?.floor?.building?.site) {
+      prefill = {
+        siteId: asset.room.floor.building.site.id,
+        buildingId: asset.room.floor.building.id,
+        floorId: asset.room.floor.id,
+        roomId: asset.room.id,
+        assetId: asset.id,
+      };
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
@@ -50,7 +87,7 @@ export default async function NewWorkOrderPage() {
           <p className="text-gray-600 ml-15">กำหนดรายละเอียดและเลือกเครื่องที่ต้องการบำรุงรักษา</p>
         </div>
 
-        <WorkOrderForm sites={sites} />
+        <WorkOrderForm sites={sites} technicians={technicians} prefill={prefill} />
       </div>
     </div>
   );

@@ -26,8 +26,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ siteId?: string }> }) {
-  const { siteId } = await searchParams;
+type DashboardSearchParams = {
+  siteId?: string
+  year?: string
+  month?: string
+}
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<DashboardSearchParams> }) {
+  const { siteId, year, month } = await searchParams;
   const user = await getCurrentUser();
 
   // ถ้ายังไม่ได้ login หรือ token หมดอายุ ให้ไปหน้า login
@@ -85,7 +91,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       );
     }
-    return <ClientDashboard siteId={siteId} />;
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
+
+    const selectedYear = year ? Number(year) || currentYear : currentYear
+    const selectedMonth = month ? Number(month) || currentMonth : currentMonth
+
+    return <ClientDashboard siteId={siteId} year={selectedYear} month={selectedMonth} />;
   }
 
   // ADMIN

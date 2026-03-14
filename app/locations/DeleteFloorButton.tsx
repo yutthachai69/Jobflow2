@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deleteFloor } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   floorId: string
@@ -26,6 +27,7 @@ export default function DeleteFloorButton({ floorId, floorName }: Props) {
       router.push('/locations')
       router.refresh()
     } catch (error) {
+      if (isRedirectError(error)) throw error
       console.error('Error deleting floor:', error)
       const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
       if (errorMessage.includes('rooms')) {

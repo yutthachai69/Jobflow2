@@ -121,6 +121,13 @@ body {
   pointer-events: none;
 }
 
+/* ปิด ::before ในแถวตาราง เพื่อไม่ให้ pseudo-element ไปสร้างคอลัมน์ว่างแล้วทำให้หัวตารางเลื่อน */
+table thead tr.bg-app-section::before,
+table tbody tr.bg-app-section::before {
+  display: none !important;
+  content: none !important;
+}
+
 .bg-app-card { 
   background: var(--app-card);
   background-image: var(--app-card-gradient);
@@ -133,7 +140,6 @@ body {
 
 .bg-app-card:hover {
   box-shadow: var(--app-card-hover-shadow);
-  transform: translateY(-2px);
   border-color: var(--app-border-glow);
 }
 
@@ -151,6 +157,19 @@ body {
 .text-app-heading { color: var(--app-text-heading); }
 .text-app-body { color: var(--app-text-body); }
 .text-app-muted { color: var(--app-text-muted); }
+
+/* Dropdown สถานที่: ให้ select + option ใช้สีตาม theme (รองรับโหมดมืด/สว่าง) */
+.site-filter-select,
+.site-filter-select option {
+  background: var(--app-card);
+  color: var(--app-text-heading);
+}
+.site-filter-select option:hover,
+.site-filter-select option:focus,
+.site-filter-select option:checked {
+  background: var(--app-section);
+  color: var(--app-text-heading);
+}
 .border-app { 
   border-color: var(--app-border);
   transition: border-color 0.3s ease;
@@ -515,7 +534,6 @@ html {
 
 .card-enhanced:hover {
   box-shadow: var(--app-card-hover-shadow);
-  transform: translateY(-2px);
   border-color: var(--app-border-glow);
 }
 

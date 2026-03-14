@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { getWOStatus } from '@/lib/status-colors'
+import { getWOStatus, getJobStatus } from '@/lib/status-colors'
 
 export const metadata = {
   title: 'รายงานการบำรุงรักษา - LMT air service',
@@ -79,20 +79,28 @@ export default async function ReportsMaintenancePage() {
     )
   }
 
-  const rows = site.workOrders.flatMap((wo) =>
-    wo.jobItems.map((ji) => ({
-      workOrderId: wo.id,
-      jobItemId: ji.id,
-      scheduledDate: wo.scheduledDate,
-      status: wo.status,
-      jobItemStatus: ji.status,
-      asset: ji.asset,
-      technician: ji.technician,
-      startTime: ji.startTime,
-      endTime: ji.endTime,
-      techNote: ji.techNote,
-    }))
-  )
+  const rows = site.workOrders
+    .flatMap((wo) =>
+      wo.jobItems.map((ji) => ({
+        workOrderId: wo.id,
+        workOrderNumber: wo.workOrderNumber ?? null,
+        jobItemId: ji.id,
+        scheduledDate: wo.scheduledDate,
+        status: wo.status,
+        jobItemStatus: ji.status,
+        asset: ji.asset,
+        technician: ji.technician,
+        startTime: ji.startTime,
+        endTime: ji.endTime,
+        techNote: ji.techNote,
+      }))
+    )
+    // เรียงให้ชัดเจน: วันที่ล่าสุดก่อน แล้วตามรหัสเครื่อง (แอร์) เพื่อไม่ให้ดูสลับ
+    .sort((a, b) => {
+      const d = new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+      if (d !== 0) return d
+      return (a.asset.qrCode || '').localeCompare(b.asset.qrCode || '')
+    })
 
   return (
     <div>
@@ -104,57 +112,76 @@ export default async function ReportsMaintenancePage() {
       </div>
 
       <div className="bg-app-card rounded-xl border border-app shadow-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-app">
-          <h2 className="text-lg font-semibold text-app-heading">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-app">
+          <h2 className="text-base sm:text-lg font-semibold text-app-heading">
             รายการงานบำรุงรักษา (PM) : {site.name}
           </h2>
           <p className="text-sm text-app-muted mt-1">รวม {rows.length} รายการ</p>
         </div>
 
         {rows.length === 0 ? (
-          <div className="p-12 text-center text-app-muted">ยังไม่มีรายการงานบำรุงรักษา</div>
+          <div className="p-8 sm:p-12 text-center text-app-muted text-sm sm:text-base">ยังไม่มีรายการงานบำรุงรักษา</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto -mx-px">
+            <table className="w-full min-w-[640px] sm:min-w-0 table-fixed text-left text-sm" role="table">
+              <colgroup>
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '12%' }} />
+              </colgroup>
               <thead>
-                <tr className="border-b border-app bg-app-section">
-                  <th className="px-6 py-4 font-medium text-app-heading">วันที่</th>
-                  <th className="px-6 py-4 font-medium text-app-heading">สถานะใบงาน</th>
-                  <th className="px-6 py-4 font-medium text-app-heading">แอร์ / ตำแหน่ง</th>
-                  <th className="px-6 py-4 font-medium text-app-heading">ช่าง</th>
-                  <th className="px-6 py-4 font-medium text-app-heading">สถานะงาน</th>
+                <tr className="border-b border-app bg-[var(--app-section)]">
+                  <th scope="col" className="px-3 py-2 sm:px-6 sm:py-2 font-medium text-app-heading text-xs sm:text-sm">วันที่</th>
+                  <th scope="col" className="px-3 py-2 sm:px-6 sm:py-2 font-medium text-app-heading text-xs sm:text-sm">เลขที่ใบงาน</th>
+                  <th scope="col" className="px-3 py-2 sm:px-6 sm:py-2 font-medium text-app-heading text-xs sm:text-sm">สถานะใบงาน</th>
+                  <th scope="col" className="px-3 py-2 sm:px-6 sm:py-2 font-medium text-app-heading text-xs sm:text-sm">แอร์ / ตำแหน่ง</th>
+                  <th scope="col" className="px-3 py-2 sm:px-6 sm:py-2 font-medium text-app-heading text-xs sm:text-sm">ช่าง</th>
+                  <th scope="col" className="px-3 py-2 sm:px-6 sm:py-2 font-medium text-app-heading text-xs sm:text-sm">สถานะงาน</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
                   const st = getWOStatus(r.status)
+                  const jobSt = getJobStatus(r.jobItemStatus)
                   const loc = r.asset.room?.floor?.building
                     ? `${r.asset.room.floor.building.name} → ${r.asset.room.floor.name} → ${r.asset.room.name}`
                     : '-'
                   return (
                     <tr key={r.jobItemId} className="border-b border-app hover:bg-app-section/50">
-                      <td className="px-6 py-4 text-app-body">
+                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-app-body text-xs sm:text-sm">
                         {new Date(r.scheduledDate).toLocaleDateString('th-TH')}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${st.tailwind}`}>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-app-body font-mono text-xs">
+                        {r.workOrderNumber ?? '-'}
+                      </td>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
+                        <span className={`inline-flex whitespace-nowrap px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${st.tailwind}`}>
                           {st.label}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-app-body">
-                        <Link
-                          href={`/assets/${r.asset.id}`}
-                          className="hover:underline"
-                          style={{ color: '#C2A66A' }}
-                        >
-                          {r.asset.qrCode}
-                        </Link>
-                        <span className="text-app-muted ml-2">• {loc}</span>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-app-body min-w-0">
+                        <div className="flex flex-col min-w-0">
+                          <Link
+                            href={`/assets/${r.asset.id}`}
+                            className="font-medium hover:underline truncate"
+                            style={{ color: '#C2A66A' }}
+                          >
+                            {r.asset.qrCode}
+                          </Link>
+                          <span className="text-xs text-app-muted break-words">{loc}</span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-app-body">
+                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-app-body text-xs sm:text-sm">
                         {r.technician?.fullName || r.technician?.username || '-'}
                       </td>
-                      <td className="px-6 py-4 text-app-body capitalize">{r.jobItemStatus}</td>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
+                        <span className={`inline-flex whitespace-nowrap px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${jobSt.tailwind}`}>
+                          {jobSt.label}
+                        </span>
+                      </td>
                     </tr>
                   )
                 })}

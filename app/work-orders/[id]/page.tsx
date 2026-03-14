@@ -319,7 +319,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                       {/* ปุ่มดูใบรายงานล้างแอร์ */}
                       {(jobItem.status === 'DONE' && workOrder.jobType === 'PM') && (
                         <Link
-                          href={`/reports/clean-room/${jobItem.id}`}
+                          href={`/reports/airborne-infection/${jobItem.id}`}
                           className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors border border-blue-200"
                         >
                           📄 ดูใบรายงาน (Report)

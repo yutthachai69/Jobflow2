@@ -150,6 +150,14 @@ export default async function WorkOrdersPage({
       orderBy: { createdAt: "desc" },
     });
 
+    // ซิงค์สถานะ: ถ้ารายการงานทั้งหมดเสร็จแล้วแต่ใบงานยังไม่เป็น COMPLETED ให้อัปเดต
+    for (const wo of workOrders) {
+      if ((wo.status === 'OPEN' || wo.status === 'IN_PROGRESS') && wo.jobItems.length > 0 && wo.jobItems.every((j) => j.status === 'DONE')) {
+        await prisma.workOrder.update({ where: { id: wo.id }, data: { status: 'COMPLETED' } });
+        wo.status = 'COMPLETED';
+      }
+    }
+
     // Fetch site name for header display
     const clientSite = await prisma.site.findUnique({
       where: { id: siteId },
@@ -223,6 +231,14 @@ export default async function WorkOrdersPage({
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // ซิงค์สถานะ: ถ้ารายการงานทั้งหมดเสร็จแล้วแต่ใบงานยังไม่เป็น COMPLETED ให้อัปเดต
+    for (const wo of workOrders) {
+      if ((wo.status === 'OPEN' || wo.status === 'IN_PROGRESS') && wo.jobItems.length > 0 && wo.jobItems.every((j) => j.status === 'DONE')) {
+        await prisma.workOrder.update({ where: { id: wo.id }, data: { status: 'COMPLETED' } });
+        wo.status = 'COMPLETED';
+      }
+    }
   }
 
   // สำหรับ TECHNICIAN: ส่งข้อมูล Job Items ไปให้ Client Component

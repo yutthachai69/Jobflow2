@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deleteWorkOrder } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   workOrderId: string
@@ -25,6 +26,7 @@ export default function DeleteWorkOrderButton({ workOrderId }: Props) {
       router.push('/work-orders')
       router.refresh()
     } catch (error) {
+      if (isRedirectError(error)) throw error
       console.error('Error deleting work order:', error)
       const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
       if (errorMessage.includes('completed jobs')) {

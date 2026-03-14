@@ -396,6 +396,13 @@ enum PMType {
   MINOR
 }
 
+enum PMScheduleStatus {
+  PLANNED     // สร้างแผนไว้แล้ว ยังไม่ออกใบงาน
+  DISPATCHED  // ออกใบงานแล้ว (มี JobItem แล้ว)
+  DONE        // งานเสร็จ (JobItem DONE)
+  OVERDUE     // เกินกำหนดแล้วยังไม่เสร็จ
+}
+
 model PMContract {
   id          String   @id @default(cuid())
   name        String
@@ -415,26 +422,32 @@ model PMContract {
 }
 
 model PMSchedule {
-  id          String    @id @default(cuid())
+  id          String          @id @default(cuid())
   contractId  String
-  contract    PMContract @relation(fields: [contractId], references: [id])
+  contract    PMContract      @relation(fields: [contractId], references: [id])
   
   assetId     String
-  asset       Asset     @relation(fields: [assetId], references: [id])
+  asset       Asset           @relation(fields: [assetId], references: [id])
   
   pmType      PMType
-  roundIndex  Int       // 1-6
-  targetMonth Int       // 1-12
+  roundIndex  Int             // 1-6
+  targetMonth Int             // 1-12
   targetYear  Int
+
+  /// วันที่ครบกำหนดจริง (ใช้สำหรับ auto-dispatch / overdue) - ทำเป็น optional ชั่วคราวเพื่อไม่ให้กระทบข้อมูลเก่า
+  dueDate     DateTime?
+  status      PMScheduleStatus @default(PLANNED)
   
   jobItem     JobItem?
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   
   @@index([contractId])
   @@index([assetId])
   @@index([targetYear, targetMonth])
+  @@index([dueDate])
+  @@index([status])
 }
 
 // ==========================================

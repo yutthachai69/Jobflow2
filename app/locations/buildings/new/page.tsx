@@ -120,8 +120,9 @@ export default async function NewBuildingPage({ searchParams }: Props) {
         </form>
 
         {/* Helper Text */}
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>หลังจากสร้างอาคารแล้ว คุณสามารถเพิ่มชั้นและห้องภายในอาคารได้</p>
+        <div className="mt-6 rounded-xl p-4 bg-blue-50 border border-blue-200 text-sm text-gray-700">
+          <p className="font-semibold mb-1">บันทึกทีละขั้นตอน</p>
+          <p>หลังกดบันทึก ระบบจะบันทึกอาคารแล้วพาคุณไปหน้า <strong>เพิ่มชั้น</strong> ภายในอาคารนี้ต่อได้เลย</p>
         </div>
       </div>
     </div>

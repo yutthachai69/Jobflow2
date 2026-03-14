@@ -5,7 +5,10 @@ import { Suspense } from 'react';
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AssetsClient from "./AssetsClient";
+import MigrateExhaustBanner from "./MigrateExhaustBanner";
 import type { Prisma } from "@prisma/client";
+
+const EXHAUST_CODE_REGEX = /^EX-\d{4}-\d{3}$/
 
 interface Props { searchParams?: Promise<{ page?: string }> }
 
@@ -176,8 +179,16 @@ export default async function AssetsPage(_props: Props) {
     }
   }
 
+  const exhaustNeedMigrateCount =
+    user.role === 'ADMIN'
+      ? assets.filter((a) => a.assetType === 'EXHAUST' && !EXHAUST_CODE_REGEX.test(a.qrCode)).length
+      : 0
+
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8 font-sans">
+      {exhaustNeedMigrateCount > 0 && (
+        <MigrateExhaustBanner needMigrateCount={exhaustNeedMigrateCount} userRole={user.role} />
+      )}
       {/* ส่ง assets ทั้งหมด ไม่ต้อง paginate ที่นี่ — AssetsClient จัดการ pagination + filter เอง */}
       <Suspense fallback={<div className="p-8 text-center text-app-muted">กำลังโหลดข้อมูล...</div>}>
         <AssetsClient assets={assets} userRole={user.role} defaultSiteName={siteName} />

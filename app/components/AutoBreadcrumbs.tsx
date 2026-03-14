@@ -11,7 +11,7 @@ interface BreadcrumbItem {
 
 // Route mapping สำหรับสร้าง breadcrumb อัตโนมัติ
 const routeLabels: Record<string, string> = {
-  '/': 'Dashboard',
+  '/': 'หน้าแรก',
   '/work-orders': 'ใบสั่งงาน',
   '/work-orders/new': 'สร้างใบสั่งงาน',
   '/assets': 'ทรัพย์สินและอุปกรณ์',
@@ -45,6 +45,8 @@ const segmentLabels: Record<string, string> = {
   'assets': 'ทรัพย์สินและอุปกรณ์',
   'users': 'ผู้ใช้งาน',
   'locations': 'สถานที่',
+  'client': 'รายงาน',
+  'pm-plan': 'แผน PM ประจำปี',
   'clients': 'ลูกค้า',
   'sites': 'สาขา',
   'buildings': 'ตึก',
@@ -53,6 +55,8 @@ const segmentLabels: Record<string, string> = {
   'reports': 'รายงาน',
   'maintenance': 'การบำรุงรักษา',
   'repair': 'การซ่อม',
+  'install': 'การติดตั้ง',
+  'airborne-infection': 'รายงาน Clean Room & Airborne',
   'technician': 'หน้างาน',
   'scan': 'สแกน QR Code',
   'job-item': 'รายละเอียดงาน',
@@ -91,16 +95,19 @@ export default function AutoBreadcrumbs() {
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = []
 
-    // เริ่มต้นด้วย Dashboard เสมอ
-    items.push({ label: 'Dashboard', href: '/' })
+    // เริ่มต้นด้วย หน้าแรก เสมอ
+    items.push({ label: routeLabels['/'] || 'หน้าแรก', href: '/' })
 
-    // ถ้าเป็นหน้า root ให้ return แค่ Dashboard
+    // ถ้าเป็นหน้า root ให้ return แค่ หน้าแรก
     if (pathname === '/') {
       return items
     }
 
     const pathSegments = pathname.split('/').filter(Boolean)
     let currentPath = ''
+
+    // รายงานแบบ /reports/[reportType]/[id] ไม่แสดง segment ประเภทรายงาน (แสดงแค่ หน้าแรก / รายงาน / รายละเอียด)
+    const isReportDetailPage = pathSegments[0] === 'reports' && pathSegments.length === 3 && /^[a-zA-Z0-9-]{20,}$/.test(pathSegments[2])
 
     for (let i = 0; i < pathSegments.length; i++) {
       const segment = pathSegments[i]
@@ -110,27 +117,34 @@ export default function AutoBreadcrumbs() {
       const isDynamicId = /^[a-zA-Z0-9-]{20,}$/.test(segment)
       const isLast = i === pathSegments.length - 1
 
+      // ข้าม segment ประเภทรายงาน (airborne-infection, install, ฯลฯ) เมื่ออยู่หน้ารายละเอียดรายงาน
+      if (isReportDetailPage && i === 1) continue
+
       if (isDynamicId) {
         // สำหรับ dynamic routes (เช่น [id]) ให้ใช้ parent route label
         const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/'
-        const parentLabel = routeLabels[parentPath] || segmentLabels[pathSegments[i - 1]] || 'รายละเอียด'
+        // หน้ารายละเอียดรายงาน: parent ที่แสดงคือ /reports ไม่ใช่ /reports/airborne-infection
+        const effectiveParentPath = isReportDetailPage ? '/reports' : parentPath
+        const parentLabel = routeLabels[effectiveParentPath] || segmentLabels[pathSegments[i - 1]] || 'รายละเอียด'
 
         // เพิ่ม parent route ถ้ายังไม่มี
-        if (i > 0 && !items.some(item => item.href === parentPath)) {
-          items.push({ label: parentLabel, href: parentPath })
+        if (i > 0 && !items.some(item => item.href === effectiveParentPath)) {
+          items.push({ label: parentLabel, href: effectiveParentPath })
         }
 
-        // สำหรับ detail page ไม่แสดง link และใช้ label "รายละเอียด"
-        if (!isLast) {
-          // ถ้ายังมี segment ต่อมา (เช่น /edit)
-          const nextSegment = pathSegments[i + 1]
-          if (nextSegment === 'edit') {
-            items.push({ label: 'แก้ไข', href: undefined })
+        // ถ้า parent มีคำว่า "รายละเอียด" อยู่แล้ว (เช่น รายละเอียดงาน, รายละเอียดใบสั่งงาน) ไม่เพิ่ม "รายละเอียด" ซ้ำ
+        const parentAlreadyHasDetail = /รายละเอียด/.test(parentLabel)
+        if (!parentAlreadyHasDetail) {
+          if (!isLast) {
+            const nextSegment = pathSegments[i + 1]
+            if (nextSegment === 'edit') {
+              items.push({ label: 'แก้ไข', href: undefined })
+            } else {
+              items.push({ label: 'รายละเอียด', href: undefined })
+            }
           } else {
             items.push({ label: 'รายละเอียด', href: undefined })
           }
-        } else {
-          items.push({ label: 'รายละเอียด', href: undefined })
         }
       } else {
         // สำหรับ static routes

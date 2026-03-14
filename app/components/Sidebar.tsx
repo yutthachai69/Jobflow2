@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image' // เพิ่ม Image component
@@ -78,6 +79,7 @@ const clientMainMenuItems: NavItem[] = [
     label: 'รายงาน',
     icon: 'reports',
     subItems: [
+      { href: '/client/pm-plan', label: 'แผน PM ประจำปี' },
       { href: '/reports/maintenance', label: 'การบำรุงรักษา' },
       { href: '/reports/repair', label: 'การซ่อม' },
       { href: '/reports/install', label: 'การติดตั้ง' },
@@ -173,26 +175,8 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
     return pathname?.startsWith(href)
   }
 
-  return (
+  const asideContent = (
     <>
-      {/* Mobile Menu Toggle Button */}
-      <MobileMenuButton onClick={handleToggle} isMobileOpen={isMobileOpen} />
-
-      {/* Mobile Overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[55] lg:hidden transition-opacity"
-          onClick={handleToggle}
-        />
-      )}
-
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed top-0 left-0 h-screen bg-app-section border-r border-app z-[60] transition-all duration-300 ease-in-out flex-shrink-0 flex-col
-          ${isMobileOpen ? 'flex translate-x-0 shadow-2xl' : 'hidden -translate-x-full lg:flex lg:translate-x-0'} 
-          ${mounted && isCollapsed ? 'w-20' : 'w-64'}
-        `}
-      >
         {/* Header: Logo & Collapse Button */}
         <div className={`flex items-center justify-between border-b border-app ${isCollapsed ? 'p-3 flex-col gap-4' : 'p-5'}`}>
 
@@ -566,7 +550,39 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
             <p className="font-bold">v{process.env.NEXT_PUBLIC_APP_VERSION?.split('.').slice(0, 2).join('.') || '1.0'}</p>
           )}
         </div>
-      </aside>
+    </>
+  )
+
+  return (
+    <>
+      {!onMobileToggle && (
+        <MobileMenuButton onClick={handleToggle} isMobileOpen={isMobileOpen} />
+      )}
+      {/* มือถือ: overlay + sidebar ไปที่ body เพื่อให้ทับเนื้อหาแน่นอน */}
+      {isMobileOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] lg:hidden flex" aria-hidden="false">
+          <div
+            className="absolute inset-0 bg-black/50 transition-opacity"
+            onClick={handleToggle}
+          />
+          <aside
+            className={`relative z-10 h-full bg-app-section border-r border-app transition-all duration-300 ease-in-out flex-shrink-0 flex-col flex translate-x-0 shadow-2xl ${mounted && isCollapsed ? 'w-20' : 'w-64'}`}
+          >
+            {asideContent}
+          </aside>
+        </div>,
+        document.body
+      )}
+      {(!isMobileOpen || typeof document === 'undefined') && (
+        <aside
+          className={`fixed top-0 left-0 h-screen bg-app-section border-r border-app z-[60] transition-all duration-300 ease-in-out flex-shrink-0 flex-col
+            hidden -translate-x-full lg:flex lg:translate-x-0
+            ${mounted && isCollapsed ? 'w-20' : 'w-64'}
+          `}
+        >
+          {asideContent}
+        </aside>
+      )}
     </>
   )
 }

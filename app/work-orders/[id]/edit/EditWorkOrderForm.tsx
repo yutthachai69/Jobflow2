@@ -26,12 +26,20 @@ interface WorkOrder {
   }
 }
 
+interface Technician {
+  id: string
+  fullName: string | null
+  username: string
+}
+
 interface Props {
   workOrder: WorkOrder
   sites: Site[]
+  technicians: Technician[]
+  currentTechnicianId: string | null
 }
 
-export default function EditWorkOrderForm({ workOrder, sites }: Props) {
+export default function EditWorkOrderForm({ workOrder, sites, technicians, currentTechnicianId }: Props) {
   const router = useRouter()
   const [selectedSiteId, setSelectedSiteId] = useState<string>(workOrder.site.id)
   const [jobType, setJobType] = useState<'PM' | 'CM' | 'INSTALL'>(workOrder.jobType)
@@ -44,7 +52,7 @@ export default function EditWorkOrderForm({ workOrder, sites }: Props) {
     const minutes = String(date.getMinutes()).padStart(2, '0')
     return `${year}-${month}-${day}T${hours}:${minutes}`
   })
-  const [assignedTeam, setAssignedTeam] = useState<string>(workOrder.assignedTeam || '')
+  const [assignedTechnicianId, setAssignedTechnicianId] = useState<string>(currentTechnicianId || '')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -78,7 +86,7 @@ export default function EditWorkOrderForm({ workOrder, sites }: Props) {
     formData.set('siteId', selectedSiteId)
     formData.set('jobType', jobType)
     formData.set('scheduledDate', scheduledDate)
-    formData.set('assignedTeam', assignedTeam)
+    formData.set('assignedTechnicianId', assignedTechnicianId)
 
     try {
       await updateWorkOrder(formData)
@@ -170,19 +178,24 @@ export default function EditWorkOrderForm({ workOrder, sites }: Props) {
           )}
         </div>
 
-        {/* Assigned Team */}
+        {/* มอบหมายช่าง */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            ทีมที่รับผิดชอบ
+            มอบหมายช่าง
           </label>
-          <input
-            type="text"
-            value={assignedTeam}
-            onChange={(e) => setAssignedTeam(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="เช่น ทีม A, ทีม B"
-          />
-          <p className="mt-2 text-xs text-gray-500">ระบุทีมที่รับผิดชอบ (ไม่บังคับ)</p>
+          <select
+            value={assignedTechnicianId}
+            onChange={(e) => setAssignedTechnicianId(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900"
+          >
+            <option value="">-- ไม่มอบหมาย (กำหนดทีหลัง) --</option>
+            {technicians.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.fullName || t.username}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-xs text-gray-500">👤 เลือกช่างที่มีในระบบ (ไม่บังคับ)</p>
         </div>
 
         {/* Submit Error */}

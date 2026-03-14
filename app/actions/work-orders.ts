@@ -90,8 +90,9 @@ export async function createWorkOrder(formData: FormData) {
     const siteId = sanitizeString(formData.get('siteId') as string)
     const jobType = formData.get('jobType') as 'PM' | 'CM' | 'INSTALL'
     const scheduledDateStr = formData.get('scheduledDate') as string
-    const assignedTeam = sanitizeString(formData.get('assignedTeam') as string)
+    const assignedTechnicianId = sanitizeString(formData.get('assignedTechnicianId') as string)
     const assetIds = formData.getAll('assetIds') as string[]
+    const formTemplate = formData.get('formTemplate') as string
 
     // Validation
     if (!siteId) {
@@ -115,24 +116,35 @@ export async function createWorkOrder(formData: FormData) {
     // สร้างเลขที่งาน
     const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
 
+    let assignedTeamDisplay: string | null = null
+    if (assignedTechnicianId) {
+      const tech = await prisma.user.findFirst({
+        where: { id: assignedTechnicianId, role: 'TECHNICIAN' },
+        select: { fullName: true, username: true },
+      })
+      assignedTeamDisplay = tech ? (tech.fullName || tech.username) : null
+    }
+
     // สร้าง Work Order
     const workOrder = await prisma.workOrder.create({
       data: {
         siteId,
         jobType,
         scheduledDate,
-        assignedTeam: assignedTeam || null,
+        assignedTeam: assignedTeamDisplay,
         status: 'OPEN',
         workOrderNumber,
       },
     })
 
-    // สร้าง Job Items สำหรับแต่ละ Asset
+    // สร้าง Job Items สำหรับแต่ละ Asset (มอบหมายช่างถ้าเลือกไว้)
     await prisma.jobItem.createMany({
       data: assetIds.map((assetId) => ({
         workOrderId: workOrder.id,
         assetId,
         status: 'PENDING',
+        technicianId: assignedTechnicianId || undefined,
+        checklist: formTemplate ? JSON.stringify({ formType: formTemplate, data: {} }) : null,
       })),
     })
 
@@ -165,7 +177,7 @@ export async function updateWorkOrder(formData: FormData) {
     const siteId = sanitizeString(formData.get('siteId') as string)
     const jobType = formData.get('jobType') as 'PM' | 'CM' | 'INSTALL'
     const scheduledDateStr = formData.get('scheduledDate') as string
-    const assignedTeam = sanitizeString(formData.get('assignedTeam') as string)
+    const assignedTechnicianId = sanitizeString(formData.get('assignedTechnicianId') as string)
 
     // Validation
     if (!workOrderId) {
@@ -186,14 +198,28 @@ export async function updateWorkOrder(formData: FormData) {
       throw new Error('Invalid date format')
     }
 
+    let assignedTeamDisplay: string | null = null
+    if (assignedTechnicianId) {
+      const tech = await prisma.user.findFirst({
+        where: { id: assignedTechnicianId, role: 'TECHNICIAN' },
+        select: { fullName: true, username: true },
+      })
+      assignedTeamDisplay = tech ? (tech.fullName || tech.username) : null
+    }
+
     await prisma.workOrder.update({
       where: { id: workOrderId },
       data: {
         siteId,
         jobType,
         scheduledDate,
-        assignedTeam: assignedTeam || null,
+        assignedTeam: assignedTeamDisplay,
       },
+    })
+
+    await prisma.jobItem.updateMany({
+      where: { workOrderId },
+      data: { technicianId: assignedTechnicianId || null },
     })
 
     revalidatePath(`/work-orders/${workOrderId}`)
@@ -455,11 +481,12 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
       })
 
       if (workOrder) {
-        // ตรวจสอบว่าทุก job item เสร็จแล้วหรือยัง
-        const allJobItems = await prisma.jobItem.findMany({
-          where: { workOrderId: jobItem.workOrderId },
-        })
-        const allDone = allJobItems.every((ji) => ji.status === 'DONE')
+        // ตรวจสอบจาก DB หลังอัปเดตว่า every job item เป็น DONE หรือยัง (ใช้ count เพื่อให้ได้ข้อมูลล่าสุด)
+        const [total, doneCount] = await Promise.all([
+          prisma.jobItem.count({ where: { workOrderId: jobItem.workOrderId } }),
+          prisma.jobItem.count({ where: { workOrderId: jobItem.workOrderId, status: 'DONE' } }),
+        ])
+        const allDone = total > 0 && total === doneCount
 
         if (allDone) {
           // Auto-close the work order immediately when all jobs are complete
@@ -609,7 +636,10 @@ export async function createJobPhoto(jobItemId: string, formData: FormData) {
       if (jobItem.technicianId !== null && jobItem.technicianId !== user.id) {
         throw new Error('Unauthorized')
       }
-      // Cannot add photos if job is DONE
+      // ต้องเริ่มงานก่อนจึงจะอัปโหลดรูปได้
+      if (jobItem.status === 'PENDING') {
+        throw new Error('กรุณากดเริ่มงานก่อนจึงจะอัปโหลดรูปได้')
+      }
       if (jobItem.status === 'DONE') {
         throw new Error('Cannot add photos to completed job')
       }
@@ -667,7 +697,10 @@ export async function updateJobItemNote(jobItemId: string, formData: FormData) {
       if (jobItem.technicianId !== null && jobItem.technicianId !== user.id) {
         throw new Error('Unauthorized')
       }
-      // Cannot update notes if job is DONE
+      // ต้องเริ่มงานก่อนจึงจะบันทึกได้
+      if (jobItem.status === 'PENDING') {
+        throw new Error('กรุณากดเริ่มงานก่อนจึงจะบันทึกได้')
+      }
       if (jobItem.status === 'DONE') {
         throw new Error('Cannot update notes on completed job')
       }
@@ -714,6 +747,13 @@ export async function updateJobItemChecklist(jobItemId: string, checklistJson: s
       if (jobItem.technicianId && jobItem.technicianId !== user.id) {
         throw new Error('Unauthorized')
       }
+      // ต้องเริ่มงานก่อนจึงจะกรอกฟอร์มได้
+      if (jobItem.status === 'PENDING') {
+        throw new Error('กรุณากดเริ่มงานก่อนจึงจะกรอกฟอร์มได้')
+      }
+      if (jobItem.status === 'DONE') {
+        throw new Error('Cannot update checklist on completed job')
+      }
     }
 
     await prisma.jobItem.update({
@@ -724,10 +764,12 @@ export async function updateJobItemChecklist(jobItemId: string, checklistJson: s
     })
 
     revalidatePath(`/work-orders/${jobItem.workOrderId}`)
+    revalidatePath(`/technician/job-item/${jobItemId}`)
+    revalidatePath(`/reports/job/${jobItemId}`)
     return { success: true }
   } catch (error) {
     console.error('Error updating checklist:', error)
-    return { success: false, error: 'Failed to update checklist' }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update checklist' }
   }
 }
 

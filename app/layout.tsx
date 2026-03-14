@@ -137,7 +137,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body
-        className="antialiased bg-app-bg text-app-body font-sans"
+        className="antialiased bg-app-bg text-app-body font-sans overflow-x-hidden"
       >
         <Script id="theme-init" strategy="beforeInteractive">
           {`(function(){var t=localStorage.getItem("airservice-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);})();`}

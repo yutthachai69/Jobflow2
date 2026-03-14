@@ -1,11 +1,16 @@
-
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineMessage } from '@/app/lib/line-messaging'
+import { getCurrentUser } from '@/lib/auth'
 
 export async function GET() {
-    try {
-        const users = await prisma.user.findMany({
+  const user = await getCurrentUser().catch(() => null)
+  if (!user || user.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const users = await prisma.user.findMany({
             where: {
                 lineUserId: { not: null }
             },
@@ -26,18 +31,18 @@ export async function GET() {
 
         const results = []
 
-        for (const user of users) {
-            if (!user.lineUserId) continue
+        for (const lineUser of users) {
+            if (!lineUser.lineUserId) continue
 
             const message = {
                 type: "text" as const,
-                text: `🔔 ทดสอบการเชื่อมต่อ LINE Notification (System Test)\nถึงคุณ: ${user.fullName || user.username}`
+                text: `🔔 ทดสอบการเชื่อมต่อ LINE Notification (System Test)\nถึงคุณ: ${lineUser.fullName || lineUser.username}`
             }
 
-            const result = await sendLineMessage(user.lineUserId, message)
+            const result = await sendLineMessage(lineUser.lineUserId, message)
             results.push({
-                user: user.username,
-                lineUserId: user.lineUserId,
+                user: lineUser.username,
+                lineUserId: lineUser.lineUserId,
                 sent: result?.success ?? false,
                 error: result?.error
             })

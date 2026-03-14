@@ -100,6 +100,8 @@ export async function generatePMContract(siteId: string, year: number) {
   })
 
   const schedulesToCreate = []
+
+  const makeDueDate = (y: number, m: number) => new Date(y, m - 1, 15)
   
   // Air Conditioners: 2 Major + 4 Minor (6 rounds)
   // เดือน: ก.พ.(ย่อย), เม.ย.(ย่อย), มิ.ย.(ใหญ่), ส.ค.(ย่อย), ต.ค.(ย่อย), ธ.ค.(ใหญ่)
@@ -108,13 +110,15 @@ export async function generatePMContract(siteId: string, year: number) {
 
   for (const asset of acAssets) {
     for (let i = 0; i < 6; i++) {
+      const month = acMonths[i]
       schedulesToCreate.push({
         contractId: contract.id,
         assetId: asset.id,
         pmType: acTypes[i],
         roundIndex: i + 1,
-        targetMonth: acMonths[i],
-        targetYear: year
+        targetMonth: month,
+        targetYear: year,
+        dueDate: makeDueDate(year, month),
       })
     }
   }
@@ -125,13 +129,15 @@ export async function generatePMContract(siteId: string, year: number) {
 
   for (const asset of exhaustAssets) {
     for (let i = 0; i < 4; i++) {
+      const month = exhaustMonths[i]
       schedulesToCreate.push({
         contractId: contract.id,
         assetId: asset.id,
         pmType: 'MINOR' as const,
         roundIndex: i + 1,
-        targetMonth: exhaustMonths[i],
-        targetYear: year
+        targetMonth: month,
+        targetYear: year,
+        dueDate: makeDueDate(year, month),
       })
     }
   }
@@ -255,4 +261,106 @@ export async function createWorkOrderFromPM(siteId: string, scheduleIds: string[
 
     return workOrder
   })
+}
+
+export async function dispatchDuePMSchedules(refDate?: string) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') throw new Error("Unauthorized")
+
+  const now = refDate ? new Date(refDate) : new Date()
+
+  const schedules = await prisma.pMSchedule.findMany({
+    where: {
+      dueDate: { lte: now },
+      status: 'PLANNED',
+      jobItem: null,
+    },
+    include: {
+      asset: {
+        include: {
+          room: {
+            include: {
+              floor: {
+                include: {
+                  building: { include: { site: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      contract: true,
+    },
+    orderBy: [
+      { asset: { room: { floor: { building: { site: { name: 'asc' } } } } } },
+      { asset: { qrCode: 'asc' } },
+    ],
+  })
+
+  if (schedules.length === 0) {
+    return { success: true, created: 0, workOrders: 0 }
+  }
+
+  // Group by site (1 WorkOrder ต่อ 1 Site)
+  const bySite = new Map<string, typeof schedules>()
+  for (const s of schedules) {
+    const siteId = s.asset.room.floor.building.siteId
+    if (!bySite.has(siteId)) bySite.set(siteId, [])
+    bySite.get(siteId)!.push(s)
+  }
+
+  let workOrderCount = 0
+
+  await prisma.$transaction(async (tx) => {
+    for (const [siteId, siteSchedules] of bySite.entries()) {
+      const workOrder = await tx.workOrder.create({
+        data: {
+          jobType: 'PM',
+          status: 'OPEN',
+          siteId,
+          scheduledDate: now,
+        },
+      })
+      workOrderCount++
+
+      for (const s of siteSchedules) {
+        const asset = s.asset
+
+        // เลือก formType ตามประเภททรัพย์สิน
+        let formType: string | null = null
+        if (asset.assetType === 'EXHAUST') {
+          formType = 'EXHAUST_FAN'
+        }
+        // สำหรับ AIR_CONDITIONER สามารถเพิ่ม mapping ฟอร์มในอนาคตได้ที่นี่
+
+        const jobItem = await tx.jobItem.create({
+          data: {
+            workOrderId: workOrder.id,
+            assetId: s.assetId,
+            status: 'PENDING',
+            pmScheduleId: s.id,
+            techNote: `รอบบำรุงรักษา: ${s.pmType === 'MAJOR' ? 'ล้างใหญ่' : 'ล้างย่อย'} (รอบที่ ${s.roundIndex})`,
+            checklist: formType ? JSON.stringify({ formType, data: {} }) : null,
+          },
+        })
+
+        await tx.pMSchedule.update({
+          where: { id: s.id },
+          data: {
+            status: 'DISPATCHED',
+          },
+        })
+      }
+    }
+  })
+
+  revalidatePath('/work-orders')
+
+  logSecurityEvent('PM_AUTO_DISPATCH', {
+    userId: user.id,
+    username: user.username,
+    description: `Auto-dispatched ${schedules.length} PM schedules into ${workOrderCount} work orders (refDate=${refDate || now.toISOString()}).`,
+  })
+
+  return { success: true, created: schedules.length, workOrders: workOrderCount }
 }

@@ -10,14 +10,20 @@ export default async function TechnicianPage() {
   if (!user) redirect('/login');
   if (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN') redirect('/');
 
+  // สถานะใบงานที่ช่างเห็นได้ (รวมรออนุมัติ/อนุมัติแล้ว)
+  const activeStatuses = ["OPEN", "IN_PROGRESS", "WAITING_APPROVAL", "APPROVED"] as const;
+
+  // สถานะรายการงานที่ยังไม่เสร็จ (รวม "พบปัญหา" เพื่อให้ช่างเห็นและกดดำเนินการต่อได้)
+  const jobItemActiveStatuses = ["PENDING", "IN_PROGRESS", "ISSUE_FOUND"] as const;
+
   // งานที่ assign ให้ช่างคนนี้
   const myWorkOrders = await prisma.workOrder.findMany({
     where: {
-      status: { in: ["OPEN", "IN_PROGRESS"] },
+      status: { in: [...activeStatuses] },
       jobItems: {
         some: {
           technicianId: user.userId,
-          status: { in: ["PENDING", "IN_PROGRESS"] },
+          status: { in: [...jobItemActiveStatuses] },
         },
       },
     },
@@ -27,21 +33,21 @@ export default async function TechnicianPage() {
         include: { asset: true },
         where: {
           technicianId: user.userId,
-          status: { in: ["PENDING", "IN_PROGRESS"] },
+          status: { in: [...jobItemActiveStatuses] },
         },
       },
     },
     orderBy: { scheduledDate: "desc" },
   });
 
-  // งานที่ยังไม่มีคนรับ (unassigned)
+  // งานที่ยังไม่มีคนรับ (unassigned) — แสดงให้ช่างเห็นและกดรับงานได้
   const unassignedWorkOrders = await prisma.workOrder.findMany({
     where: {
-      status: { in: ["OPEN", "IN_PROGRESS"] },
+      status: { in: [...activeStatuses] },
       jobItems: {
         some: {
           technicianId: null,
-          status: { in: ["PENDING", "IN_PROGRESS"] },
+          status: { in: [...jobItemActiveStatuses] },
         },
       },
     },
@@ -51,7 +57,7 @@ export default async function TechnicianPage() {
         include: { asset: true },
         where: {
           technicianId: null,
-          status: { in: ["PENDING", "IN_PROGRESS"] },
+          status: { in: [...jobItemActiveStatuses] },
         },
       },
     },
@@ -156,6 +162,22 @@ export default async function TechnicianPage() {
           <p className="text-app-muted ml-15">จัดการงานบำรุงรักษาและซ่อมแซม</p>
         </div>
 
+        {/* งานที่ยังไม่มีคนรับ — แสดงก่อนเพื่อให้เห็นใบงานที่แอดมินสร้างแล้วทันที */}
+        {unassignedWorkOrders.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-xl font-bold text-app-heading">📋 งานที่ยังไม่มีคนรับ</h2>
+              <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm font-bold">
+                {unassignedWorkOrders.length}
+              </span>
+            </div>
+            <p className="text-sm text-app-muted mb-3">ใบงานที่แอดมินสร้างแล้ว ยังไม่ได้มอบหมายช่าง — กดดูรายละเอียดแล้วมอบหมายตัวเองได้จากหน้ารายละเอียดใบงาน</p>
+            <div className="space-y-4">
+              {unassignedWorkOrders.map((wo) => renderWorkOrderCard(wo, false))}
+            </div>
+          </div>
+        )}
+
         {/* งานของฉัน */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -171,7 +193,11 @@ export default async function TechnicianPage() {
                 <span className="text-3xl">✅</span>
               </div>
               <h3 className="text-lg font-bold text-app-heading mb-2">ไม่มีงานที่ต้องทำ</h3>
-              <p className="text-app-muted text-sm">ดูงานที่ยังไม่มีคนรับด้านล่างเพื่อรับงานใหม่</p>
+              <p className="text-app-muted text-sm">
+                {unassignedWorkOrders.length > 0
+                  ? 'หรือเลือกรับงานจากรายการ "งานที่ยังไม่มีคนรับ" ด้านบน'
+                  : 'ดูงานที่ยังไม่มีคนรับด้านบนเมื่อแอดมินสร้างใบงานใหม่'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -179,21 +205,6 @@ export default async function TechnicianPage() {
             </div>
           )}
         </div>
-
-        {/* งานที่ยังไม่มีคนรับ */}
-        {unassignedWorkOrders.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-xl font-bold text-app-heading">📋 งานที่ยังไม่มีคนรับ</h2>
-              <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm font-bold">
-                {unassignedWorkOrders.length}
-              </span>
-            </div>
-            <div className="space-y-4">
-              {unassignedWorkOrders.map((wo) => renderWorkOrderCard(wo, false))}
-            </div>
-          </div>
-        )}
 
         {/* Quick Instructions */}
         <div className="bg-app-card border border-app rounded-2xl p-6 shadow-md">

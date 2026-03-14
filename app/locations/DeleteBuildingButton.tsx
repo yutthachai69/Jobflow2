@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deleteBuilding } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   buildingId: string
@@ -26,6 +27,7 @@ export default function DeleteBuildingButton({ buildingId, buildingName }: Props
       router.push('/locations')
       router.refresh()
     } catch (error) {
+      if (isRedirectError(error)) throw error
       console.error('Error deleting building:', error)
       const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
       if (errorMessage.includes('floors')) {

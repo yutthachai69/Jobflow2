@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 type Photo = {
@@ -70,18 +71,25 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
     ? Math.round((new Date(job.endTime).getTime() - new Date(job.startTime).getTime()) / 60000)
     : null;
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const drawerContent = (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden
       />
 
-      {/* Drawer */}
-      <div className="fixed bottom-0 right-0 top-0 z-50 w-full max-w-lg bg-white shadow-2xl flex flex-col overflow-hidden">
+      {/* Drawer: รองไว้ที่ body เพื่อไม่ให้ถูกตัดโดย overflow ของ layout หลัก + ความสูงชัดเจน */}
+      <div
+        className="fixed bottom-0 right-0 top-0 z-[9999] w-full max-w-lg bg-white shadow-2xl flex flex-col"
+        style={{ height: '100vh' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white">
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white">
           <div>
             <div className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full border mb-2 ${STATUS_STYLE[job.status] ?? STATUS_STYLE['PENDING']}`}>
               {STATUS_LABEL[job.status] ?? job.status}
@@ -104,8 +112,11 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Body - ความสูงชัดเจนจาก calc เพื่อให้ overflow-y-auto เลื่อนได้แน่นอน */}
+        <div
+          className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6"
+          style={{ minHeight: 0, maxHeight: 'calc(100vh - 180px)' }}
+        >
           {/* Meta */}
           <div className="grid grid-cols-2 gap-4">
             {[
@@ -153,9 +164,9 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3">
           <Link
-            href={`/technician/job-item/${job.id}`}
+            href={`/reports/job/${job.id}`}
             className="flex-1 text-center py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
           >
             📄 ดู Service Report
@@ -170,6 +181,9 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
       </div>
     </>
   );
+
+  if (!mounted || typeof document === 'undefined') return null;
+  return createPortal(drawerContent, document.body);
 }
 
 export default function JobHistoryPanel({ jobItems }: { jobItems: JobItem[] }) {

@@ -13,8 +13,14 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 
 export async function POST(request: NextRequest) {
-  // อนุญาตให้เรียกได้ใน production (สำหรับ initial setup)
-  if (process.env.NODE_ENV === 'production' && process.env.SEED_SECRET) {
+  // Production: ต้องมี SEED_SECRET และส่ง Bearer เท่านั้น ถึงจะให้รัน setup
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.SEED_SECRET) {
+      return NextResponse.json(
+        { error: 'Setup is disabled in production when SEED_SECRET is not set' },
+        { status: 503 }
+      )
+    }
     const authHeader = request.headers.get('authorization')
     if (authHeader !== `Bearer ${process.env.SEED_SECRET}`) {
       return NextResponse.json(
@@ -235,18 +241,22 @@ export async function POST(request: NextRequest) {
       
       await setupPrisma.$disconnect()
 
-      return NextResponse.json({
+      const body: Record<string, unknown> = {
         success: true,
         message: 'Database setup completed successfully!',
         results,
         schemaCreated,
         seedCompleted,
-        users: {
+      }
+      // อย่าส่งรหัสผ่านหรือ default accounts ออกใน production
+      if (process.env.NODE_ENV !== 'production') {
+        body.defaultAccounts = {
           admin: { username: 'admin', password: 'admin123' },
           technician: { username: 'tech1', password: 'password123' },
-          client: { username: 'client1', password: 'client123' }
+          client: { username: 'client1', password: 'client123' },
         }
-      })
+      }
+      return NextResponse.json(body)
     } catch (error: any) {
       // Log errors (important for debugging)
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -270,27 +280,33 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// สำหรับ GET request - แสดง info
+// GET — ใน production ไม่เปิดเผยข้อมูล setup หรือบัญชี default
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { message: 'Not available' },
+      { status: 404 }
+    )
+  }
   return NextResponse.json({
-    message: 'Database Setup API',
+    message: 'Database Setup API (development only)',
     usage: {
       method: 'POST',
       endpoint: '/api/setup',
       description: 'Creates database schema and seeds initial data',
-      production: process.env.SEED_SECRET ? 'Requires Authorization header: Bearer <SEED_SECRET>' : 'No auth required',
-      development: 'No auth required'
+      production: 'Disabled unless SEED_SECRET is set; then use Authorization: Bearer <SEED_SECRET>',
+      development: 'No auth required',
     },
     whatItDoes: [
       '1. Generate Prisma Client',
       '2. Create database schema (db push)',
-      '3. Seed initial data (users, clients, sites, assets, etc.)'
+      '3. Seed initial data (users, clients, sites, assets, etc.)',
     ],
     defaultAccounts: {
       admin: { username: 'admin', password: 'admin123' },
       technician: { username: 'tech1', password: 'password123' },
-      client: { username: 'client1', password: 'client123' }
-    }
+      client: { username: 'client1', password: 'client123' },
+    },
   })
 }
 

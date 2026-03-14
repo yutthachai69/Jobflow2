@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deleteRoom } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   roomId: string
@@ -26,6 +27,7 @@ export default function DeleteRoomButton({ roomId, roomName }: Props) {
       router.push('/locations')
       router.refresh()
     } catch (error) {
+      if (isRedirectError(error)) throw error
       console.error('Error deleting room:', error)
       const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
       if (errorMessage.includes('assets')) {

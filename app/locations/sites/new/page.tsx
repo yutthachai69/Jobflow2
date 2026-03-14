@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { createSite } from "@/app/actions";
+import { createSiteWithStructure } from "@/app/actions";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -76,14 +76,14 @@ export default async function NewSitePage({ searchParams }: Props) {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-900 bg-clip-text text-transparent">
-              เพิ่มสถานที่ใหม่
+              เพิ่มสถานที่ (พร้อมอาคาร ชั้น ห้อง)
             </h1>
           </div>
-          <p className="text-gray-600 ml-15">สร้างสถานที่ใหม่สำหรับลูกค้า</p>
+          <p className="text-gray-600 ml-15">กรอกข้อมูลในการ์ดเดียว แล้วกดบันทึกครั้งเดียว</p>
         </div>
 
-        {/* Form */}
-        <form action={createSite} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-100">
+        {/* Form - การ์ดเดียว: สถานที่ + อาคาร + ชั้น + ห้อง */}
+        <form action={createSiteWithStructure} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-gray-100">
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -108,69 +108,85 @@ export default async function NewSitePage({ searchParams }: Props) {
                   </option>
                 ))}
               </select>
-              <p className="mt-2 text-xs text-gray-500">
-                เลือกองค์กรลูกค้าที่สถานที่นี้สังกัด
-              </p>
             </div>
 
+            {/* สถานที่ */}
+            <div className="border-b border-gray-200 pb-4">
+              <h3 className="text-sm font-semibold text-blue-700 mb-3">📍 สถานที่</h3>
+              <div className="space-y-4 pl-0">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อสถานที่ <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="name"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+                    placeholder="เช่น สุขุมวิท, โรงงาน A, สำนักงานใหญ่"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+                  <textarea
+                    name="address"
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white resize-none text-gray-900 placeholder:text-gray-400"
+                    placeholder="ที่อยู่เต็ม (ไม่บังคับ)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ตำแหน่งบนแผนที่</label>
+                  <SiteMapPicker />
+                </div>
+              </div>
+            </div>
+
+            {/* อาคาร */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ชื่อสถานที่ <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">🏢 ชื่ออาคาร <span className="text-red-500">*</span></label>
               <input
                 type="text"
-                name="name"
+                name="buildingName"
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-                placeholder="เช่น สุขุมวิท, โรงงาน A, สำนักงานใหญ่"
+                placeholder="เช่น อาคาร A, อาคารหลัก"
               />
-              <p className="mt-2 text-xs text-gray-500">
-                💡 ระบุชื่อที่บ่งบอกที่ตั้งหรือลักษณะของสถานที่
-              </p>
             </div>
 
+            {/* ชั้น */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ที่อยู่
-              </label>
-              <textarea
-                name="address"
-                rows={3}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white resize-none text-gray-900 placeholder:text-gray-400"
-                placeholder="ที่อยู่เต็ม รวมถึงเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
+              <label className="block text-sm font-semibold text-gray-700 mb-2">🏢 ชื่อชั้น <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="floorName"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+                placeholder="เช่น ชั้น 1, G (Ground), ชั้น 2"
               />
-              <p className="mt-2 text-xs text-gray-500">
-                ที่อยู่สำหรับการติดต่อและประสานงาน (ไม่บังคับ)
-              </p>
             </div>
 
-            {/* Map Picker */}
+            {/* ห้อง */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <span className="flex items-center gap-2">
-                  📍 ตำแหน่งบนแผนที่
-                </span>
-              </label>
-              <SiteMapPicker />
+              <label className="block text-sm font-semibold text-gray-700 mb-2">🚪 ชื่อห้อง/โซน <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="roomName"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+                placeholder="เช่น Lobby, ห้องประชุม 1, Server Room"
+              />
             </div>
 
             {/* Info Box */}
             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="text-sm text-gray-700">
-                  <p className="font-semibold mb-1">หลังจากสร้างสถานที่แล้ว</p>
-                  <p className="text-gray-600">คุณสามารถเพิ่มอาคาร (Buildings), ชั้น (Floors), และห้อง (Rooms) ภายในสถานที่นี้ได้</p>
-                </div>
-              </div>
+              <p className="text-sm text-gray-700">
+                <strong>บันทึกครั้งเดียว</strong> — ระบบจะสร้างสถานที่ อาคาร ชั้น และห้องในคราวเดียวกัน แล้วกลับไปหน้ารายการ
+              </p>
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
               <button
                 type="submit"
-                aria-label="บันทึกข้อมูลสถานที่"
+                aria-label="บันทึกสถานที่ อาคาร ชั้น ห้อง"
                 className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
               >
-                <span>บันทึก</span>
+                <span>บันทึกทั้งหมด</span>
               </button>
               <Link
                 href="/locations"

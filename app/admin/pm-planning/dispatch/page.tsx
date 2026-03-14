@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
-import { getDuePMSchedules, createWorkOrderFromPM } from '@/app/actions/pm';
+import { getDuePMSchedules, createWorkOrderFromPM, dispatchDuePMSchedules } from '@/app/actions/pm';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -71,6 +71,23 @@ export default function PMDispatchBoard() {
         }
     };
 
+    const handleAutoDispatch = async () => {
+        setIsProcessing(true);
+        try {
+            const res = await dispatchDuePMSchedules();
+            if (res.created === 0) {
+                toast.success('ไม่มีรอบที่ถึงกำหนดใหม่สำหรับ auto-dispatch');
+            } else {
+                toast.success(`Auto-dispatch สำเร็จ: สร้างใบงาน ${res.workOrders} ใบ (${res.created} รอบ)`);
+                router.push('/work-orders');
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Auto-dispatch ล้มเหลว');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <div className="p-4 md:p-8">
             <Breadcrumbs
@@ -104,6 +121,15 @@ export default function PMDispatchBoard() {
                         className="btn-app-primary px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isProcessing ? 'กำลังประมวลผล...' : `📦 ออกใบงาน (${selectedIds.length} รายการ)`}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleAutoDispatch}
+                        disabled={isProcessing}
+                        className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-app text-app-heading bg-app-card hover:bg-app-section transition-colors disabled:opacity-50"
+                    >
+                        ⚙️ Auto-dispatch รอบที่ถึงกำหนด
                     </button>
                 </div>
             </div>

@@ -146,7 +146,7 @@ export default async function AdminDashboard({ siteId }: Props) {
             <h2 className="text-lg font-semibold text-app-heading">งานล่าสุด</h2>
             <Link href="/work-orders" className="text-sm font-medium hover:underline" style={{ color: '#C2A66A' }}>ดูทั้งหมด →</Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="min-w-0 overflow-x-auto -mx-px">
             {recentWorkOrders.length === 0 ? (
               <div className="py-12">
                 <EmptyState icon="📋" title="ยังไม่มีงานล่าสุด" description="เมื่อมีการสร้างใบสั่งงานใหม่ จะแสดงที่นี่" actionLabel="สร้างใบสั่งงานใหม่" actionHref="/work-orders/new" />

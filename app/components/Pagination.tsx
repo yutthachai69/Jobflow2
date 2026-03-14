@@ -37,9 +37,11 @@ export default function Pagination({ currentPage, totalPages, totalItems, itemsP
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-      <div className="text-sm text-app-muted">
-        แสดง {startItem} - {endItem} จาก {totalItems} รายการ
-      </div>
+      {!onPageChange && (
+        <div className="text-sm text-app-muted">
+          แสดง {startItem} - {endItem} จาก {totalItems} รายการ
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <button
           onClick={() => handlePageChange(currentPage - 1)}

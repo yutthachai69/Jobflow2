@@ -26,8 +26,6 @@ export default function SiteFilter({ sites, selectedSiteId }: { sites: Site[]; s
     });
   };
 
-  const selectedSite = sites.find(s => s.id === selectedSiteId);
-
   return (
     <div className={`flex items-center gap-3 transition-opacity ${isPending ? 'opacity-60 pointer-events-none' : ''}`}>
       <div className="flex items-center gap-2 bg-app-card border border-app rounded-2xl px-4 py-2.5 shadow-sm">
@@ -37,10 +35,10 @@ export default function SiteFilter({ sites, selectedSiteId }: { sites: Site[]; s
           <select
             value={selectedSiteId || 'ALL'}
             onChange={(e) => handleChange(e.target.value)}
-            className="bg-transparent border-none focus:ring-0 text-sm font-bold text-app-heading p-0 cursor-pointer min-w-[140px]"
+            className="site-filter-select bg-app-card text-app-heading border-none focus:ring-0 text-sm font-bold p-0 cursor-pointer min-w-[140px] outline-none"
           >
             <option value="ALL">ทุกสถานที่</option>
-            {sites.map(site => (
+            {sites.map((site) => (
               <option key={site.id} value={site.id}>{site.name}</option>
             ))}
           </select>

@@ -142,8 +142,9 @@ export default async function NewRoomPage({ searchParams }: Props) {
         </form>
 
         {/* Helper Text */}
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>หลังจากสร้างห้องแล้ว คุณสามารถเพิ่มเครื่องปรับอากาศในห้องนี้ได้</p>
+        <div className="mt-6 rounded-xl p-4 bg-orange-50 border border-orange-200 text-sm text-gray-700">
+          <p className="font-semibold mb-1">บันทึกทีละขั้นตอน</p>
+          <p>หลังกดบันทึก ระบบจะบันทึกห้องแล้วกลับไป <strong>หน้ารายการสถานที่</strong> คุณสามารถเพิ่มเครื่องปรับอากาศในห้องนี้ได้จากหน้ารายการ</p>
         </div>
       </div>
     </div>

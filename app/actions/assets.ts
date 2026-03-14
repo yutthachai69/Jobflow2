@@ -9,6 +9,31 @@ import { logSecurityEvent } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
 
+const EXHAUST_CODE_REGEX = /^EX-(\d{4})-(\d{3})$/
+
+/** สร้างรหัส Exhaust ตัวถัดไปในรูปแบบ EX-YYYY-NNN (เช่น EX-2025-001) */
+async function getNextExhaustCode(): Promise<string> {
+  const year = new Date().getFullYear()
+  const prefix = `EX-${year}-`
+  const existing = await prisma.asset.findMany({
+    where: {
+      assetType: 'EXHAUST',
+      qrCode: { startsWith: prefix },
+    },
+    select: { qrCode: true },
+  })
+  let maxN = 0
+  for (const a of existing) {
+    const m = a.qrCode.match(EXHAUST_CODE_REGEX)
+    if (m && m[1] === String(year)) {
+      const n = parseInt(m[2], 10)
+      if (n > maxN) maxN = n
+    }
+  }
+  const nextN = maxN + 1
+  return `${prefix}${String(nextN).padStart(3, '0')}`
+}
+
 export async function createAsset(formData: FormData): Promise<{ error: string } | void> {
   try {
     await requireAdmin()
@@ -50,8 +75,13 @@ export async function createAsset(formData: FormData): Promise<{ error: string }
       return { error: 'รูปแบบวันที่ไม่ถูกต้อง' }
     }
 
-    // For non-air-conditioner assets without serialNo, generate a unique qrCode
-    const qrCode = serialNo || `ASSET-${Date.now()}`
+    // Exhaust: ไม่บังคับกรอกรหัส → สร้างรูปแบบ EX-YYYY-NNN ให้อัตโนมัติ
+    let qrCode: string
+    if (assetType === 'EXHAUST' && !serialNo) {
+      qrCode = await getNextExhaustCode()
+    } else {
+      qrCode = serialNo || `ASSET-${Date.now()}`
+    }
 
     await prisma.asset.create({
       data: {
@@ -196,4 +226,38 @@ export async function deleteAsset(assetId: string) {
     throw error
   }
   redirect('/assets')
+}
+
+/** อัปเดตรหัส Exhaust ที่ยังไม่ใช่รูปแบบ EX-YYYY-NNN ให้เป็น EX-YYYY-NNN (เรียงตามวันที่สร้าง) */
+export async function migrateExhaustAssetCodes(): Promise<{ updated: number; error?: string }> {
+  try {
+    await requireAdmin()
+
+    const allExhaust = await prisma.asset.findMany({
+      where: { assetType: 'EXHAUST' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, qrCode: true },
+    })
+    const exhaustToMigrate = allExhaust.filter((a) => !EXHAUST_CODE_REGEX.test(a.qrCode))
+
+    if (exhaustToMigrate.length === 0) {
+      return { updated: 0 }
+    }
+
+    let updated = 0
+    for (const asset of exhaustToMigrate) {
+      const newCode = await getNextExhaustCode()
+      await prisma.asset.update({
+        where: { id: asset.id },
+        data: { qrCode: newCode },
+      })
+      updated++
+    }
+
+    revalidatePath('/assets')
+    return { updated }
+  } catch (error) {
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    return { updated: 0, error: error instanceof Error ? error.message : 'เกิดข้อผิดพลาด' }
+  }
 }

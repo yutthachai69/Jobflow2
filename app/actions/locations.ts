@@ -24,7 +24,7 @@ export async function createClient(formData: FormData) {
       throw new Error('Client name is required')
     }
 
-    await prisma.client.create({
+    const client = await prisma.client.create({
       data: {
         name,
         contactInfo: contactInfo || null,
@@ -37,11 +37,11 @@ export async function createClient(formData: FormData) {
     })
 
     revalidatePath('/locations')
+    redirect(`/locations/sites/new?clientId=${client.id}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
-  redirect('/locations')
 }
 
 export async function updateClient(formData: FormData) {
@@ -148,7 +148,7 @@ export async function createSite(formData: FormData) {
       throw new Error('Site name is required')
     }
 
-    await prisma.site.create({
+    const site = await prisma.site.create({
       data: {
         clientId,
         name,
@@ -164,11 +164,68 @@ export async function createSite(formData: FormData) {
     })
 
     revalidatePath('/locations')
+    redirect(`/locations/buildings/new?siteId=${site.id}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
-  redirect('/locations')
+}
+
+/** สร้างสถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) */
+export async function createSiteWithStructure(formData: FormData) {
+  try {
+    const user = await requireAdmin()
+
+    const clientId = sanitizeString(formData.get('clientId') as string)
+    const siteName = sanitizeString(formData.get('name') as string)
+    const address = sanitizeString(formData.get('address') as string)
+    const latitudeStr = formData.get('latitude') as string
+    const longitudeStr = formData.get('longitude') as string
+    const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+    const longitude = longitudeStr ? parseFloat(longitudeStr) : null
+    const buildingName = sanitizeString(formData.get('buildingName') as string)
+    const floorName = sanitizeString(formData.get('floorName') as string)
+    const roomName = sanitizeString(formData.get('roomName') as string)
+
+    if (!clientId) throw new Error('Client ID is required')
+    if (!siteName) throw new Error('Site name is required')
+    if (!buildingName) throw new Error('Building name is required')
+    if (!floorName) throw new Error('Floor name is required')
+    if (!roomName) throw new Error('Room name is required')
+
+    await prisma.$transaction(async (tx) => {
+      const site = await tx.site.create({
+        data: {
+          clientId,
+          name: siteName,
+          address: address || null,
+          latitude,
+          longitude,
+        },
+      })
+      const building = await tx.building.create({
+        data: { siteId: site.id, name: buildingName },
+      })
+      const floor = await tx.floor.create({
+        data: { buildingId: building.id, name: floorName },
+      })
+      await tx.room.create({
+        data: { floorId: floor.id, name: roomName },
+      })
+    })
+
+    logSecurityEvent('SITE_CREATED', {
+      createdBy: user.id,
+      timestamp: new Date().toISOString(),
+      note: 'with structure (building, floor, room)',
+    })
+
+    revalidatePath('/locations')
+    redirect('/locations')
+  } catch (error) {
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
 }
 
 export async function updateSite(formData: FormData) {
@@ -291,7 +348,7 @@ export async function createBuilding(formData: FormData) {
       throw new Error('Building name is required')
     }
 
-    await prisma.building.create({
+    const building = await prisma.building.create({
       data: {
         siteId,
         name,
@@ -304,11 +361,11 @@ export async function createBuilding(formData: FormData) {
     })
 
     revalidatePath('/locations')
+    redirect(`/locations/floors/new?buildingId=${building.id}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
-  redirect('/locations')
 }
 
 export async function updateBuilding(formData: FormData) {
@@ -413,7 +470,7 @@ export async function createFloor(formData: FormData) {
       throw new Error('Floor name is required')
     }
 
-    await prisma.floor.create({
+    const floor = await prisma.floor.create({
       data: {
         buildingId,
         name,
@@ -426,11 +483,11 @@ export async function createFloor(formData: FormData) {
     })
 
     revalidatePath('/locations')
+    redirect(`/locations/rooms/new?floorId=${floor.id}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
-  redirect('/locations')
 }
 
 export async function updateFloor(formData: FormData) {

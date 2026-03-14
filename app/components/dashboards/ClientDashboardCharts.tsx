@@ -56,7 +56,7 @@ export default function ClientDashboardCharts({
           สถิติการดำเนินงานรายวัน
         </h3>
         <p className="text-sm text-app-muted mb-4">
-          {siteName} • การล้างและซ่อมแอร์
+          {siteName} • การล้างและซ่อมแอร์ (30 วันย้อนหลัง)
         </p>
         <div className="h-64 md:h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">

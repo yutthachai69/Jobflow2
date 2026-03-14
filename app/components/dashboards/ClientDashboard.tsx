@@ -2,10 +2,13 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { getWOStatus } from '@/lib/status-colors'
 import ClientDashboardCharts from './ClientDashboardCharts'
+import DashboardPeriodPicker from './DashboardPeriodPicker'
 import DateTimeDisplay from '@/app/components/DateTimeDisplay'
 
 interface ClientDashboardProps {
   siteId: string | null
+  year?: number
+  month?: number
 }
 
 function toDateKey(d: Date) {
@@ -21,7 +24,7 @@ const MONTH_LABELS: Record<string, string> = {
   '7': 'ก.ค.', '8': 'ส.ค.', '9': 'ก.ย.', '10': 'ต.ค.', '11': 'พ.ย.', '12': 'ธ.ค.',
 }
 
-export default async function ClientDashboard({ siteId }: ClientDashboardProps) {
+export default async function ClientDashboard({ siteId, year, month }: ClientDashboardProps) {
   if (!siteId) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
@@ -85,6 +88,10 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
     )
   }
 
+  const now = new Date()
+  const selectedYear = year ?? now.getFullYear()
+  const selectedMonth = month ?? now.getMonth() + 1
+
   const allAssets = site.buildings.flatMap((b) =>
     b.floors.flatMap((f) => f.rooms.flatMap((r) => r.assets))
   )
@@ -102,18 +109,19 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
     (wo) => wo.status === 'COMPLETED' && new Date(wo.updatedAt).toDateString() === new Date().toDateString()
   ).length
 
-  // สร้างข้อมูลกราฟรายวัน (ย้อนหลัง 30 วัน)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // สร้างข้อมูลกราฟรายวัน (ทั้งเดือนที่เลือก)
+  const startOfMonth = new Date(selectedYear, selectedMonth - 1, 1)
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
   const dailyMap: Record<string, { PM: number; CM: number; INSTALL: number }> = {}
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - i)
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(selectedYear, selectedMonth - 1, day)
     const k = toDateKey(d)
     dailyMap[k] = { PM: 0, CM: 0, INSTALL: 0 }
   }
   for (const wo of site.workOrders) {
-    const k = toDateKey(new Date(wo.scheduledDate))
+    const d = new Date(wo.scheduledDate)
+    if (d.getFullYear() !== selectedYear || d.getMonth() + 1 !== selectedMonth) continue
+    const k = toDateKey(d)
     if (!dailyMap[k]) continue
     const jt = wo.jobType as 'PM' | 'CM' | 'INSTALL'
     if (jt === 'PM' || jt === 'CM' || jt === 'INSTALL') dailyMap[k][jt] += 1
@@ -127,16 +135,17 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
       รวม: v.PM + v.CM + v.INSTALL,
     }))
 
-  // สร้างข้อมูลกราฟรายเดือน (ย้อนหลัง 6 เดือน)
+  // สร้างข้อมูลกราฟรายเดือน (ทั้งปีที่เลือก)
   const monthMap: Record<string, { PM: number; CM: number; INSTALL: number }> = {}
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+  for (let m = 0; m < 12; m++) {
+    const d = new Date(selectedYear, m, 1)
     const k = toMonthKey(d)
-    const [y, m] = k.split('-')
     monthMap[k] = { PM: 0, CM: 0, INSTALL: 0 }
   }
   for (const wo of site.workOrders) {
-    const k = toMonthKey(new Date(wo.scheduledDate))
+    const d = new Date(wo.scheduledDate)
+    if (d.getFullYear() !== selectedYear) continue
+    const k = toMonthKey(d)
     if (!monthMap[k]) continue
     const jt = wo.jobType as 'PM' | 'CM' | 'INSTALL'
     if (jt === 'PM' || jt === 'CM' || jt === 'INSTALL') monthMap[k][jt] += 1
@@ -157,15 +166,20 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
   return (
     <div className="p-4 md:p-8">
       <div className="w-full max-w-full">
-        {/* Welcome + สรุปสั้นๆ ให้ไม่งง */}
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-app-heading mb-2">แดชบอร์ด</h1>
-          <p className="text-app-muted mb-1">
-            {site.name} • {site.client.name}
-          </p>
-          <p className="text-sm text-app-muted max-w-2xl">
-            ภาพรวมงานล้างแอร์ บำรุงรักษา และซ่อมแซมในสถานที่ของคุณ — ดูสถานะล่าสุด สถิติ และงานที่กำลังดำเนินการได้ด้านล่าง
-          </p>
+        {/* Welcome + สรุปสั้นๆ ให้ไม่งง + ตัวเลือกช่วงเดือน/ปี */}
+        <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-app-heading mb-2">แดชบอร์ด</h1>
+            <p className="text-app-muted mb-1">
+              {site.name} • {site.client.name}
+            </p>
+            <p className="text-sm text-app-muted max-w-2xl">
+              ภาพรวมงานล้างแอร์ บำรุงรักษา และซ่อมแซมในสถานที่ของคุณ — ดูสถานะล่าสุด สถิติ และงานที่กำลังดำเนินการได้ด้านล่าง
+            </p>
+          </div>
+          <div className="flex items-center justify-end">
+            <DashboardPeriodPicker />
+          </div>
         </div>
 
         {/* ปฏิทินและเวลา */}
@@ -185,7 +199,7 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
             <Link
               key={label}
               href={href}
-              className="relative overflow-hidden rounded-2xl p-4 md:p-5 shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-200 block border border-white/5"
+              className="relative overflow-hidden rounded-2xl p-4 md:p-5 shadow-xl hover:shadow-2xl transition-shadow duration-200 block border border-white/5"
               style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px ${glow}` }}
             >
               <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full opacity-20" style={{ background: from }} />
@@ -211,7 +225,7 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
             <Link
               key={label}
               href={href}
-              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 block border border-white/5"
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-shadow duration-200 block border border-white/5"
               style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px ${glow}` }}
             >
               <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-20" style={{ background: from }} />
@@ -284,13 +298,13 @@ export default async function ClientDashboard({ siteId }: ClientDashboardProps) 
           {[
             { href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', sub: 'ดูรายการแอร์ทั้งหมดในสถานที่', emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.2)' },
             { href: '/work-orders', label: 'ประวัติงาน', sub: 'ดูประวัติการทำงานทั้งหมด', emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.2)' },
+            { href: '/client/pm-plan', label: 'แผน PM', sub: 'ดูแผนบำรุงรักษารายปีของสาขา', emoji: '📅', from: '#0f766e', to: '#115e59', glow: 'rgba(15,118,110,0.2)' },
             { href: '/reports/maintenance', label: 'รายงาน', sub: 'รายงานการบำรุงรักษา & การซ่อม', emoji: '📊', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.2)' },
-            { href: '/contact', label: 'ติดต่อเรา', sub: 'แจ้งปัญหาหรือสอบถามข้อมูล', emoji: '📞', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.2)' },
           ].map(({ href, label, sub, emoji, from, to, glow }) => (
             <Link
               key={href}
               href={href}
-              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 block border border-white/5"
+              className="relative overflow-hidden rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-shadow duration-200 block border border-white/5"
               style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 20px ${glow}` }}
             >
               <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full opacity-20" style={{ background: from }} />

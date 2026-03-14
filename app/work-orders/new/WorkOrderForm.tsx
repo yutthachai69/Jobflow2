@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createWorkOrder } from '@/app/actions'
 import Tooltip from '@/app/components/Tooltip'
@@ -44,24 +44,54 @@ interface Asset {
   btu: number | null
 }
 
+interface Prefill {
+  siteId: string
+  buildingId: string
+  floorId: string
+  roomId: string
+  assetId: string
+}
+
+interface Technician {
+  id: string
+  fullName: string | null
+  username: string
+}
+
 interface Props {
   sites: Site[]
+  technicians: Technician[]
+  prefill?: Prefill | null
 }
 
 type SelectionStage = 'site' | 'building' | 'floor' | 'room' | 'done'
 
-export default function WorkOrderForm({ sites }: Props) {
+export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
   const router = useRouter()
   const [selectedSiteId, setSelectedSiteId] = useState<string>('')
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('')
   const [selectedFloorId, setSelectedFloorId] = useState<string>('')
   const [selectedRoomId, setSelectedRoomId] = useState<string>('')
   const [currentStage, setCurrentStage] = useState<SelectionStage>('site')
+  const [prefillAssetId, setPrefillAssetId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (prefill?.siteId && prefill?.buildingId && prefill?.floorId && prefill?.roomId && prefill?.assetId) {
+      setSelectedSiteId(prefill.siteId)
+      setSelectedBuildingId(prefill.buildingId)
+      setSelectedFloorId(prefill.floorId)
+      setSelectedRoomId(prefill.roomId)
+      setCurrentStage('done')
+      setPrefillAssetId(prefill.assetId)
+    }
+  }, [prefill])
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [jobType, setJobType] = useState<string>('')
+  const [formTemplate, setFormTemplate] = useState<string>('')
+  const [assignedTechnicianId, setAssignedTechnicianId] = useState<string>('')
   const [newAssets, setNewAssets] = useState<NewAssetEntry[]>([{ qrCode: '', btu: '' }])
 
   const selectedSite = sites.find(s => s.id === selectedSiteId)
@@ -255,6 +285,11 @@ export default function WorkOrderForm({ sites }: Props) {
       }
     }
 
+    // สำหรับ PM ต้องบังคับเลือกฟอร์ม
+    if (jobType === 'PM' && !formTemplate) {
+      newErrors.formTemplate = 'กรุณาเลือกแบบฟอร์มสำหรับงาน PM'
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       setIsSubmitting(false)
@@ -266,6 +301,9 @@ export default function WorkOrderForm({ sites }: Props) {
 
     setErrors({})
     formData.set('siteId', selectedSiteId)
+    formData.set('formTemplate', formTemplate)
+    // ส่ง assignedTechnicianId จาก state เสมอ (ไม่พึ่งค่าจาก DOM ของ select)
+    formData.set('assignedTechnicianId', assignedTechnicianId ?? '')
 
     // สำหรับ INSTALL ส่ง newAssets + roomId
     if (jobType === 'INSTALL') {
@@ -448,6 +486,51 @@ export default function WorkOrderForm({ sites }: Props) {
           )}
         </div>
 
+        {/* เลือกแบบฟอร์ม (Form Template) - เฉพาะ PM */}
+        {jobType === 'PM' && (
+          <div data-error={errors.formTemplate ? 'true' : undefined}>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <span className="flex items-center gap-2">
+                แบบฟอร์มบันทึกการทำงาน <span className="text-red-500">*</span>
+                <Tooltip content="เลือกแบบฟอร์มที่ช่างจะต้องใช้สำหรับงาน PM นี้">
+                  <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
+                </Tooltip>
+              </span>
+            </label>
+            <select
+              name="formTemplate"
+              aria-label="เลือกแบบฟอร์ม"
+              aria-required="true"
+              aria-invalid={errors.formTemplate ? 'true' : 'false'}
+              value={formTemplate}
+              onChange={(e) => {
+                setFormTemplate(e.target.value)
+                if (errors.formTemplate) setErrors({ ...errors, formTemplate: '' })
+              }}
+              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 ${errors.formTemplate ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
+                }`}
+            >
+              <option value="">-- เลือกแบบฟอร์ม --</option>
+              <option value="AIRBORNE_INFECTION">🏥 Clean Room & Airborne Infection Report</option>
+              <option value="EXHAUST_FAN">🌀 Exhaust Fan Type Report</option>
+            </select>
+            {errors.formTemplate && (
+              <div className="mt-2 flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert">
+                <span>⚠️</span>
+                <div>
+                  <p className="font-semibold">{errors.formTemplate}</p>
+                  <p className="text-xs text-red-500 mt-1">💡 กรุณาเลือกแบบฟอร์มสำหรับช่าง</p>
+                </div>
+              </div>
+            )}
+            {!errors.formTemplate && (
+              <p className="mt-2 text-xs text-gray-500">
+                เอกสารที่ช่างต้องกรอกและให้ลูกค้าเซ็นรับหลังทำงานเสร็จ
+              </p>
+            )}
+          </div>
+        )}
+
         {/* วันนัดหมาย */}
         <div data-error={errors.scheduledDate ? 'true' : undefined}>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -486,19 +569,26 @@ export default function WorkOrderForm({ sites }: Props) {
           )}
         </div>
 
-        {/* ทีมที่รับผิดชอบ */}
+        {/* มอบหมายช่าง */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            ทีมที่รับผิดชอบ
+            มอบหมายช่าง
           </label>
-          <input
-            type="text"
-            name="assignedTeam"
-            placeholder="เช่น ทีมช่าง A, สมชาย งานดี"
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-          />
+          <select
+            name="assignedTechnicianId"
+            value={assignedTechnicianId}
+            onChange={(e) => setAssignedTechnicianId(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900"
+          >
+            <option value="">-- ไม่มอบหมาย (กำหนดทีหลัง) --</option>
+            {technicians.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.fullName || t.username}
+              </option>
+            ))}
+          </select>
           <p className="mt-2 text-xs text-gray-500">
-            👥 ระบุชื่อทีมหรือช่างที่รับผิดชอบ (ไม่บังคับ)
+            👤 เลือกช่างที่มีในระบบ (ไม่บังคับ)
           </p>
         </div>
 
@@ -684,6 +774,7 @@ export default function WorkOrderForm({ sites }: Props) {
                         type="checkbox"
                         name="assetIds"
                         value={item.asset.id}
+                        defaultChecked={prefillAssetId === item.asset.id}
                         className="mt-1.5 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                       />
                       <div className="flex-1 min-w-0">

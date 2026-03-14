@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Header from './Header'
@@ -21,38 +21,54 @@ export default function AppLayout({ role, username, fullName, siteName, lineUser
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  // มือถือ: เมื่อเปิด Sidebar ให้ lock overflow ที่ body ป้องกัน layout overflow / horizontal scroll
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isNarrow = window.matchMedia('(max-width: 1023px)').matches
+    if (isNarrow && isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
+  }, [isMobileMenuOpen])
+
   // ไม่แสดง Sidebar/Header บนหน้า welcome/login
   if (pathname === '/welcome' || pathname === '/login') {
     return <>{children}</>
   }
 
   return (
-    // 🔥 Flex Container ที่สูงเต็มจอและห้าม Scroll ที่ Body หลัก
-    <div className="flex h-screen overflow-hidden bg-app-bg" style={{ position: 'relative' }}>
-      {/* Sidebar: ส่ง Props ควบคุม Mobile Menu - ซ่อนในมือถือ (hidden lg:flex) */}
-      <Sidebar
-        role={role}
-        lineUserId={lineUserId}
-        isMobileOpen={isMobileMenuOpen}
-        onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      />
-
-      {/* Content Area: ส่วนขวามือ - เต็มหน้าจอในมือถือ */}
-      <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300 w-full lg:w-auto" style={{ overflow: 'visible' }}>
-        {/* Header: ส่ง User Data ไปแสดงผล */}
-        <Header
+    // 🔥 Flex Container ที่สูงเต็มจอและห้าม Scroll ที่ Body หลัก (มือถือ: ป้องกันเนื้อหาถูกบีบ)
+    <div className="flex h-screen min-h-0 w-full min-w-0 overflow-hidden bg-app-bg" style={{ position: 'relative' }}>
+      {/* Sidebar: ไม่แสดงตอนพิมพ์ */}
+      <div className="print:hidden">
+        <Sidebar
           role={role}
-          username={username}
-          fullName={fullName}
-          siteName={siteName}
-          onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          lineUserId={lineUserId}
+          isMobileOpen={isMobileMenuOpen}
+          onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
+      </div>
+
+      {/* Content Area: z-0 ให้ overlay/sidebar ที่ portaled ไป body ทับได้แน่นอน */}
+      <div className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden relative z-0 transition-all duration-300 lg:w-auto">
+        {/* Header: ไม่แสดงตอนพิมพ์ */}
+        <div className="print:hidden">
+          <Header
+            role={role}
+            username={username}
+            fullName={fullName}
+            siteName={siteName}
+            onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          />
+        </div>
 
         {/* 🔥 Main Scroll Area: ให้ Scroll เฉพาะเนื้อหาตรงนี้ */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth" key={pathname} style={{ viewTransitionName: 'main-content' }}>
-          <div className="w-full max-w-full min-h-full">
-            {/* Breadcrumb Navigation - แสดงในทุกหน้า */}
-            <AutoBreadcrumbs />
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth print:p-0" key={pathname} style={{ viewTransitionName: 'main-content' }}>
+          <div className="w-full max-w-full min-w-0 min-h-full">
+            {/* Breadcrumb - ไม่แสดงตอนพิมพ์ */}
+            <div className="print:hidden">
+              <AutoBreadcrumbs />
+            </div>
             {children}
           </div>
         </main>

@@ -57,8 +57,8 @@ export default async function EditWorkOrderPage({ params }: Props) {
     notFound();
   }
 
-  // Get all sites for form
-  const sites = await prisma.site.findMany({
+  const [sites, technicians] = await Promise.all([
+    prisma.site.findMany({
     include: {
       client: true,
       buildings: {
@@ -77,7 +77,15 @@ export default async function EditWorkOrderPage({ params }: Props) {
         },
       },
     },
-  });
+  }),
+    prisma.user.findMany({
+      where: { role: 'TECHNICIAN', locked: false },
+      select: { id: true, fullName: true, username: true },
+      orderBy: [{ fullName: 'asc' }, { username: 'asc' }],
+    }),
+  ]);
+
+  const currentTechnicianId = workOrder.jobItems[0]?.technicianId ?? null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
@@ -95,7 +103,7 @@ export default async function EditWorkOrderPage({ params }: Props) {
           <p className="text-gray-600">อัพเดทข้อมูลใบสั่งงาน</p>
         </div>
 
-        <EditWorkOrderForm workOrder={workOrder} sites={sites} />
+        <EditWorkOrderForm workOrder={workOrder} sites={sites} technicians={technicians} currentTechnicianId={currentTechnicianId} />
       </div>
     </div>
   );

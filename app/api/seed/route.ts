@@ -10,23 +10,20 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // ตรวจสอบว่าเป็น production หรือไม่
-    // สำหรับ Vercel deployment ครั้งแรก อนุญาตให้ seed ได้เลย
-    // (ควรปิดหรือเพิ่ม auth หลังจาก seed เสร็จแล้ว)
     if (process.env.NODE_ENV === 'production') {
-      // ถ้ามี SEED_SECRET ให้เช็ค auth
-      if (process.env.SEED_SECRET) {
-        const authHeader = request.headers.get('authorization')
-        const expectedSecret = process.env.SEED_SECRET
-        
-        if (authHeader !== `Bearer ${expectedSecret}`) {
-          return NextResponse.json(
-            { error: 'Unauthorized. Use: Authorization: Bearer <SEED_SECRET>' },
-            { status: 401 }
-          )
-        }
+      if (!process.env.SEED_SECRET) {
+        return NextResponse.json(
+          { error: 'Seed is disabled in production when SEED_SECRET is not set' },
+          { status: 503 }
+        )
       }
-      // ถ้าไม่มี SEED_SECRET ใน production = อนุญาตให้ seed ได้ (สำหรับ initial setup)
+      const authHeader = request.headers.get('authorization')
+      if (authHeader !== `Bearer ${process.env.SEED_SECRET}`) {
+        return NextResponse.json(
+          { error: 'Unauthorized. Use: Authorization: Bearer <SEED_SECRET>' },
+          { status: 401 }
+        )
+      }
     }
 
     // ใช้ seed function จาก prisma/seed.ts โดยตรง
@@ -274,21 +271,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// สำหรับ GET request - แสดง info
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ message: 'Not available' }, { status: 404 })
+  }
   return NextResponse.json({
-    message: 'Database Seed API',
-    usage: {
-      method: 'POST',
-      endpoint: '/api/seed',
-      production: 'Requires Authorization header: Bearer <SEED_SECRET>',
-      development: 'No auth required'
-    },
-    defaultAccounts: {
-      admin: { username: 'admin', password: 'admin123' },
-      technician: { username: 'tech1', password: 'password123' },
-      client: { username: 'client1', password: 'client123' }
-    }
+    message: 'Database Seed API (development only)',
+    usage: { method: 'POST', endpoint: '/api/seed' },
+    production: 'Requires SEED_SECRET and Authorization: Bearer <SEED_SECRET>',
   })
 }
 

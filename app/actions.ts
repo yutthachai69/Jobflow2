@@ -691,6 +691,68 @@ export async function createClient(formData: FormData) {
   redirect('/locations')
 }
 
+/** สร้างลูกค้า + สถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) */
+export async function createClientWithStructure(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const clientName = sanitizeString(formData.get('name') as string)
+  const contactInfo = sanitizeString(formData.get('contactInfo') as string)
+  const siteName = sanitizeString(formData.get('siteName') as string)
+  const address = sanitizeString(formData.get('address') as string)
+  const latitudeStr = formData.get('latitude') as string
+  const longitudeStr = formData.get('longitude') as string
+  const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+  const longitude = longitudeStr ? parseFloat(longitudeStr) : null
+  const buildingName = sanitizeString(formData.get('buildingName') as string)
+  const floorName = sanitizeString(formData.get('floorName') as string)
+  const roomName = sanitizeString(formData.get('roomName') as string)
+
+  if (!clientName) throw new Error('Client name is required')
+  if (!siteName) throw new Error('Site name is required')
+  if (!buildingName) throw new Error('Building name is required')
+  if (!floorName) throw new Error('Floor name is required')
+  if (!roomName) throw new Error('Room name is required')
+
+  await prisma.$transaction(async (tx) => {
+    const client = await tx.client.create({
+      data: {
+        name: clientName,
+        contactInfo: contactInfo || null,
+      },
+    })
+    const site = await tx.site.create({
+      data: {
+        clientId: client.id,
+        name: siteName,
+        address: address || null,
+        latitude,
+        longitude,
+      },
+    })
+    const building = await tx.building.create({
+      data: { siteId: site.id, name: buildingName },
+    })
+    const floor = await tx.floor.create({
+      data: { buildingId: building.id, name: floorName },
+    })
+    await tx.room.create({
+      data: { floorId: floor.id, name: roomName },
+    })
+  })
+
+  logSecurityEvent('CLIENT_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+    note: 'with structure (site, building, floor, room)',
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
 export async function updateClient(formData: FormData) {
   // Authorization: Only ADMIN can update clients
   const user = await getCurrentUser()
@@ -802,6 +864,61 @@ export async function createSite(formData: FormData) {
   logSecurityEvent('SITE_CREATED', {
     createdBy: user.id,
     timestamp: new Date().toISOString(),
+  })
+
+  revalidatePath('/locations')
+  redirect('/locations')
+}
+
+/** สร้างสถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) */
+export async function createSiteWithStructure(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  const clientId = sanitizeString(formData.get('clientId') as string)
+  const siteName = sanitizeString(formData.get('name') as string)
+  const address = sanitizeString(formData.get('address') as string)
+  const latitudeStr = formData.get('latitude') as string
+  const longitudeStr = formData.get('longitude') as string
+  const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+  const longitude = longitudeStr ? parseFloat(longitudeStr) : null
+  const buildingName = sanitizeString(formData.get('buildingName') as string)
+  const floorName = sanitizeString(formData.get('floorName') as string)
+  const roomName = sanitizeString(formData.get('roomName') as string)
+
+  if (!clientId) throw new Error('Client ID is required')
+  if (!siteName) throw new Error('Site name is required')
+  if (!buildingName) throw new Error('Building name is required')
+  if (!floorName) throw new Error('Floor name is required')
+  if (!roomName) throw new Error('Room name is required')
+
+  await prisma.$transaction(async (tx) => {
+    const site = await tx.site.create({
+      data: {
+        clientId,
+        name: siteName,
+        address: address || null,
+        latitude,
+        longitude,
+      },
+    })
+    const building = await tx.building.create({
+      data: { siteId: site.id, name: buildingName },
+    })
+    const floor = await tx.floor.create({
+      data: { buildingId: building.id, name: floorName },
+    })
+    await tx.room.create({
+      data: { floorId: floor.id, name: roomName },
+    })
+  })
+
+  logSecurityEvent('SITE_CREATED', {
+    createdBy: user.id,
+    timestamp: new Date().toISOString(),
+    note: 'with structure (building, floor, room)',
   })
 
   revalidatePath('/locations')

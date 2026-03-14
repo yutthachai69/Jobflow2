@@ -50,7 +50,7 @@ export default function ChecklistSection({ jobItemId, initialData, isEditable }:
                     }))
                     setItems(migrated)
                 } else {
-                    // Handle case where initialData is a custom form JSON object (e.g., CleanRoomForm)
+                    // Handle case where initialData is a custom form JSON object
                     setItems([])
                 }
             } catch (e) {

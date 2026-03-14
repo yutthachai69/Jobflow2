@@ -228,42 +228,22 @@ export default function ScanQRPage() {
     e.preventDefault()
     const form = e.currentTarget
     const qrCodeInput = form.querySelector('input[name="qrCode"]') as HTMLInputElement
-    const qrCodeUrlInput = form.querySelector('input[name="qrCodeUrl"]') as HTMLInputElement
-
     const qrCodeValue = qrCodeInput?.value.trim()
-    const qrCodeUrlValue = qrCodeUrlInput?.value.trim()
 
-    if (!qrCodeValue && !qrCodeUrlValue) {
-      setError('กรุณากรอกรหัสทรัพย์สินหรือ URL')
+    if (!qrCodeValue) {
+      setError('กรุณากรอกรหัสทรัพย์สิน')
       return
     }
 
     setError(null)
 
     try {
-      // ถ้ามี URL ให้ตรวจสอบก่อน
-      if (qrCodeUrlValue) {
-        try {
-          const url = new URL(qrCodeUrlValue)
-          if (url.origin === window.location.origin) {
-            router.push(url.pathname + url.search)
-            return
-          }
-        } catch {
-          // ไม่ใช่ URL ที่ถูกต้อง
-        }
+      const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(qrCodeValue)}`)
+      const data = await response.json()
+      if (data.assetId) {
+        router.push(`/assets/${data.assetId}`)
+        return
       }
-
-      // ถ้ามีรหัสทรัพย์สิน ให้ค้นหาจาก QR Code
-      if (qrCodeValue) {
-        const response = await fetch(`/api/assets/find?qrCode=${encodeURIComponent(qrCodeValue)}`)
-        const data = await response.json()
-        if (data.assetId) {
-          router.push(`/assets/${data.assetId}`)
-          return
-        }
-      }
-
       setError('ไม่พบทรัพย์สินที่ระบุ')
     } catch (err) {
       setError('เกิดข้อผิดพลาด กรุณาลองอีกครั้ง')
@@ -352,17 +332,6 @@ export default function ScanQRPage() {
                   name="qrCode"
                   placeholder="พิมพ์รหัสทรัพย์สิน เช่น AC-2024-001"
                   className="w-full border border-app rounded-lg px-4 py-3 text-lg bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-app-body mb-2">
-                  หรือ URL จาก QR Code
-                </label>
-                <input
-                  type="text"
-                  name="qrCodeUrl"
-                  placeholder="วาง URL ที่ได้จาก QR Code"
-                  className="w-full border border-app rounded-lg px-4 py-3 text-base bg-app-card text-app-body focus:ring-2 focus:ring-[var(--app-btn-primary)] focus:border-[var(--app-btn-primary)] placeholder:text-app-muted transition-all"
                 />
               </div>
               <button
