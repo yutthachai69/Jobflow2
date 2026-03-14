@@ -12,18 +12,29 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+const assetInclude = {
+  room: {
+    include: {
+      floor: { include: { building: { include: { site: true } } } },
+    },
+  },
+} as const;
+
+async function findAssetByParam(param: string) {
+  const byId = await prisma.asset.findUnique({
+    where: { id: param },
+    include: assetInclude,
+  });
+  if (byId) return byId;
+  return prisma.asset.findUnique({
+    where: { qrCode: param },
+    include: assetInclude,
+  });
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const asset = await prisma.asset.findUnique({
-    where: { id },
-    include: {
-      room: {
-        include: {
-          floor: { include: { building: { include: { site: true } } } },
-        },
-      },
-    },
-  });
+  const asset = await findAssetByParam(id);
 
   if (!asset) return { title: "ไม่พบข้อมูล - LMT air service" };
 
@@ -45,8 +56,11 @@ export default async function AssetDetailPage({ params }: Props) {
 
   if (!user) notFound();
 
-  const asset = await prisma.asset.findUnique({
-    where: { id },
+  const asset = await findAssetByParam(id);
+  if (!asset) notFound();
+
+  const assetWithJobs = await prisma.asset.findUnique({
+    where: { id: asset.id },
     include: {
       room: {
         include: {
@@ -71,9 +85,16 @@ export default async function AssetDetailPage({ params }: Props) {
     } as any,
   });
 
-  if (!asset) notFound();
+  if (!assetWithJobs) notFound();
 
-  const a = asset as any;
+  const a = assetWithJobs as any;
+
+  // ป้องกัน Server Components error ใน production เมื่อ relation ขาด (room/floor/building/site ถูกลบหรือไม่โหลด)
+  const room = a.room;
+  const floor = room?.floor;
+  const building = floor?.building;
+  const site = building?.site;
+  if (!room || !floor || !building || !site) notFound();
 
   // Access Control
   if (user.role === "CLIENT") {
@@ -85,7 +106,7 @@ export default async function AssetDetailPage({ params }: Props) {
       });
       siteId = dbUser?.siteId ?? null;
     }
-    if (!siteId || siteId !== a.room.floor.building.siteId) notFound();
+    if (!siteId || siteId !== site.id) notFound();
   }
 
   const pendingJobItems = a.jobItems.filter(
@@ -158,10 +179,10 @@ export default async function AssetDetailPage({ params }: Props) {
           <div>
             <p className="text-app-muted">สถานที่ติดตั้ง</p>
             <p className="font-semibold text-lg text-app-heading">
-              {a.room.floor.building.site.name}
+              {site.name}
             </p>
             <p className="text-app-body">
-              {a.room.floor.building.name} → {a.room.floor.name} → {a.room.name}
+              {building.name} → {floor.name} → {room.name}
             </p>
           </div>
           <div>
@@ -256,14 +277,16 @@ export default async function AssetDetailPage({ params }: Props) {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-semibold text-app-heading mb-1">
-                      {jobItem.workOrder.jobType} - {jobItem.workOrder.site.name}
+                      {jobItem.workOrder.jobType} - {jobItem.workOrder?.site?.name ?? '-'}
                     </div>
                     <div className="text-sm text-app-body mb-1">
-                      {jobItem.workOrder.site.client.name}
+                      {jobItem.workOrder?.site?.client?.name ?? '-'}
                     </div>
                     <div className="text-xs text-app-muted">
                       วันนัดหมาย:{" "}
-                      {new Date(jobItem.workOrder.scheduledDate).toLocaleDateString("th-TH")}
+                      {jobItem.workOrder?.scheduledDate
+                        ? new Date(jobItem.workOrder.scheduledDate).toLocaleDateString("th-TH")
+                        : "-"}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">

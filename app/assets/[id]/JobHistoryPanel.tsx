@@ -102,7 +102,7 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
             <h3 className="font-extrabold text-gray-900 text-lg tracking-tight leading-tight">
               {job.workOrder.jobType}
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">{job.workOrder.site.name}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{job.workOrder?.site?.name ?? '-'}</p>
           </div>
           <button
             onClick={onClose}
@@ -127,7 +127,7 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
                   ? new Date(job.startTime).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
                   : 'ไม่ระบุ'
               },
-              { label: 'ลูกค้า / สถานที่', value: job.workOrder.site.client.name },
+              { label: 'ลูกค้า / สถานที่', value: job.workOrder?.site?.client?.name ?? '-' },
               { label: 'ระยะเวลา', value: durationMin != null ? `${durationMin} นาที` : 'ไม่ระบุ' },
             ].map(item => (
               <div key={item.label} className="bg-gray-50 rounded-2xl p-4">
