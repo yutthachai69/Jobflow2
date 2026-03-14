@@ -832,7 +832,6 @@ export async function deleteClient(clientId: string) {
   })
 
   revalidatePath('/locations')
-  redirect('/locations')
 }
 
 export async function createSite(formData: FormData) {
@@ -1021,7 +1020,7 @@ export async function deleteSite(siteId: string) {
   })
 
   revalidatePath('/locations')
-  redirect('/locations')
+  // ไม่ใช้ redirect() เพื่อไม่ให้ production แสดง Server Components error; ให้ client ทำ router.push เอง
 }
 
 export async function createBuilding(formData: FormData) {
@@ -1139,7 +1138,6 @@ export async function deleteBuilding(buildingId: string) {
   })
 
   revalidatePath('/locations')
-  redirect('/locations')
 }
 
 export async function createFloor(formData: FormData) {
@@ -1257,7 +1255,6 @@ export async function deleteFloor(floorId: string) {
   })
 
   revalidatePath('/locations')
-  redirect('/locations')
 }
 
 export async function createRoom(formData: FormData) {
@@ -1375,7 +1372,6 @@ export async function deleteRoom(roomId: string) {
   })
 
   revalidatePath('/locations')
-  redirect('/locations')
 }
 
 export async function createAsset(formData: FormData) {
