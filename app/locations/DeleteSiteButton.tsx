@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { deleteSite } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
-import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   siteId: string
@@ -19,26 +18,20 @@ export default function DeleteSiteButton({ siteId, siteName }: Props) {
 
   async function handleDelete() {
     setIsDeleting(true)
-
     try {
-      await deleteSite(siteId)
-      toast.success('ลบสถานที่เรียบร้อยแล้ว')
-      setShowConfirm(false)
-      router.push('/locations')
-      router.refresh()
-    } catch (error) {
-      if (isRedirectError(error)) throw error
-      console.error('Error deleting site:', error)
-      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
-      if (errorMessage.includes('buildings')) {
-        toast.error('ไม่สามารถลบสถานที่ที่มีอาคารได้')
-      } else if (errorMessage.includes('users')) {
-        toast.error('ไม่สามารถลบสถานที่ที่มีผู้ใช้ที่มอบหมายได้')
-      } else if (errorMessage.includes('work orders')) {
-        toast.error('ไม่สามารถลบสถานที่ที่มีใบสั่งงานได้')
+      const result = await deleteSite(siteId)
+      if (result.success) {
+        toast.success('ลบสถานที่เรียบร้อยแล้ว')
+        setShowConfirm(false)
+        router.push('/locations')
+        router.refresh()
       } else {
-        toast.error(errorMessage)
+        toast.error(result.error)
       }
+    } catch (error) {
+      console.error('Error deleting site:', error)
+      toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
+    } finally {
       setIsDeleting(false)
     }
   }

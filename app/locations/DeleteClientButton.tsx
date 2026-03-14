@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { deleteClient } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
-import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   clientId: string
@@ -19,22 +18,20 @@ export default function DeleteClientButton({ clientId, clientName }: Props) {
 
   async function handleDelete() {
     setIsDeleting(true)
-
     try {
-      await deleteClient(clientId)
-      toast.success('ลบลูกค้าเรียบร้อยแล้ว')
-      setShowConfirm(false)
-      router.push('/locations')
-      router.refresh()
-    } catch (error) {
-      if (isRedirectError(error)) throw error
-      console.error('Error deleting client:', error)
-      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
-      if (errorMessage.includes('sites')) {
-        toast.error('ไม่สามารถลบลูกค้าที่มีสถานที่ได้')
+      const result = await deleteClient(clientId)
+      if (result.success) {
+        toast.success('ลบลูกค้าเรียบร้อยแล้ว')
+        setShowConfirm(false)
+        router.push('/locations')
+        router.refresh()
       } else {
-        toast.error(errorMessage)
+        toast.error(result.error)
       }
+    } catch (error) {
+      console.error('Error deleting client:', error)
+      toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
+    } finally {
       setIsDeleting(false)
     }
   }

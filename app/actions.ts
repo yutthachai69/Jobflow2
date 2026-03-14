@@ -797,41 +797,41 @@ export async function updateClient(formData: FormData) {
   redirect('/locations')
 }
 
-export async function deleteClient(clientId: string) {
-  // Authorization: Only ADMIN can delete clients
+export type DeleteResult = { success: true } | { success: false; error: string }
+
+export async function deleteClient(clientId: string): Promise<DeleteResult> {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+    return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
-  // Check if client exists
   const client = await prisma.client.findUnique({
     where: { id: clientId },
-    include: {
-      sites: true,
-    },
+    include: { sites: true },
   })
 
   if (!client) {
-    throw new Error('Client not found')
+    return { success: false, error: 'ไม่พบลูกค้า' }
   }
 
-  // Check if client has sites (prevent deletion if has sites)
   if (client.sites.length > 0) {
-    throw new Error('Cannot delete client with sites')
+    return { success: false, error: 'ไม่สามารถลบลูกค้าที่มีสถานที่ได้' }
   }
 
-  await prisma.client.delete({
-    where: { id: clientId },
-  })
-
-  logSecurityEvent('CLIENT_DELETED', {
-    deletedBy: user.id,
-    clientId,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/locations')
+  try {
+    await prisma.client.delete({
+      where: { id: clientId },
+    })
+    logSecurityEvent('CLIENT_DELETED', {
+      deletedBy: user.id,
+      clientId,
+      timestamp: new Date().toISOString(),
+    })
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการลบข้อมูล' }
+  }
 }
 
 export async function createSite(formData: FormData) {
@@ -973,14 +973,12 @@ export async function updateSite(formData: FormData) {
   redirect('/locations')
 }
 
-export async function deleteSite(siteId: string) {
-  // Authorization: Only ADMIN can delete sites
+export async function deleteSite(siteId: string): Promise<DeleteResult> {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+    return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
-  // Check if site exists
   const site = await prisma.site.findUnique({
     where: { id: siteId },
     include: {
@@ -991,36 +989,35 @@ export async function deleteSite(siteId: string) {
   })
 
   if (!site) {
-    throw new Error('Site not found')
+    return { success: false, error: 'ไม่พบสถานที่' }
   }
 
-  // Check if site has buildings (prevent deletion if has buildings)
   if (site.buildings.length > 0) {
-    throw new Error('Cannot delete site with buildings')
+    return { success: false, error: 'ไม่สามารถลบสถานที่ที่มีอาคารได้' }
   }
 
-  // Check if site has users (prevent deletion if has users assigned)
   if (site.users.length > 0) {
-    throw new Error('Cannot delete site with assigned users')
+    return { success: false, error: 'ไม่สามารถลบสถานที่ที่มีผู้ใช้ที่มอบหมายได้' }
   }
 
-  // Check if site has work orders (prevent deletion if has work orders)
   if (site.workOrders.length > 0) {
-    throw new Error('Cannot delete site with work orders')
+    return { success: false, error: 'ไม่สามารถลบสถานที่ที่มีใบสั่งงานได้' }
   }
 
-  await prisma.site.delete({
-    where: { id: siteId },
-  })
-
-  logSecurityEvent('SITE_DELETED', {
-    deletedBy: user.id,
-    siteId,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/locations')
-  // ไม่ใช้ redirect() เพื่อไม่ให้ production แสดง Server Components error; ให้ client ทำ router.push เอง
+  try {
+    await prisma.site.delete({
+      where: { id: siteId },
+    })
+    logSecurityEvent('SITE_DELETED', {
+      deletedBy: user.id,
+      siteId,
+      timestamp: new Date().toISOString(),
+    })
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการลบข้อมูล' }
+  }
 }
 
 export async function createBuilding(formData: FormData) {
@@ -1103,41 +1100,39 @@ export async function updateBuilding(formData: FormData) {
   redirect('/locations')
 }
 
-export async function deleteBuilding(buildingId: string) {
-  // Authorization: Only ADMIN can delete buildings
+export async function deleteBuilding(buildingId: string): Promise<DeleteResult> {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+    return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
-  // Check if building exists
   const building = await prisma.building.findUnique({
     where: { id: buildingId },
-    include: {
-      floors: true,
-    },
+    include: { floors: true },
   })
 
   if (!building) {
-    throw new Error('Building not found')
+    return { success: false, error: 'ไม่พบอาคาร' }
   }
 
-  // Check if building has floors (prevent deletion if has floors)
   if (building.floors.length > 0) {
-    throw new Error('Cannot delete building with floors')
+    return { success: false, error: 'ไม่สามารถลบอาคารที่มีชั้นได้' }
   }
 
-  await prisma.building.delete({
-    where: { id: buildingId },
-  })
-
-  logSecurityEvent('BUILDING_DELETED', {
-    deletedBy: user.id,
-    buildingId,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/locations')
+  try {
+    await prisma.building.delete({
+      where: { id: buildingId },
+    })
+    logSecurityEvent('BUILDING_DELETED', {
+      deletedBy: user.id,
+      buildingId,
+      timestamp: new Date().toISOString(),
+    })
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการลบข้อมูล' }
+  }
 }
 
 export async function createFloor(formData: FormData) {
@@ -1220,41 +1215,39 @@ export async function updateFloor(formData: FormData) {
   redirect('/locations')
 }
 
-export async function deleteFloor(floorId: string) {
-  // Authorization: Only ADMIN can delete floors
+export async function deleteFloor(floorId: string): Promise<DeleteResult> {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+    return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
-  // Check if floor exists
   const floor = await prisma.floor.findUnique({
     where: { id: floorId },
-    include: {
-      rooms: true,
-    },
+    include: { rooms: true },
   })
 
   if (!floor) {
-    throw new Error('Floor not found')
+    return { success: false, error: 'ไม่พบชั้น' }
   }
 
-  // Check if floor has rooms (prevent deletion if has rooms)
   if (floor.rooms.length > 0) {
-    throw new Error('Cannot delete floor with rooms')
+    return { success: false, error: 'ไม่สามารถลบชั้นที่มีห้องได้' }
   }
 
-  await prisma.floor.delete({
-    where: { id: floorId },
-  })
-
-  logSecurityEvent('FLOOR_DELETED', {
-    deletedBy: user.id,
-    floorId,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/locations')
+  try {
+    await prisma.floor.delete({
+      where: { id: floorId },
+    })
+    logSecurityEvent('FLOOR_DELETED', {
+      deletedBy: user.id,
+      floorId,
+      timestamp: new Date().toISOString(),
+    })
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการลบข้อมูล' }
+  }
 }
 
 export async function createRoom(formData: FormData) {
@@ -1337,41 +1330,39 @@ export async function updateRoom(formData: FormData) {
   redirect('/locations')
 }
 
-export async function deleteRoom(roomId: string) {
-  // Authorization: Only ADMIN can delete rooms
+export async function deleteRoom(roomId: string): Promise<DeleteResult> {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+    return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
   }
 
-  // Check if room exists
   const room = await prisma.room.findUnique({
     where: { id: roomId },
-    include: {
-      assets: true,
-    },
+    include: { assets: true },
   })
 
   if (!room) {
-    throw new Error('Room not found')
+    return { success: false, error: 'ไม่พบห้อง' }
   }
 
-  // Check if room has assets (prevent deletion if has assets)
   if (room.assets.length > 0) {
-    throw new Error('Cannot delete room with assets')
+    return { success: false, error: 'ไม่สามารถลบห้องที่มีแอร์ได้' }
   }
 
-  await prisma.room.delete({
-    where: { id: roomId },
-  })
-
-  logSecurityEvent('ROOM_DELETED', {
-    deletedBy: user.id,
-    roomId,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/locations')
+  try {
+    await prisma.room.delete({
+      where: { id: roomId },
+    })
+    logSecurityEvent('ROOM_DELETED', {
+      deletedBy: user.id,
+      roomId,
+      timestamp: new Date().toISOString(),
+    })
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการลบข้อมูล' }
+  }
 }
 
 export async function createAsset(formData: FormData) {

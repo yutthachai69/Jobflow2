@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { deleteRoom } from '@/app/actions'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/app/components/ConfirmDialog'
-import { isRedirectError } from '@/lib/error-handler'
 
 interface Props {
   roomId: string
@@ -19,22 +18,20 @@ export default function DeleteRoomButton({ roomId, roomName }: Props) {
 
   async function handleDelete() {
     setIsDeleting(true)
-
     try {
-      await deleteRoom(roomId)
-      toast.success('ลบห้องเรียบร้อยแล้ว')
-      setShowConfirm(false)
-      router.push('/locations')
-      router.refresh()
-    } catch (error) {
-      if (isRedirectError(error)) throw error
-      console.error('Error deleting room:', error)
-      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
-      if (errorMessage.includes('assets')) {
-        toast.error('ไม่สามารถลบห้องที่มีแอร์ได้')
+      const result = await deleteRoom(roomId)
+      if (result.success) {
+        toast.success('ลบห้องเรียบร้อยแล้ว')
+        setShowConfirm(false)
+        router.push('/locations')
+        router.refresh()
       } else {
-        toast.error(errorMessage)
+        toast.error(result.error)
       }
+    } catch (error) {
+      console.error('Error deleting room:', error)
+      toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
+    } finally {
       setIsDeleting(false)
     }
   }
