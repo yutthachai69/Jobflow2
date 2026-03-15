@@ -50,66 +50,83 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+function AssetNotFoundMessage() {
+  return (
+    <div className="min-h-screen bg-app-bg p-4 md:p-8 flex items-center justify-center">
+      <div className="text-center max-w-md">
+        <p className="text-app-body mb-6">ไม่พบข้อมูลทรัพย์สินหรือข้อมูลไม่สมบูรณ์</p>
+        <Link
+          href="/assets"
+          className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
+        >
+          กลับไปรายการทรัพย์สิน
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default async function AssetDetailPage({ params }: Props) {
   const { id } = await params;
-  const user = await getCurrentUser();
 
-  if (!user) notFound();
+  try {
+    const user = await getCurrentUser();
+    if (!user) return <AssetNotFoundMessage />;
 
-  const asset = await findAssetByParam(id);
-  if (!asset) notFound();
+    const asset = await findAssetByParam(id);
+    if (!asset) return <AssetNotFoundMessage />;
 
-  const assetWithJobs = await prisma.asset.findUnique({
-    where: { id: asset.id },
-    include: {
-      room: {
-        include: {
-          floor: { include: { building: { include: { site: true } } } },
-        },
-      },
-      jobItems: {
-        include: {
-          workOrder: {
-            include: { site: { include: { client: true } } },
+    const assetWithJobs = await prisma.asset.findUnique({
+      where: { id: asset.id },
+      include: {
+        room: {
+          include: {
+            floor: { include: { building: { include: { site: true } } } },
           },
-          technician: true,
-          photos: true,
         },
-        orderBy: { startTime: "desc" },
-      },
-      pmSchedules: {
-        where: { targetYear: new Date().getFullYear() },
-        include: { jobItem: { select: { status: true, id: true } } },
-        orderBy: { roundIndex: "asc" },
-      },
-    } as any,
-  });
+        jobItems: {
+          include: {
+            workOrder: {
+              include: { site: { include: { client: true } } },
+            },
+            technician: true,
+            photos: true,
+          },
+          orderBy: { startTime: "desc" },
+        },
+        pmSchedules: {
+          where: { targetYear: new Date().getFullYear() },
+          include: { jobItem: { select: { status: true, id: true } } },
+          orderBy: { roundIndex: "asc" },
+        },
+      } as any,
+    });
 
-  if (!assetWithJobs) notFound();
+    if (!assetWithJobs) return <AssetNotFoundMessage />;
 
-  const a = assetWithJobs as any;
+    const a = assetWithJobs as any;
 
-  // ป้องกัน Server Components error ใน production เมื่อ relation ขาด (room/floor/building/site ถูกลบหรือไม่โหลด)
-  const room = a.room;
-  const floor = room?.floor;
-  const building = floor?.building;
-  const site = building?.site;
-  if (!room || !floor || !building || !site) notFound();
+    // ป้องกัน Server Components error ใน production เมื่อ relation ขาด — ไม่ throw แสดงข้อความแทน
+    const room = a.room;
+    const floor = room?.floor;
+    const building = floor?.building;
+    const site = building?.site;
+    if (!room || !floor || !building || !site) return <AssetNotFoundMessage />;
 
-  // Access Control
-  if (user.role === "CLIENT") {
-    let siteId = user.siteId;
-    if (!siteId) {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { siteId: true },
-      });
-      siteId = dbUser?.siteId ?? null;
+    // Access Control
+    if (user.role === "CLIENT") {
+      let siteId = user.siteId;
+      if (!siteId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.userId },
+          select: { siteId: true },
+        });
+        siteId = dbUser?.siteId ?? null;
+      }
+      if (!siteId || siteId !== site.id) return <AssetNotFoundMessage />;
     }
-    if (!siteId || siteId !== site.id) notFound();
-  }
 
-  const pendingJobItems = a.jobItems.filter(
+    const pendingJobItems = a.jobItems.filter(
     (ji: any) => ji.status === "PENDING" || ji.status === "IN_PROGRESS"
   );
 
@@ -331,4 +348,7 @@ export default async function AssetDetailPage({ params }: Props) {
       <JobHistoryPanel jobItems={a.jobItems} />
     </div>
   );
+  } catch {
+    return <AssetNotFoundMessage />;
+  }
 }

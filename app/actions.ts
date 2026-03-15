@@ -691,66 +691,72 @@ export async function createClient(formData: FormData) {
   redirect('/locations')
 }
 
-/** สร้างลูกค้า + สถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) */
-export async function createClientWithStructure(formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+export type CreateStructureResult = { success: true } | { success: false; error: string }
+
+/** สร้างลูกค้า + สถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) — ไม่ใช้ redirect เพื่อไม่ให้ production ขึ้น error */
+export async function createClientWithStructure(formData: FormData): Promise<CreateStructureResult> {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
+    }
+
+    const clientName = sanitizeString(formData.get('name') as string)
+    const contactInfo = sanitizeString(formData.get('contactInfo') as string)
+    const siteName = sanitizeString(formData.get('siteName') as string)
+    const address = sanitizeString(formData.get('address') as string)
+    const latitudeStr = formData.get('latitude') as string
+    const longitudeStr = formData.get('longitude') as string
+    const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+    const longitude = longitudeStr ? parseFloat(longitudeStr) : null
+    const buildingName = sanitizeString(formData.get('buildingName') as string)
+    const floorName = sanitizeString(formData.get('floorName') as string)
+    const roomName = sanitizeString(formData.get('roomName') as string)
+
+    if (!clientName) return { success: false, error: 'กรุณากรอกชื่อบริษัท/องค์กร' }
+    if (!siteName) return { success: false, error: 'กรุณากรอกชื่อสถานที่' }
+    if (!buildingName) return { success: false, error: 'กรุณากรอกชื่ออาคาร' }
+    if (!floorName) return { success: false, error: 'กรุณากรอกชื่อชั้น' }
+    if (!roomName) return { success: false, error: 'กรุณากรอกชื่อห้อง/โซน' }
+
+    await prisma.$transaction(async (tx) => {
+      const client = await tx.client.create({
+        data: {
+          name: clientName,
+          contactInfo: contactInfo || null,
+        },
+      })
+      const site = await tx.site.create({
+        data: {
+          clientId: client.id,
+          name: siteName,
+          address: address || null,
+          latitude,
+          longitude,
+        },
+      })
+      const building = await tx.building.create({
+        data: { siteId: site.id, name: buildingName },
+      })
+      const floor = await tx.floor.create({
+        data: { buildingId: building.id, name: floorName },
+      })
+      await tx.room.create({
+        data: { floorId: floor.id, name: roomName },
+      })
+    })
+
+    logSecurityEvent('CLIENT_CREATED', {
+      createdBy: user.id,
+      timestamp: new Date().toISOString(),
+      note: 'with structure (site, building, floor, room)',
+    })
+
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการบันทึก' }
   }
-
-  const clientName = sanitizeString(formData.get('name') as string)
-  const contactInfo = sanitizeString(formData.get('contactInfo') as string)
-  const siteName = sanitizeString(formData.get('siteName') as string)
-  const address = sanitizeString(formData.get('address') as string)
-  const latitudeStr = formData.get('latitude') as string
-  const longitudeStr = formData.get('longitude') as string
-  const latitude = latitudeStr ? parseFloat(latitudeStr) : null
-  const longitude = longitudeStr ? parseFloat(longitudeStr) : null
-  const buildingName = sanitizeString(formData.get('buildingName') as string)
-  const floorName = sanitizeString(formData.get('floorName') as string)
-  const roomName = sanitizeString(formData.get('roomName') as string)
-
-  if (!clientName) throw new Error('Client name is required')
-  if (!siteName) throw new Error('Site name is required')
-  if (!buildingName) throw new Error('Building name is required')
-  if (!floorName) throw new Error('Floor name is required')
-  if (!roomName) throw new Error('Room name is required')
-
-  await prisma.$transaction(async (tx) => {
-    const client = await tx.client.create({
-      data: {
-        name: clientName,
-        contactInfo: contactInfo || null,
-      },
-    })
-    const site = await tx.site.create({
-      data: {
-        clientId: client.id,
-        name: siteName,
-        address: address || null,
-        latitude,
-        longitude,
-      },
-    })
-    const building = await tx.building.create({
-      data: { siteId: site.id, name: buildingName },
-    })
-    const floor = await tx.floor.create({
-      data: { buildingId: building.id, name: floorName },
-    })
-    await tx.room.create({
-      data: { floorId: floor.id, name: roomName },
-    })
-  })
-
-  logSecurityEvent('CLIENT_CREATED', {
-    createdBy: user.id,
-    timestamp: new Date().toISOString(),
-    note: 'with structure (site, building, floor, room)',
-  })
-
-  revalidatePath('/locations')
-  redirect('/locations')
 }
 
 export async function updateClient(formData: FormData) {
@@ -869,59 +875,63 @@ export async function createSite(formData: FormData) {
   redirect('/locations')
 }
 
-/** สร้างสถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) */
-export async function createSiteWithStructure(formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
+/** สร้างสถานที่ + อาคาร + ชั้น + ห้อง ในครั้งเดียว (การ์ดเดียว บันทึกทีเดียว) — ไม่ใช้ redirect เพื่อไม่ให้ production ขึ้น error */
+export async function createSiteWithStructure(formData: FormData): Promise<CreateStructureResult> {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      return { success: false, error: 'ไม่มีสิทธิ์ดำเนินการ' }
+    }
+
+    const clientId = sanitizeString(formData.get('clientId') as string)
+    const siteName = sanitizeString(formData.get('name') as string)
+    const address = sanitizeString(formData.get('address') as string)
+    const latitudeStr = formData.get('latitude') as string
+    const longitudeStr = formData.get('longitude') as string
+    const latitude = latitudeStr ? parseFloat(latitudeStr) : null
+    const longitude = longitudeStr ? parseFloat(longitudeStr) : null
+    const buildingName = sanitizeString(formData.get('buildingName') as string)
+    const floorName = sanitizeString(formData.get('floorName') as string)
+    const roomName = sanitizeString(formData.get('roomName') as string)
+
+    if (!clientId) return { success: false, error: 'กรุณาเลือกลูกค้า' }
+    if (!siteName) return { success: false, error: 'กรุณากรอกชื่อสถานที่' }
+    if (!buildingName) return { success: false, error: 'กรุณากรอกชื่ออาคาร' }
+    if (!floorName) return { success: false, error: 'กรุณากรอกชื่อชั้น' }
+    if (!roomName) return { success: false, error: 'กรุณากรอกชื่อห้อง/โซน' }
+
+    await prisma.$transaction(async (tx) => {
+      const site = await tx.site.create({
+        data: {
+          clientId,
+          name: siteName,
+          address: address || null,
+          latitude,
+          longitude,
+        },
+      })
+      const building = await tx.building.create({
+        data: { siteId: site.id, name: buildingName },
+      })
+      const floor = await tx.floor.create({
+        data: { buildingId: building.id, name: floorName },
+      })
+      await tx.room.create({
+        data: { floorId: floor.id, name: roomName },
+      })
+    })
+
+    logSecurityEvent('SITE_CREATED', {
+      createdBy: user.id,
+      timestamp: new Date().toISOString(),
+      note: 'with structure (building, floor, room)',
+    })
+
+    revalidatePath('/locations')
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'เกิดข้อผิดพลาดในการบันทึก' }
   }
-
-  const clientId = sanitizeString(formData.get('clientId') as string)
-  const siteName = sanitizeString(formData.get('name') as string)
-  const address = sanitizeString(formData.get('address') as string)
-  const latitudeStr = formData.get('latitude') as string
-  const longitudeStr = formData.get('longitude') as string
-  const latitude = latitudeStr ? parseFloat(latitudeStr) : null
-  const longitude = longitudeStr ? parseFloat(longitudeStr) : null
-  const buildingName = sanitizeString(formData.get('buildingName') as string)
-  const floorName = sanitizeString(formData.get('floorName') as string)
-  const roomName = sanitizeString(formData.get('roomName') as string)
-
-  if (!clientId) throw new Error('Client ID is required')
-  if (!siteName) throw new Error('Site name is required')
-  if (!buildingName) throw new Error('Building name is required')
-  if (!floorName) throw new Error('Floor name is required')
-  if (!roomName) throw new Error('Room name is required')
-
-  await prisma.$transaction(async (tx) => {
-    const site = await tx.site.create({
-      data: {
-        clientId,
-        name: siteName,
-        address: address || null,
-        latitude,
-        longitude,
-      },
-    })
-    const building = await tx.building.create({
-      data: { siteId: site.id, name: buildingName },
-    })
-    const floor = await tx.floor.create({
-      data: { buildingId: building.id, name: floorName },
-    })
-    await tx.room.create({
-      data: { floorId: floor.id, name: roomName },
-    })
-  })
-
-  logSecurityEvent('SITE_CREATED', {
-    createdBy: user.id,
-    timestamp: new Date().toISOString(),
-    note: 'with structure (building, floor, room)',
-  })
-
-  revalidatePath('/locations')
-  redirect('/locations')
 }
 
 export async function updateSite(formData: FormData) {
