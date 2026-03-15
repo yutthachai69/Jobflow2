@@ -24,7 +24,7 @@ type JobItem = {
     site: { name: string; client: { name: string } };
     scheduledDate: string | Date;
   };
-  technician: { fullName: string } | null;
+  technician: { fullName: string | null } | null;
   photos: Photo[];
 };
 
