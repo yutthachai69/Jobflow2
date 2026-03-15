@@ -18,7 +18,7 @@ interface Asset {
   installDate: Date | null
   status: string
   createdAt?: Date
-  room: {
+  room?: {
     name: string
     floor: {
       name: string
@@ -32,7 +32,7 @@ interface Asset {
         }
       }
     }
-  }
+  } | null
 }
 
 interface Props {
@@ -80,13 +80,15 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
     const result = assets.filter((asset) => {
       // Search filter
       const searchLower = search.toLowerCase()
+      const room = asset.room
+      const siteName = room?.floor?.building?.site?.name ?? ''
       const matchesSearch =
         !search ||
         asset.qrCode.toLowerCase().includes(searchLower) ||
-        asset.room.name.toLowerCase().includes(searchLower) ||
-        asset.room.floor.name.toLowerCase().includes(searchLower) ||
-        asset.room.floor.building.name.toLowerCase().includes(searchLower) ||
-        asset.room.floor.building.site.name.toLowerCase().includes(searchLower)
+        (room?.name?.toLowerCase().includes(searchLower)) ||
+        (room?.floor?.name?.toLowerCase().includes(searchLower)) ||
+        (room?.floor?.building?.name?.toLowerCase().includes(searchLower)) ||
+        (siteName?.toLowerCase().includes(searchLower))
 
       // Status filter
       const matchesStatus = statusFilter === 'ALL' || asset.status === statusFilter
@@ -101,8 +103,8 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
         matchesType = (asset as any).machineType === typeFilter
       }
 
-      // Site filter
-      const matchesSite = siteFilter === 'ALL' || asset.room?.floor?.building?.site?.name === siteFilter
+      // Site filter (ถ้าไม่มี site จะแสดงเฉพาะเมื่อเลือก "ทุกสถานที่")
+      const matchesSite = siteFilter === 'ALL' || siteName === siteFilter
 
       return matchesSearch && matchesStatus && matchesType && matchesSite
     })
@@ -265,10 +267,10 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
                 <div className="mb-3 pb-3 border-b border-app">
                   <div className="text-xs text-app-muted mb-1">สถานที่ติดตั้ง</div>
                   <div className="text-sm text-app-heading font-medium">
-                    {asset.room.floor.building.site.name}
+                    {asset.room?.floor?.building?.site?.name ?? '-'}
                   </div>
                   <div className="text-xs text-app-muted mt-1">
-                    {asset.room.floor.building.name} → {asset.room.floor.name} → {asset.room.name}
+                    {asset.room?.floor?.building?.name ?? '-'} → {asset.room?.floor?.name ?? '-'} → {asset.room?.name ?? '-'}
                   </div>
                   {asset.installDate && (
                     <div className="text-xs text-app-muted mt-1">
@@ -392,13 +394,13 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
                       {asset.btu ? `${asset.btu.toLocaleString()} BTU` : '-'}
                     </td>
                     <td className="px-4 py-3 text-app-body">
-                      {asset.room.floor.building.name}
+                      {asset.room?.floor?.building?.name ?? '-'}
                     </td>
                     <td className="px-4 py-3 text-app-body">
-                      {asset.room.floor.name}
+                      {asset.room?.floor?.name ?? '-'}
                     </td>
                     <td className="px-4 py-3 text-app-body">
-                      {asset.room.name}
+                      {asset.room?.name ?? '-'}
                     </td>
                     <td className="px-4 py-3 text-app-body text-xs">
                       {installDateFormatted}

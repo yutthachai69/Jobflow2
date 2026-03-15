@@ -33,28 +33,44 @@ async function findAssetByParam(param: string) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const asset = await findAssetByParam(id);
-
-  if (!asset) return { title: "ไม่พบข้อมูล - LMT air service" };
-
-  const title = `${asset.qrCode} - LMT air service`;
-  const description = `รายละเอียดทรัพย์สิน | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
-
-  return {
-    title,
-    description,
-    openGraph: { title, description, type: "website" },
-    twitter: { card: "summary", title, description },
-    robots: { index: false, follow: false },
-  };
+  try {
+    const { id } = await params;
+    const asset = await findAssetByParam(id);
+    if (!asset) return { title: "ไม่พบข้อมูล - LMT air service" };
+    const title = `${asset.qrCode} - LMT air service`;
+    const description = `รายละเอียดทรัพย์สิน | QR Code: ${asset.qrCode} | สถานะ: ${asset.status}`;
+    return {
+      title,
+      description,
+      openGraph: { title, description, type: "website" },
+      twitter: { card: "summary", title, description },
+      robots: { index: false, follow: false },
+    };
+  } catch {
+    return { title: "รายละเอียดทรัพย์สิน - LMT air service" };
+  }
 }
 
-function AssetNotFoundMessage() {
+type AssetMessageReason =
+  | 'no-user'
+  | 'no-asset'
+  | 'no-relation'
+  | 'forbidden'
+  | 'error'
+
+const MESSAGES: Record<AssetMessageReason, string> = {
+  'no-user': 'กรุณาเข้าสู่ระบบ',
+  'no-asset': 'ไม่พบทรัพย์สินนี้ในระบบ (ไม่มี id หรือ qrCode ตรงกับ URL)',
+  'no-relation': 'ข้อมูลสถานที่ของทรัพย์สินไม่สมบูรณ์ — ใน Supabase ให้ตรวจว่า Asset มี roomId ชี้ไปที่ Room ที่มีอยู่ และ Room → Floor → Building → Site ครบ',
+  'forbidden': 'ไม่มีสิทธิ์ดูทรัพย์สินนี้',
+  'error': 'เกิดข้อผิดพลาดในการโหลด กรุณาลองใหม่',
+}
+
+function AssetMessage({ reason }: { reason: AssetMessageReason }) {
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8 flex items-center justify-center">
       <div className="text-center max-w-md">
-        <p className="text-app-body mb-6">ไม่พบข้อมูลทรัพย์สินหรือข้อมูลไม่สมบูรณ์</p>
+        <p className="text-app-body mb-6">{MESSAGES[reason]}</p>
         <Link
           href="/assets"
           className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
@@ -63,7 +79,7 @@ function AssetNotFoundMessage() {
         </Link>
       </div>
     </div>
-  );
+  )
 }
 
 export default async function AssetDetailPage({ params }: Props) {
@@ -71,10 +87,10 @@ export default async function AssetDetailPage({ params }: Props) {
 
   try {
     const user = await getCurrentUser();
-    if (!user) return <AssetNotFoundMessage />;
+    if (!user) return <AssetMessage reason="no-user" />;
 
     const asset = await findAssetByParam(id);
-    if (!asset) return <AssetNotFoundMessage />;
+    if (!asset) return <AssetMessage reason="no-asset" />;
 
     const assetWithJobs = await prisma.asset.findUnique({
       where: { id: asset.id },
@@ -102,19 +118,17 @@ export default async function AssetDetailPage({ params }: Props) {
       } as any,
     });
 
-    if (!assetWithJobs) return <AssetNotFoundMessage />;
+    if (!assetWithJobs) return <AssetMessage reason="no-asset" />;
 
     const a = assetWithJobs as any;
 
-    // ป้องกัน Server Components error ใน production เมื่อ relation ขาด — ไม่ throw แสดงข้อความแทน
     const room = a.room;
     const floor = room?.floor;
     const building = floor?.building;
     const site = building?.site;
-    if (!room || !floor || !building || !site) return <AssetNotFoundMessage />;
+    const hasLocation = !!(room && floor && building && site);
 
-    // Access Control
-    if (user.role === "CLIENT") {
+    if (user.role === "CLIENT" && hasLocation) {
       let siteId = user.siteId;
       if (!siteId) {
         const dbUser = await prisma.user.findUnique({
@@ -123,7 +137,7 @@ export default async function AssetDetailPage({ params }: Props) {
         });
         siteId = dbUser?.siteId ?? null;
       }
-      if (!siteId || siteId !== site.id) return <AssetNotFoundMessage />;
+      if (!siteId || siteId !== site.id) return <AssetMessage reason="forbidden" />;
     }
 
     const pendingJobItems = a.jobItems.filter(
@@ -195,12 +209,16 @@ export default async function AssetDetailPage({ params }: Props) {
         <div className="grid grid-cols-2 gap-4 text-sm mb-6">
           <div>
             <p className="text-app-muted">สถานที่ติดตั้ง</p>
-            <p className="font-semibold text-lg text-app-heading">
-              {site.name}
-            </p>
-            <p className="text-app-body">
-              {building.name} → {floor.name} → {room.name}
-            </p>
+            {hasLocation ? (
+              <>
+                <p className="font-semibold text-lg text-app-heading">{site!.name}</p>
+                <p className="text-app-body">
+                  {building!.name} → {floor!.name} → {room!.name}
+                </p>
+              </>
+            ) : (
+              <p className="text-amber-600 font-medium">ไม่ระบุสถานที่ (ใน Supabase ตรวจว่า Room id ตรงกับ Asset.roomId และมี Floor → Building → Site ครบ)</p>
+            )}
           </div>
           <div>
             <p className="text-app-muted">ข้อมูลเครื่อง</p>
@@ -348,7 +366,8 @@ export default async function AssetDetailPage({ params }: Props) {
       <JobHistoryPanel jobItems={a.jobItems} />
     </div>
   );
-  } catch {
-    return <AssetNotFoundMessage />;
+  } catch (e) {
+    console.error('[AssetDetail]', id, e);
+    return <AssetMessage reason="error" />;
   }
 }
