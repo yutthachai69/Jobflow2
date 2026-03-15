@@ -10,16 +10,16 @@ export async function getClientPMPlan(year: number) {
   const siteId = user.siteId
   if (!siteId) throw new Error("Client has no site")
 
+  // ใช้ select เฉพาะฟิลด์ที่ใช้ — ไม่รวม dueDate เพื่อรองรับ production ที่อาจยังไม่มีคอลัมน์นี้
   const schedules = await prisma.pMSchedule.findMany({
     where: {
       targetYear: year,
-      contract: {
-        siteId,
-      },
+      contract: { siteId },
     },
-    include: {
-      asset: true,
-      jobItem: true,
+    select: {
+      targetMonth: true,
+      asset: { select: { assetType: true } },
+      jobItem: { select: { status: true } },
     },
   })
 
