@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import QRCodeDisplay from "./QRCodeDisplay";
 import DeleteAssetButton from "./DeleteButton";
@@ -110,17 +109,13 @@ export default async function AssetDetailPage({ params }: Props) {
           },
           orderBy: { startTime: "desc" },
         },
-        pmSchedules: {
-          where: { targetYear: new Date().getFullYear() },
-          include: { jobItem: { select: { status: true, id: true } } },
-          orderBy: { roundIndex: "asc" },
-        },
-      } as any,
+        // pmSchedules ไม่ include ชั่วคราว — ถ้า production ยังไม่มีคอลัมน์ PMSchedule.dueDate จะ error (P2022)
+      },
     });
 
     if (!assetWithJobs) return <AssetMessage reason="no-asset" />;
 
-    const a = assetWithJobs as any;
+    const a = { ...assetWithJobs, pmSchedules: [] as any[] };
 
     const room = a.room;
     const floor = room?.floor;
@@ -367,7 +362,9 @@ export default async function AssetDetailPage({ params }: Props) {
     </div>
   );
   } catch (e) {
-    console.error('[AssetDetail]', id, e);
+    const errMsg = e instanceof Error ? e.message : String(e);
+    const errCode = e && typeof e === 'object' && 'code' in e ? (e as { code?: string }).code : undefined;
+    console.error('[AssetDetail]', id, errMsg, errCode ?? '', e);
     return <AssetMessage reason="error" />;
   }
 }
