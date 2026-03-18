@@ -15,19 +15,23 @@ export default function DeleteWorkOrderButton({ workOrderId }: Props) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showForceConfirm, setShowForceConfirm] = useState(false)
 
-  async function handleDelete() {
+  async function doDelete(force?: boolean) {
     setIsDeleting(true)
 
     try {
       // NOTE: Server Actions imported into client can have awkward inferred types in Next.js build.
       // We treat the result as a simple { success, error } shape.
-      const res = (await deleteWorkOrder(workOrderId)) as unknown as { success: boolean; error?: string }
+      const res = (await deleteWorkOrder(workOrderId, force)) as unknown as { success: boolean; error?: string }
 
       if (!res?.success) {
         const errorMessage = res?.error || 'เกิดข้อผิดพลาดในการลบข้อมูล'
-        if (errorMessage.includes('completed jobs')) {
-          toast.error('ไม่สามารถลบใบสั่งงานที่มีงานเสร็จสิ้นแล้วได้')
+        if (errorMessage === 'CONFIRM_DELETE_COMPLETED') {
+          setIsDeleting(false)
+          setShowConfirm(false)
+          setShowForceConfirm(true)
+          return
         } else {
           toast.error(errorMessage)
         }
@@ -37,6 +41,7 @@ export default function DeleteWorkOrderButton({ workOrderId }: Props) {
 
       toast.success('ลบใบสั่งงานเรียบร้อยแล้ว')
       setShowConfirm(false)
+      setShowForceConfirm(false)
       router.push('/work-orders')
       router.refresh()
     } catch (error) {
@@ -65,8 +70,20 @@ export default function DeleteWorkOrderButton({ workOrderId }: Props) {
         confirmText="ลบ"
         cancelText="ยกเลิก"
         confirmColor="red"
-        onConfirm={handleDelete}
+        onConfirm={() => doDelete(false)}
         onCancel={() => setShowConfirm(false)}
+        isLoading={isDeleting}
+      />
+
+      <ConfirmDialog
+        isOpen={showForceConfirm}
+        title="ยืนยันการลบงานที่เสร็จสิ้นแล้ว"
+        message="ใบสั่งงานนี้มีรายการงานที่เสร็จสิ้นแล้ว คุณแน่ใจหรือไม่ว่าต้องการลบ? (การกระทำนี้ไม่สามารถยกเลิกได้)"
+        confirmText="ยืนยันลบ"
+        cancelText="ยกเลิก"
+        confirmColor="red"
+        onConfirm={() => doDelete(true)}
+        onCancel={() => setShowForceConfirm(false)}
         isLoading={isDeleting}
       />
     </>

@@ -295,7 +295,7 @@ export async function updateWorkOrder(formData: FormData) {
   redirect(`/work-orders/${workOrderId}`)
 }
 
-export async function deleteWorkOrder(workOrderId: string) {
+export async function deleteWorkOrder(workOrderId: string, force?: boolean) {
   try {
     // Authorization: Only ADMIN can delete work orders
     const user = await getCurrentUser()
@@ -319,10 +319,10 @@ export async function deleteWorkOrder(workOrderId: string) {
       return { success: false, error: 'Work Order not found' } satisfies DeleteResult
     }
 
-    // Check if work order has job items with DONE status (prevent deletion if has completed work)
+    // Check if work order has job items with DONE status
     const hasCompletedJobs = workOrder.jobItems.some((job) => job.status === 'DONE')
-    if (hasCompletedJobs) {
-      return { success: false, error: 'Cannot delete work order with completed jobs' } satisfies DeleteResult
+    if (hasCompletedJobs && !force) {
+      return { success: false, error: 'CONFIRM_DELETE_COMPLETED' } satisfies DeleteResult
     }
 
     // Delete job items (and their photos) first
