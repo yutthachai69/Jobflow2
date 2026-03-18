@@ -296,57 +296,62 @@ export async function updateWorkOrder(formData: FormData) {
 }
 
 export async function deleteWorkOrder(workOrderId: string) {
-  // Authorization: Only ADMIN can delete work orders
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
-  }
+  try {
+    // Authorization: Only ADMIN can delete work orders
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      return { success: false, error: 'Unauthorized' } satisfies DeleteResult
+    }
 
-  // Check if work order exists
-  const workOrder = await prisma.workOrder.findUnique({
-    where: { id: workOrderId },
-    include: {
-      jobItems: {
-        include: {
-          photos: true,
+    // Check if work order exists
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id: workOrderId },
+      include: {
+        jobItems: {
+          include: {
+            photos: true,
+          },
         },
       },
-    },
-  })
-
-  if (!workOrder) {
-    throw new Error('Work Order not found')
-  }
-
-  // Check if work order has job items with DONE status (prevent deletion if has completed work)
-  const hasCompletedJobs = workOrder.jobItems.some(job => job.status === 'DONE')
-  if (hasCompletedJobs) {
-    throw new Error('Cannot delete work order with completed jobs')
-  }
-
-  // Delete job items (and their photos) first
-  for (const jobItem of workOrder.jobItems) {
-    await prisma.jobPhoto.deleteMany({
-      where: { jobItemId: jobItem.id },
     })
+
+    if (!workOrder) {
+      return { success: false, error: 'Work Order not found' } satisfies DeleteResult
+    }
+
+    // Check if work order has job items with DONE status (prevent deletion if has completed work)
+    const hasCompletedJobs = workOrder.jobItems.some((job) => job.status === 'DONE')
+    if (hasCompletedJobs) {
+      return { success: false, error: 'Cannot delete work order with completed jobs' } satisfies DeleteResult
+    }
+
+    // Delete job items (and their photos) first
+    for (const jobItem of workOrder.jobItems) {
+      await prisma.jobPhoto.deleteMany({
+        where: { jobItemId: jobItem.id },
+      })
+    }
+    await prisma.jobItem.deleteMany({
+      where: { workOrderId },
+    })
+
+    // Delete work order
+    await prisma.workOrder.delete({
+      where: { id: workOrderId },
+    })
+
+    logSecurityEvent('WORK_ORDER_DELETED', {
+      deletedBy: user.id,
+      workOrderId,
+      timestamp: new Date().toISOString(),
+    })
+
+    revalidatePath('/work-orders')
+    return { success: true } satisfies DeleteResult
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false, error: message } satisfies DeleteResult
   }
-  await prisma.jobItem.deleteMany({
-    where: { workOrderId },
-  })
-
-  // Delete work order
-  await prisma.workOrder.delete({
-    where: { id: workOrderId },
-  })
-
-  logSecurityEvent('WORK_ORDER_DELETED', {
-    deletedBy: user.id,
-    workOrderId,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/work-orders')
-  redirect('/work-orders')
 }
 
 export async function assignTechnicianToJobItem(jobItemId: string, technicianId: string | null) {
