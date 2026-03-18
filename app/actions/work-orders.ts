@@ -275,9 +275,10 @@ export async function deleteWorkOrder(workOrderId: string) {
     revalidatePath('/work-orders')
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
-    throw error
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false as const, error: message }
   }
-  redirect('/work-orders')
+  return { success: true as const }
 }
 
 export async function assignTechnicianToJobItem(jobItemId: string, technicianId: string | null) {

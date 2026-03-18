@@ -20,20 +20,30 @@ export default function DeleteWorkOrderButton({ workOrderId }: Props) {
     setIsDeleting(true)
 
     try {
-      await deleteWorkOrder(workOrderId)
+      // NOTE: Server Actions imported into client can have awkward inferred types in Next.js build.
+      // We treat the result as a simple { success, error } shape.
+      const res = (await deleteWorkOrder(workOrderId)) as unknown as { success: boolean; error?: string }
+
+      if (!res?.success) {
+        const errorMessage = res?.error || 'เกิดข้อผิดพลาดในการลบข้อมูล'
+        if (errorMessage.includes('completed jobs')) {
+          toast.error('ไม่สามารถลบใบสั่งงานที่มีงานเสร็จสิ้นแล้วได้')
+        } else {
+          toast.error(errorMessage)
+        }
+        setIsDeleting(false)
+        return
+      }
+
       toast.success('ลบใบสั่งงานเรียบร้อยแล้ว')
       setShowConfirm(false)
       router.push('/work-orders')
       router.refresh()
     } catch (error) {
+      // กันกรณีเกิด error ที่ไม่คาดคิด (เช่น network / runtime)
       if (isRedirectError(error)) throw error
       console.error('Error deleting work order:', error)
-      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล'
-      if (errorMessage.includes('completed jobs')) {
-        toast.error('ไม่สามารถลบใบสั่งงานที่มีงานเสร็จสิ้นแล้วได้')
-      } else {
-        toast.error(errorMessage)
-      }
+      toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
       setIsDeleting(false)
     }
   }
