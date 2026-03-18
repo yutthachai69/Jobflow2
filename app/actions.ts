@@ -463,6 +463,56 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
   revalidatePath(`/work-orders/${jobItem.workOrderId}`)
 }
 
+export async function adminReopenJobItem(jobItemId: string) {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      return { success: false as const, error: 'Unauthorized' }
+    }
+
+    const jobItem = await prisma.jobItem.findUnique({
+      where: { id: jobItemId },
+      select: { id: true, status: true, workOrderId: true },
+    })
+    if (!jobItem) {
+      return { success: false as const, error: 'Job item not found' }
+    }
+    if (jobItem.status !== 'DONE') {
+      return { success: false as const, error: 'Job item is not completed' }
+    }
+
+    // ถ้าใบสั่งงานถูกปิดไปแล้ว (COMPLETED) ให้เปิดกลับเป็น IN_PROGRESS เพื่อให้ไปโผล่ใน "หน้างาน"
+    await prisma.workOrder.update({
+      where: { id: jobItem.workOrderId },
+      data: { status: 'IN_PROGRESS' },
+    }).catch(() => null)
+
+    await prisma.jobItem.update({
+      where: { id: jobItemId },
+      data: {
+        status: 'IN_PROGRESS',
+        endTime: null, // ตามที่เลือก A: reopen แล้วล้าง endTime
+      },
+    })
+
+    logSecurityEvent('JOB_ITEM_REOPENED_BY_ADMIN', {
+      reopenedBy: user.id,
+      jobItemId,
+      workOrderId: jobItem.workOrderId,
+      timestamp: new Date().toISOString(),
+    })
+
+    revalidatePath(`/technician/job-item/${jobItemId}`)
+    revalidatePath(`/technician/work-order/${jobItem.workOrderId}`)
+    revalidatePath(`/work-orders/${jobItem.workOrderId}`)
+
+    return { success: true as const, workOrderId: jobItem.workOrderId }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false as const, error: message }
+  }
+}
+
 export async function updateJobItemChecklist(jobItemId: string, checklist: string) {
   const user = await getCurrentUser()
   if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {

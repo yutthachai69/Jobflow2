@@ -7,6 +7,7 @@ import DeleteWorkOrderButton from "./DeleteButton";
 import CancelWorkOrderButton from "./CancelButton";
 import AssignTechnicianButton from "./AssignTechnicianButton";
 import ExportButton from "./ExportButton";
+import ReopenJobItemButton from "./ReopenJobItemButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import { getWOStatus, getJobStatus } from "@/lib/status-colors";
 import { getWorkOrderDisplayNumber } from "@/lib/work-order-number";
@@ -324,6 +325,11 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                         >
                           📄 ดูใบรายงาน (Report)
                         </Link>
+                      )}
+
+                      {/* ADMIN: เปิดงานที่เสร็จสิ้นแล้วกลับมาแก้ไข */}
+                      {user.role === 'ADMIN' && jobItem.status === 'DONE' && (
+                        <ReopenJobItemButton jobItemId={jobItem.id} />
                       )}
                     </div>
                   </div>

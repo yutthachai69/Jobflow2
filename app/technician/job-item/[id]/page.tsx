@@ -9,6 +9,7 @@ import AirborneInfectionForm from "@/app/components/forms/AirborneInfectionForm"
 import ExhaustFanForm from "@/app/components/forms/ExhaustFanForm";
 import AssetHistoryTimeline from "@/app/components/AssetHistoryTimeline";
 import JobItemReportDownloadButton from "./JobItemReportDownloadButton";
+import CompleteJobItemButton from "./CompleteButton";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -210,19 +211,17 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                     </div>
                   </div>
                 )}
-                <form action={updateJobItemStatus.bind(null, id, "DONE")} className="flex-shrink-0">
-                  <button
-                    type="submit"
+                <div className="flex-shrink-0">
+                  <CompleteJobItemButton
+                    jobItemId={id}
                     disabled={!canComplete}
                     className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
                       ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                       : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                       }`}
-                    title={!canComplete ? 'กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน' : ''}
-                  >
-                    <span>เสร็จสิ้น</span>
-                  </button>
-                </form>
+                    titleWhenDisabled="กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน"
+                  />
+                </div>
               </>
             )}
             {jobItem.status === "ISSUE_FOUND" && (
@@ -460,19 +459,15 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   </div>
                 </div>
               )}
-              <form action={updateJobItemStatus.bind(null, id, "DONE")} className="flex-shrink-0">
-                <button
-                  type="submit"
-                  disabled={!canComplete}
-                  className={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canComplete
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
-                    : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
-                    }`}
-                  title={!canComplete ? 'กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน' : ''}
-                >
-                  <span>เสร็จสิ้น</span>
-                </button>
-              </form>
+              <CompleteJobItemButton
+                jobItemId={id}
+                disabled={!canComplete}
+                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canComplete
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
+                  : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
+                  }`}
+                titleWhenDisabled="กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน"
+              />
             </div>
           </div>
         )}
