@@ -96,10 +96,16 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
     b.floors.flatMap((f) => f.rooms.flatMap((r) => r.assets))
   )
 
-  const ahuCount = allAssets.filter(a => (a as any).machineType === 'AHU').length
-  const fcuCount = allAssets.filter(a => (a as any).machineType === 'FCU').length
-  const splitCount = allAssets.filter(a => (a as any).machineType === 'SPLIT_TYPE').length
-  const exhaustCount = allAssets.filter(a => (a as any).machineType === 'EXHAUST').length
+  // "แอร์ทั้งหมด" ต้องนับเฉพาะ AIR_CONDITIONER (ไม่รวม EXHAUST)
+  const airAssets = allAssets.filter((a) => (a as any).assetType === 'AIR_CONDITIONER')
+
+  // กลุ่ม machineType ให้นับเฉพาะแอร์เท่านั้น
+  const ahuCount = airAssets.filter(a => (a as any).machineType === 'AHU').length
+  const fcuCount = airAssets.filter(a => (a as any).machineType === 'FCU').length
+  const splitCount = airAssets.filter(a => (a as any).machineType === 'SPLIT_TYPE').length
+
+  // Exhaust ให้นับจาก assetType = EXHAUST (ไม่ปนกับ machineType ของแอร์)
+  const exhaustCount = allAssets.filter(a => (a as any).assetType === 'EXHAUST').length
 
   const activeWorkOrders = site.workOrders.filter((wo) => wo.status === 'OPEN' || wo.status === 'IN_PROGRESS')
   const inProgressJobItems = allAssets.flatMap((a) =>
@@ -190,7 +196,7 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
         {/* สถิติการ์ดแอร์ */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
           {[
-            { label: 'แอร์ทั้งหมด', value: allAssets.length, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets' },
+            { label: 'แอร์ทั้งหมด', value: airAssets.length, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets?type=AIR_CONDITIONER' },
             { label: 'AHU', value: ahuCount, emoji: '🌀', from: '#0891b2', to: '#0e7490', glow: 'rgba(8,145,178,0.25)', href: '/assets?type=AHU' },
             { label: 'FCU', value: fcuCount, emoji: '💨', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/assets?type=FCU' },
             { label: 'Split Type', value: splitCount, emoji: '❄️', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/assets?type=SPLIT_TYPE' },
