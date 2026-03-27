@@ -132,9 +132,7 @@ export async function middleware(request: NextRequest) {
 
   // Admin-only routes
   const adminOnlyRoutes = ['/users', '/locations', '/security-incidents', '/messages']
-  const isAdminOnlyRoute =
-    adminOnlyRoutes.some((route) => pathname.startsWith(route)) ||
-    pathname.startsWith('/admin')
+  const isAdminOnlyRoute = adminOnlyRoutes.some(route => pathname.startsWith(route))
 
   // Technician-only routes
   const technicianOnlyRoutes = ['/technician']
