@@ -17,6 +17,7 @@
     "test:coverage": "jest --coverage",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:add-adhoc-pm-type": "node scripts/add-jobitem-adhoc-pm-type.js",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
@@ -27,7 +28,8 @@
     "db:migrate:postgres": "node scripts/migrate-data-to-postgresql.js",
     "db:switch:postgres": "node scripts/switch-database.js postgresql",
     "db:switch:sqlite": "node scripts/switch-database.js sqlite",
-    "db:check": "node scripts/check-database.js",
+    "db:check": "node scripts/verify-env-parity.js",
+    "verify:parity": "node scripts/verify-env-parity.js",
     "assets:clear": "node scripts/clear-assets.js",
     "assets:generate": "node scripts/generate-assets.js"
   },

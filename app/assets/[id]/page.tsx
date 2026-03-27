@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import QRCodeDisplay from "./QRCodeDisplay";
@@ -13,6 +14,9 @@ import {
   sortSchedulesByDueAsc,
 } from "@/lib/pm-due";
 
+/** หน้ารายละเอียดต้องสดทุกครั้ง — กัน RSC/cache ทำให้โหลดพังแบบค้างหรือ payload เก่า */
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -24,6 +28,100 @@ const assetInclude = {
     },
   },
 } as const;
+
+/** ไม่ดึง customerSignature / checklist — ข้อมูลใหญ่เกินไปสำหรับส่งเข้า client (JobHistoryPanel) */
+const jobItemsForDetailSelectBase = {
+  id: true,
+  status: true,
+  techNote: true,
+  startTime: true,
+  endTime: true,
+  workOrder: {
+    select: {
+      id: true,
+      jobType: true,
+      scheduledDate: true,
+      site: {
+        select: {
+          name: true,
+          client: { select: { name: true } },
+        },
+      },
+    },
+  },
+  technician: { select: { fullName: true } },
+  photos: {
+    select: { id: true, url: true, type: true, createdAt: true },
+  },
+  pmSchedule: { select: { pmType: true } },
+} as const;
+
+const jobItemsForDetailWithAdHoc = {
+  orderBy: { startTime: "desc" as const },
+  select: {
+    ...jobItemsForDetailSelectBase,
+    adHocPmType: true,
+  },
+};
+
+const jobItemsForDetailNoAdHoc = {
+  orderBy: { startTime: "desc" as const },
+  select: jobItemsForDetailSelectBase,
+};
+
+/** โหลดแยกจาก Asset — ถ้า PMSchedule / JobItem query พัง หน้ารายละเอียดยังขึ้นได้ */
+async function loadJobItemsForAssetDetail(assetId: string) {
+  try {
+    return await prisma.jobItem.findMany({
+      where: { assetId },
+      ...jobItemsForDetailWithAdHoc,
+    });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2022"
+    ) {
+      return prisma.jobItem.findMany({
+        where: { assetId },
+        ...jobItemsForDetailNoAdHoc,
+      });
+    }
+    console.error("[AssetDetail] jobItems load failed", e);
+    return [];
+  }
+}
+
+async function loadPmSchedulesForAssetDetail(assetId: string) {
+  try {
+    return await prisma.pMSchedule.findMany({
+      where: { assetId },
+      orderBy: [{ targetYear: "asc" }, { roundIndex: "asc" }],
+      include: {
+        jobItem: { select: { id: true, status: true } },
+      },
+    });
+  } catch (e) {
+    console.error("[AssetDetail] pmSchedules load failed", e);
+    return [];
+  }
+}
+
+async function loadAssetWithJobs(assetId: string) {
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    include: {
+      room: assetInclude.room,
+    },
+  });
+  if (!asset) return null;
+
+  const [jobItems, pmSchedules] = await Promise.all([
+    loadJobItemsForAssetDetail(assetId),
+    loadPmSchedulesForAssetDetail(assetId),
+  ]);
+
+  return { ...asset, jobItems, pmSchedules };
+}
 
 async function findAssetByParam(param: string) {
   const byId = await prisma.asset.findUnique({
@@ -71,11 +169,30 @@ const MESSAGES: Record<AssetMessageReason, string> = {
   'error': 'เกิดข้อผิดพลาดในการโหลด กรุณาลองใหม่',
 }
 
-function AssetMessage({ reason }: { reason: AssetMessageReason }) {
+function AssetMessage({
+  reason,
+  devDetail,
+  adminDetail,
+}: {
+  reason: AssetMessageReason
+  /** แสดงเฉพาะ development */
+  devDetail?: string | null
+  /** แสดงใน production เมื่อล็อกอินเป็น ADMIN — ไล่ error บน Vercel ได้โดยไม่ต้องเปิด log ทันที */
+  adminDetail?: string | null
+}) {
+  const detailBlock =
+    (process.env.NODE_ENV === "development" && devDetail) || adminDetail;
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8 flex items-center justify-center">
       <div className="text-center max-w-md">
         <p className="text-app-body mb-6">{MESSAGES[reason]}</p>
+        {detailBlock && (
+          <pre className="text-left text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-6 overflow-x-auto whitespace-pre-wrap break-words">
+            {process.env.NODE_ENV === "development" && devDetail
+              ? devDetail
+              : adminDetail ?? devDetail}
+          </pre>
+        )}
         <Link
           href="/assets"
           className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
@@ -89,41 +206,17 @@ function AssetMessage({ reason }: { reason: AssetMessageReason }) {
 
 export default async function AssetDetailPage({ params }: Props) {
   const { id } = await params;
+  let userForError: { role: string } | null = null;
 
   try {
     const user = await getCurrentUser();
+    userForError = user;
     if (!user) return <AssetMessage reason="no-user" />;
 
     const asset = await findAssetByParam(id);
     if (!asset) return <AssetMessage reason="no-asset" />;
 
-    const assetWithJobs = await prisma.asset.findUnique({
-      where: { id: asset.id },
-      include: {
-        room: {
-          include: {
-            floor: { include: { building: { include: { site: true } } } },
-          },
-        },
-        jobItems: {
-          include: {
-            workOrder: {
-              include: { site: { include: { client: true } } },
-            },
-            technician: true,
-            photos: true,
-            pmSchedule: { select: { pmType: true } },
-          },
-          orderBy: { startTime: "desc" },
-        },
-        pmSchedules: {
-          orderBy: [{ targetYear: "asc" }, { roundIndex: "asc" }],
-          include: {
-            jobItem: { select: { id: true, status: true } },
-          },
-        },
-      },
-    });
+    const assetWithJobs = await loadAssetWithJobs(asset.id);
 
     if (!assetWithJobs) return <AssetMessage reason="no-asset" />;
 
@@ -148,8 +241,10 @@ export default async function AssetDetailPage({ params }: Props) {
     }
 
     const pendingJobItems = a.jobItems.filter(
-    (ji: any) => ji.status === "PENDING" || ji.status === "IN_PROGRESS"
-  );
+      (ji: { status: string; workOrder?: unknown }) =>
+        (ji.status === "PENDING" || ji.status === "IN_PROGRESS") &&
+        ji.workOrder != null
+    );
 
   const pmSchedules = a.pmSchedules;
   const pmDoneCount = pmSchedules.filter((s) => s.jobItem?.status === "DONE").length;
@@ -382,7 +477,8 @@ export default async function AssetDetailPage({ params }: Props) {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-semibold text-app-heading mb-1">
-                      {jobItem.workOrder.jobType} - {jobItem.workOrder?.site?.name ?? '-'}
+                      {jobItem.workOrder?.jobType ?? "งาน"} -{" "}
+                      {jobItem.workOrder?.site?.name ?? "-"}
                     </div>
                     <div className="text-sm text-app-body mb-1">
                       {jobItem.workOrder?.site?.client?.name ?? '-'}
@@ -425,26 +521,63 @@ export default async function AssetDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Job History */}
-      <h2 className="text-xl font-bold text-app-heading mb-4 flex items-center">
-        ประวัติการบำรุงรักษา
-        <span className="ml-2 text-sm font-normal text-app-muted">
-          ({a.jobItems.length} รายการ)
-        </span>
-      </h2>
-
-      <JobHistoryPanel
-        jobItems={a.jobItems.map((ji) => ({
-          ...ji,
-          pmType: ji.pmSchedule?.pmType ?? ji.adHocPmType ?? null,
-        }))}
-      />
+      {/* Job History — ข้ามแถวที่ไม่มี workOrder (ข้อมูลเสีย) กัน client crash บน production */}
+      {(() => {
+        const historyItems = a.jobItems.filter((ji) => ji.workOrder != null);
+        const panelPayload = historyItems.map((ji) => {
+          const adHoc =
+            "adHocPmType" in ji ? ji.adHocPmType : null;
+          const pmType = (ji.pmSchedule?.pmType ?? adHoc ?? null) as
+            | string
+            | null;
+          return {
+            id: ji.id,
+            status: ji.status,
+            techNote: ji.techNote,
+            startTime: ji.startTime,
+            endTime: ji.endTime,
+            pmType,
+            workOrder: ji.workOrder!,
+            technician: ji.technician,
+            photos: ji.photos ?? [],
+          };
+        });
+        return (
+          <>
+            <h2 className="text-xl font-bold text-app-heading mb-4 flex items-center">
+              ประวัติการบำรุงรักษา
+              <span className="ml-2 text-sm font-normal text-app-muted">
+                ({panelPayload.length}
+                {a.jobItems.length !== panelPayload.length
+                  ? ` จาก ${a.jobItems.length}`
+                  : ""}{" "}
+                รายการ)
+              </span>
+            </h2>
+            <JobHistoryPanel jobItems={JSON.parse(JSON.stringify(panelPayload))} />
+          </>
+        );
+      })()}
     </div>
   );
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
     const errCode = e && typeof e === 'object' && 'code' in e ? (e as { code?: string }).code : undefined;
     console.error('[AssetDetail]', id, errMsg, errCode ?? '', e);
-    return <AssetMessage reason="error" />;
+    const devDetail =
+      process.env.NODE_ENV === "development"
+        ? [errCode && `code: ${errCode}`, errMsg].filter(Boolean).join("\n")
+        : null;
+    const adminDetail =
+      userForError?.role === "ADMIN"
+        ? [errCode && `code: ${errCode}`, errMsg].filter(Boolean).join("\n")
+        : null;
+    return (
+      <AssetMessage
+        reason="error"
+        devDetail={devDetail}
+        adminDetail={adminDetail}
+      />
+    );
   }
 }

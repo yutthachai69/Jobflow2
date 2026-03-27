@@ -54,3 +54,4 @@ fix-*.js
 
 # local job photos (dev only)
 public/job-photos/
+.env*.local

@@ -18,12 +18,12 @@ type JobItem = {
   startTime: string | Date | null;
   endTime: string | Date | null;
   pmType?: string | null;
-  workOrder: {
+  workOrder?: {
     id: string;
     jobType: string;
     site: { name: string; client: { name: string } };
     scheduledDate: string | Date;
-  };
+  } | null;
   technician: { fullName: string | null } | null;
   photos: Photo[];
 };
@@ -100,7 +100,7 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
               )}
             </div>
             <h3 className="font-extrabold text-gray-900 text-lg tracking-tight leading-tight">
-              {job.workOrder.jobType}
+              {job.workOrder?.jobType ?? "งาน"}
             </h3>
             <p className="text-xs text-gray-400 mt-0.5">{job.workOrder?.site?.name ?? '-'}</p>
           </div>
@@ -146,16 +146,16 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
           )}
 
           {/* Photos */}
-          {job.photos.length > 0 && (
+          {(job.photos ?? []).length > 0 && (
             <div>
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">📷 รูปภาพประกอบ</div>
               <PhotoSection
-                photos={job.photos}
+                photos={job.photos ?? []}
                 types={['BEFORE', 'AFTER']}
                 label={t => t === 'BEFORE' ? '🔴 ก่อนทำ' : '🟢 หลังทำ'}
               />
               <PhotoSection
-                photos={job.photos}
+                photos={job.photos ?? []}
                 types={['DEFECT', 'METER']}
                 label={t => t === 'DEFECT' ? '⚠️ จุดชำรุด' : '📊 ค่าเกจ'}
               />
@@ -199,8 +199,9 @@ export default function JobHistoryPanel({ jobItems }: { jobItems: JobItem[] }) {
       ) : (
         <div className="space-y-3">
           {jobItems.map(job => {
-            const beforePhoto = job.photos.find(p => p.type === 'BEFORE');
-            const afterPhoto = job.photos.find(p => p.type === 'AFTER');
+            const photos = job.photos ?? [];
+            const beforePhoto = photos.find(p => p.type === 'BEFORE');
+            const afterPhoto = photos.find(p => p.type === 'AFTER');
 
             return (
               <button
@@ -241,7 +242,9 @@ export default function JobHistoryPanel({ jobItems }: { jobItems: JobItem[] }) {
                           : 'ไม่ระบุวัน'}
                       </span>
                     </div>
-                    <div className="font-bold text-gray-900 text-sm leading-tight truncate">{job.workOrder.jobType}</div>
+                    <div className="font-bold text-gray-900 text-sm leading-tight truncate">
+                      {job.workOrder?.jobType ?? "งาน"}
+                    </div>
                     <div className="text-xs text-gray-400 mt-0.5 truncate">ช่าง: {job.technician?.fullName || 'System Admin'}</div>
                     {job.techNote && (
                       <div className="text-xs text-gray-500 mt-1.5 line-clamp-1 italic">"{job.techNote}"</div>
@@ -255,12 +258,12 @@ export default function JobHistoryPanel({ jobItems }: { jobItems: JobItem[] }) {
                 </div>
 
                 {/* Progress bar: before/after photos count */}
-                {job.photos.length > 0 && (
+                {photos.length > 0 && (
                   <div className="px-5 pb-4">
                     <div className="flex items-center gap-2">
-                      <div className="text-[10px] text-gray-400 font-medium">{job.photos.length} รูปภาพ</div>
+                      <div className="text-[10px] text-gray-400 font-medium">{photos.length} รูปภาพ</div>
                       <div className="flex-1 flex gap-1">
-                        {job.photos.slice(0, 6).map((_, i) => (
+                        {photos.slice(0, 6).map((_, i) => (
                           <div key={i} className="flex-1 h-1 rounded-full bg-blue-200" />
                         ))}
                       </div>
