@@ -91,6 +91,11 @@ export default function AutoBreadcrumbs() {
     return null
   }
 
+  // แผน PM แอดมิน: แต่ละหน้ามี <Breadcrumbs /> ภาษาไทยอยู่แล้ว — ไม่ให้ซ้ำกับเส้นทาง admin / pm-planning / …
+  if (pathname.startsWith('/admin/pm-planning')) {
+    return null
+  }
+
   // สร้าง breadcrumb items จาก pathname
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = []

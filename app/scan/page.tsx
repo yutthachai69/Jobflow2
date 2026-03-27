@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useConfirm } from '@/app/components/ConfirmModal'
+import {
+  startHtml5QrcodeWithFallbacks,
+  describeCameraError,
+} from '@/lib/html5-qrcode-camera'
 
 export default function ScanQRPage() {
   const router = useRouter()
@@ -51,38 +55,9 @@ export default function ScanQRPage() {
       setScanning(true)
       scannedRef.current = false
 
-      // 3. Request camera permission explicitly first (forces browser to ask)
-      let stream: MediaStream | null = null
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        // Got permission, stop the stream immediately (QR library will open its own)
-        stream.getTracks().forEach(track => track.stop())
-      } catch (permErr: any) {
-        console.error('Camera permission error:', permErr)
-        if (permErr?.name === 'NotAllowedError' || permErr?.name === 'PermissionDeniedError') {
-          setError('กรุณาอนุญาตให้ใช้งานกล้อง: กดที่ 🔒 ข้างๆ URL > การตั้งค่าเว็บไซต์ > กล้อง > อนุญาต')
-        } else if (permErr?.name === 'NotFoundError') {
-          setError('ไม่พบกล้องในอุปกรณ์นี้')
-        } else if (permErr?.name === 'NotReadableError') {
-          setError('กล้องถูกใช้งานโดยแอปอื่นอยู่ กรุณาปิดแอปอื่นแล้วลองใหม่')
-        } else {
-          setError(`ไม่สามารถเข้าถึงกล้องได้: ${permErr?.message || permErr}`)
-        }
-        setScanning(false)
-        return
-      }
-
-      // 4. Dynamic import html5-qrcode
-      const { Html5Qrcode } = await import('html5-qrcode')
-      const qrCode = new Html5Qrcode('qr-reader')
-      html5QrCodeRef.current = qrCode
-
-      await qrCode.start(
-        { facingMode: 'environment' }, // ใช้กล้องหลัง
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
+      // เปิดกล้องผ่าน html5-qrcode โดยตรง + fallback (หลีกเลี่ยง getUserMedia ซ้ำที่พังบน Android Chrome)
+      const qrCode = await startHtml5QrcodeWithFallbacks(
+        'qr-reader',
         async (decodedText: string) => {
           // สแกนสำเร็จ!
           if (scannedRef.current) return // ป้องกันการสแกนซ้ำ
@@ -138,9 +113,10 @@ export default function ScanQRPage() {
           // ยังไม่สแกนเจอ (ไม่ต้องแสดง error)
         }
       )
+      html5QrCodeRef.current = qrCode
     } catch (err: any) {
       console.error('Error starting QR scanner:', err)
-      setError(`ไม่สามารถเปิดกล้องสแกนได้: ${err?.message || err}`)
+      setError(describeCameraError(err))
       setScanning(false)
       html5QrCodeRef.current = null
     }

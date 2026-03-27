@@ -244,6 +244,9 @@ model JobItem {
   pmScheduleId String? @unique
   pmSchedule   PMSchedule? @relation(fields: [pmScheduleId], references: [id])
 
+  /// ล้างใหญ่/ล้างย่อย เมื่อสร้างใบ PM มือ (ไม่ผูก PMSchedule) — ใช้ร่วมกับกราฟล้าง
+  adHocPmType PMType?
+
   @@index([technicianId])
   @@index([status])
   @@index([workOrderId])

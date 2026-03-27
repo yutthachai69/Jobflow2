@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useConfirm } from '@/app/components/ConfirmModal'
+import {
+  startHtml5QrcodeWithFallbacks,
+  describeCameraError,
+} from '@/lib/html5-qrcode-camera'
 
 export default function ScanQRPage() {
   const router = useRouter()
@@ -25,22 +29,24 @@ export default function ScanQRPage() {
   }, [])
 
   const startScanning = async () => {
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+      setError(
+        'กล้องใช้ได้เฉพาะ HTTPS หรือ localhost — ตรวจสอบว่าเข้าเว็บผ่าน https://'
+      )
+      return
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('อุปกรณ์นี้ไม่รองรับการเปิดกล้องในเบราว์เซอร์นี้')
+      return
+    }
+
     try {
       setError(null)
       setScanning(true)
       scannedRef.current = false
 
-      // Dynamic import html5-qrcode
-      const { Html5Qrcode } = await import('html5-qrcode')
-      const qrCode = new Html5Qrcode('qr-reader')
-      html5QrCodeRef.current = qrCode
-
-      await qrCode.start(
-        { facingMode: 'environment' }, // ใช้กล้องหลัง
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
+      const qrCode = await startHtml5QrcodeWithFallbacks(
+        'qr-reader',
         async (decodedText: string) => {
           // สแกนสำเร็จ!
           if (scannedRef.current) return // ป้องกันการสแกนซ้ำ
@@ -91,9 +97,10 @@ export default function ScanQRPage() {
           // ยังไม่สแกนเจอ (ไม่ต้องแสดง error)
         }
       )
+      html5QrCodeRef.current = qrCode
     } catch (err: any) {
       console.error('Error starting camera:', err)
-      setError('ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาตให้ใช้งานกล้อง')
+      setError(describeCameraError(err))
       setScanning(false)
       html5QrCodeRef.current = null
     }

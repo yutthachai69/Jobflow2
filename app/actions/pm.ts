@@ -4,6 +4,24 @@ import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { logSecurityEvent } from "@/lib/security"
+import { generateWorkOrderNumber } from "@/lib/work-order-number"
+import {
+  isPmScheduleDueForFieldStart,
+  sortSchedulesByDueAsc,
+  type PMScheduleDueFields,
+} from "@/lib/pm-due"
+import type { AssetType, PMType } from "@prisma/client"
+
+function pmJobItemNote(pmType: PMType, roundIndex: number) {
+  return `รอบบำรุงรักษา: ${pmType === "MAJOR" ? "ล้างใหญ่" : "ล้างย่อย"} (รอบที่ ${roundIndex})`
+}
+
+function pmChecklistJsonForAsset(assetType: AssetType): string | null {
+  if (assetType === "EXHAUST") {
+    return JSON.stringify({ formType: "EXHAUST_FAN", data: {} })
+  }
+  return null
+}
 
 export async function getSitesWithPMStatus(year: number) {
   const user = await getCurrentUser()
@@ -224,143 +242,195 @@ export async function createWorkOrderFromPM(siteId: string, scheduleIds: string[
   if (!site) throw new Error("ไม่พบสถานที่")
 
   return await prisma.$transaction(async (tx) => {
-    // 1. Create Work Order
+    const scheduledDate = new Date()
+    const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
+
     const workOrder = await tx.workOrder.create({
       data: {
-        jobType: 'PM',
-        status: 'OPEN',
+        workOrderNumber,
+        jobType: "PM",
+        status: "OPEN",
         siteId,
-        scheduledDate: new Date(), // Today
-      }
+        scheduledDate,
+      },
     })
 
-    // 2. Create JobItems for each schedule
     for (const scheduleId of scheduleIds) {
       const schedule = await tx.pMSchedule.findUnique({
-        where: { id: scheduleId }
+        where: { id: scheduleId },
+        include: { asset: { select: { assetType: true } } },
       })
-      
+
       if (!schedule) continue
 
       await tx.jobItem.create({
         data: {
           workOrderId: workOrder.id,
           assetId: schedule.assetId,
-          status: 'PENDING',
+          status: "PENDING",
           pmScheduleId: schedule.id,
-          techNote: `รอบบำรุงรักษา: ${schedule.pmType === 'MAJOR' ? 'ล้างใหญ่' : 'ล้างย่อย'} (รอบที่ ${schedule.roundIndex})`
-        }
+          techNote: pmJobItemNote(schedule.pmType, schedule.roundIndex),
+          checklist: pmChecklistJsonForAsset(schedule.asset.assetType),
+        },
+      })
+
+      await tx.pMSchedule.update({
+        where: { id: schedule.id },
+        data: { status: "DISPATCHED" },
       })
     }
 
-    logSecurityEvent('PM_WORK_ORDER_GENERATED', {
-        userId: user.id,
-        username: user.username,
-        description: `Generated Work Order ${workOrder.id} for site ${siteId} from ${scheduleIds.length} PM schedules.`,
+    logSecurityEvent("PM_WORK_ORDER_GENERATED", {
+      userId: user.userId,
+      username: user.userId,
+      description: `Generated Work Order ${workOrder.id} for site ${siteId} from ${scheduleIds.length} PM schedules.`,
     })
 
     return workOrder
+  }).then(async (wo) => {
+    revalidatePath("/work-orders")
+    revalidatePath("/admin/pm-planning/dispatch")
+    return wo
   })
 }
 
+/**
+ * ช่าง (หรือแอดมินทดสอบ) สแกนเข้าหน้าทรัพย์สินแล้วกดเริ่มงาน PM — สร้าง WorkOrder + JobItem สำหรับ “รอบที่ถึงกำหนดและยังไม่มีใบงาน” รอบแรกตามลำดับ due
+ */
+export async function startPmJobFromAsset(assetId: string) {
+  const user = await getCurrentUser()
+  if (!user || (user.role !== "TECHNICIAN" && user.role !== "ADMIN")) {
+    throw new Error("Unauthorized")
+  }
+
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    include: {
+      room: {
+        include: {
+          floor: { include: { building: { select: { siteId: true } } } },
+        },
+      },
+    },
+  })
+
+  if (!asset || asset.status !== "ACTIVE") {
+    throw new Error("ไม่พบทรัพย์สิน หรือไม่พร้อมใช้งาน")
+  }
+
+  const siteId = asset.room?.floor?.building?.siteId
+  if (!siteId) {
+    throw new Error("ทรัพย์สินนี้ไม่ผูกสถานที่ครบ — ติดต่อแอดมิน")
+  }
+
+  const schedulesRaw = await prisma.pMSchedule.findMany({
+    where: {
+      assetId,
+      status: "PLANNED",
+      jobItem: { is: null },
+    },
+  })
+
+  const asDue: PMScheduleDueFields[] = schedulesRaw.map((s) => ({
+    id: s.id,
+    dueDate: s.dueDate,
+    targetYear: s.targetYear,
+    targetMonth: s.targetMonth,
+    status: s.status,
+  }))
+
+  const dueSorted = sortSchedulesByDueAsc(asDue.filter((s) => isPmScheduleDueForFieldStart(s)))
+  if (dueSorted.length === 0) {
+    throw new Error("ยังไม่มีรอบ PM ที่ถึงกำหนดสำหรับเครื่องนี้ — ตรวจสอบแผนหรือรอถึงรอบถัดไป")
+  }
+
+  const pickId = dueSorted[0]!.id
+
+  const now = new Date()
+  const workOrderNumber = await generateWorkOrderNumber(now)
+  const techId = user.role === "TECHNICIAN" ? user.userId : null
+
+  const result = await prisma.$transaction(async (tx) => {
+    const schedule = await tx.pMSchedule.findFirst({
+      where: {
+        id: pickId,
+        assetId,
+        status: "PLANNED",
+        jobItem: { is: null },
+      },
+      include: { asset: { select: { id: true, assetType: true } } },
+    })
+
+    if (!schedule) {
+      throw new Error("รอบนี้ถูกสร้างใบงานไปแล้ว — รีเฟรชหน้าแล้วลองใหม่")
+    }
+
+    const workOrder = await tx.workOrder.create({
+      data: {
+        workOrderNumber,
+        jobType: "PM",
+        status: "OPEN",
+        siteId,
+        scheduledDate: now,
+      },
+    })
+
+    const jobItem = await tx.jobItem.create({
+      data: {
+        workOrderId: workOrder.id,
+        assetId: schedule.assetId,
+        status: "PENDING",
+        pmScheduleId: schedule.id,
+        technicianId: techId,
+        techNote: pmJobItemNote(schedule.pmType, schedule.roundIndex),
+        checklist: pmChecklistJsonForAsset(schedule.asset.assetType),
+      },
+    })
+
+    await tx.pMSchedule.update({
+      where: { id: schedule.id },
+      data: { status: "DISPATCHED" },
+    })
+
+    return { workOrderId: workOrder.id, jobItemId: jobItem.id }
+  })
+
+  revalidatePath("/work-orders")
+  revalidatePath("/technician")
+  revalidatePath(`/assets/${assetId}`)
+  revalidatePath("/admin/pm-planning/dispatch")
+
+  logSecurityEvent("PM_FIELD_START", {
+    userId: user.userId,
+    username: user.userId,
+    description: `Started PM from asset ${assetId} → WO ${result.workOrderId}, jobItem ${result.jobItemId}`,
+  })
+
+  return result
+}
+
+/**
+ * เดิม: สร้างใบงาน PM อัตโนมัติทุกรอบที่ dueDate ถึง
+ * ปัจจุบัน: ปิดการใช้งาน — ใบงาน PM สร้างเมื่อช่างกดเริ่มที่หน้าทรัพย์สิน (`startPmJobFromAsset`) หรือแอดมินเลือกจากตารางด้านล่าง
+ */
 export async function dispatchDuePMSchedules(refDate?: string) {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') throw new Error("Unauthorized")
+  if (!user || user.role !== "ADMIN") throw new Error("Unauthorized")
 
   const now = refDate ? new Date(refDate) : new Date()
 
-  const schedules = await prisma.pMSchedule.findMany({
-    where: {
-      dueDate: { lte: now },
-      status: 'PLANNED',
-      jobItem: null,
-    },
-    include: {
-      asset: {
-        include: {
-          room: {
-            include: {
-              floor: {
-                include: {
-                  building: { include: { site: true } },
-                },
-              },
-            },
-          },
-        },
-      },
-      contract: true,
-    },
-    orderBy: [
-      { asset: { room: { floor: { building: { site: { name: 'asc' } } } } } },
-      { asset: { qrCode: 'asc' } },
-    ],
+  logSecurityEvent("PM_AUTO_DISPATCH_DISABLED", {
+    userId: user.userId,
+    username: user.userId,
+    description: `dispatchDuePMSchedules called but disabled (refDate=${refDate || now.toISOString()}). Use field start or manual dispatch.`,
   })
 
-  if (schedules.length === 0) {
-    return { success: true, created: 0, workOrders: 0 }
+  return {
+    success: true,
+    created: 0,
+    workOrders: 0,
+    disabled: true as const,
+    message:
+      "ปิด Auto-dispatch แล้ว — ให้ช่างสแกน QR แล้วกดเริ่มงาน PM ที่หน้าทรัพย์สิน หรือแอดมินออกใบจากตารางด้านล่าง",
   }
-
-  // Group by site (1 WorkOrder ต่อ 1 Site)
-  const bySite = new Map<string, typeof schedules>()
-  for (const s of schedules) {
-    const siteId = s.asset.room.floor.building.siteId
-    if (!bySite.has(siteId)) bySite.set(siteId, [])
-    bySite.get(siteId)!.push(s)
-  }
-
-  let workOrderCount = 0
-
-  await prisma.$transaction(async (tx) => {
-    for (const [siteId, siteSchedules] of bySite.entries()) {
-      const workOrder = await tx.workOrder.create({
-        data: {
-          jobType: 'PM',
-          status: 'OPEN',
-          siteId,
-          scheduledDate: now,
-        },
-      })
-      workOrderCount++
-
-      for (const s of siteSchedules) {
-        const asset = s.asset
-
-        // เลือก formType ตามประเภททรัพย์สิน
-        let formType: string | null = null
-        if (asset.assetType === 'EXHAUST') {
-          formType = 'EXHAUST_FAN'
-        }
-        // สำหรับ AIR_CONDITIONER สามารถเพิ่ม mapping ฟอร์มในอนาคตได้ที่นี่
-
-        const jobItem = await tx.jobItem.create({
-          data: {
-            workOrderId: workOrder.id,
-            assetId: s.assetId,
-            status: 'PENDING',
-            pmScheduleId: s.id,
-            techNote: `รอบบำรุงรักษา: ${s.pmType === 'MAJOR' ? 'ล้างใหญ่' : 'ล้างย่อย'} (รอบที่ ${s.roundIndex})`,
-            checklist: formType ? JSON.stringify({ formType, data: {} }) : null,
-          },
-        })
-
-        await tx.pMSchedule.update({
-          where: { id: s.id },
-          data: {
-            status: 'DISPATCHED',
-          },
-        })
-      }
-    }
-  })
-
-  revalidatePath('/work-orders')
-
-  logSecurityEvent('PM_AUTO_DISPATCH', {
-    userId: user.id,
-    username: user.username,
-    description: `Auto-dispatched ${schedules.length} PM schedules into ${workOrderCount} work orders (refDate=${refDate || now.toISOString()}).`,
-  })
-
-  return { success: true, created: schedules.length, workOrders: workOrderCount }
 }

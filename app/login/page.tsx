@@ -152,15 +152,42 @@ export default async function LoginPage({ searchParams }: Props) {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 backdrop-blur-sm" style={{ borderTopColor: 'var(--app-border)', borderTopWidth: '1px', borderTopStyle: 'solid', backgroundColor: 'var(--app-section)' }}>
-        <div className="w-full max-w-full px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: 'var(--app-text-muted)' }}>
-          <div className="order-2 md:order-1">
-            {/* © {currentYear} Flomac Co., Ltd. All rights reserved. */}
+        <div className="w-full max-w-full px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-sm" style={{ color: 'var(--app-text-muted)' }}>
+
+          {/* Copyright ฝั่งซ้าย */}
+          <div className="order-2 md:order-1 text-center md:text-left">
             © {currentYear} LMT air service. All rights reserved.
           </div>
-          <div className="flex gap-6 order-1 md:order-2">
-            <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Privacy Policy</span>
-            <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Terms of Service</span>
-            <span className="cursor-pointer transition-colors hover:opacity-80" style={{ color: 'var(--app-text-muted)' }}>Support</span>
+
+          {/* ส่วนติดต่อแอดมิน ฝั่งขวา */}
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 order-1 md:order-2">
+
+            {/* Facebook - เปิดหน้าโปรไฟล์ใหม่ */}
+            <a
+              href="https://www.facebook.com/yutthachai.kummeephak.2025/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 transition-colors hover:text-blue-500"
+            >
+              <span className="font-medium">Facebook</span>
+            </a>
+
+            {/* Email - กดแล้วเด้งไปหน้าส่งเมล์ */}
+            <a
+              href="mailto:firsaza4455@gmail.com"
+              className="flex items-center gap-2 transition-colors hover:text-red-400"
+            >
+              <span className="font-medium">firsaza4455@gmail.com</span>
+            </a>
+
+            {/* Phone - กดแล้วโทรออกได้ทันที (บนมือถือ) */}
+            <a
+              href="tel:0828310466"
+              className="flex items-center gap-2 transition-colors hover:text-green-500"
+            >
+              <span className="font-medium text-app-heading">082-831-0466</span>
+            </a>
+
           </div>
         </div>
       </footer>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import TechnicianDashboard from "@/app/components/dashboards/TechnicianDashboard";
 import ClientDashboard from "@/app/components/dashboards/ClientDashboard";
 import AdminDashboard from "@/app/components/dashboards/AdminDashboard";
+import { parseGranularity } from "@/lib/client-wash-chart";
 
 export async function generateMetadata(): Promise<Metadata> {
   const user = await getCurrentUser();
@@ -30,10 +31,17 @@ type DashboardSearchParams = {
   siteId?: string
   year?: string
   month?: string
+  chartFrom?: string
+  chartTo?: string
+  chartGran?: string
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
 }
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<DashboardSearchParams> }) {
-  const { siteId, year, month } = await searchParams;
+  const { siteId, year, month, chartFrom, chartTo, chartGran } = await searchParams;
   const user = await getCurrentUser();
 
   // ถ้ายังไม่ได้ login หรือ token หมดอายุ ให้ไปหน้า login
@@ -91,14 +99,37 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       );
     }
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
 
-    const selectedYear = year ? Number(year) || currentYear : currentYear
-    const selectedMonth = month ? Number(month) || currentMonth : currentMonth
+    const defaultTo = `${currentYear}-${pad2(currentMonth)}-${pad2(now.getDate())}`;
+    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
+    const defaultFrom = `${startOfMonth.getFullYear()}-${pad2(startOfMonth.getMonth() + 1)}-${pad2(startOfMonth.getDate())}`;
 
-    return <ClientDashboard siteId={siteId} year={selectedYear} month={selectedMonth} />;
+    let chartFromStr = chartFrom?.trim() || defaultFrom;
+    let chartToStr = chartTo?.trim() || defaultTo;
+
+    if (!chartFrom && !chartTo && (year || month)) {
+      const y = year ? Number(year) || currentYear : currentYear;
+      const m = month ? Number(month) || currentMonth : currentMonth;
+      if (m >= 1 && m <= 12) {
+        const lastDay = new Date(y, m, 0).getDate();
+        chartFromStr = `${y}-${pad2(m)}-01`;
+        chartToStr = `${y}-${pad2(m)}-${pad2(lastDay)}`;
+      }
+    }
+
+    const chartGranularity = parseGranularity(chartGran);
+
+    return (
+      <ClientDashboard
+        siteId={siteId}
+        chartFrom={chartFromStr}
+        chartTo={chartToStr}
+        chartGranularity={chartGranularity}
+      />
+    );
   }
 
   // ADMIN

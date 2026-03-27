@@ -154,7 +154,11 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  // camera=(self) ให้หน้า /scan ใช้ getUserMedia ได้ — camera=() จะบล็อกกล้องทั้งไซต์แม้ผู้ใช้กดอนุญาตใน Chrome
+  response.headers.set(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=(self)'
+  )
 
   // HSTS - ใช้เฉพาะใน production และ HTTPS
   if (!isDev && request.nextUrl.protocol === 'https:') {

@@ -17,13 +17,12 @@ import {
   IconWrench,
   IconReports,
   IconSurvey,
-  IconChecklist,
   IconLine,
 } from './SidebarIcons'
 
 type NavRole = 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
 
-type IconKey = 'dashboard' | 'workorder' | 'assets' | 'users' | 'locations' | 'security' | 'contact' | 'scan' | 'wrench' | 'reports' | 'survey' | 'checklist' | 'line'
+type IconKey = 'dashboard' | 'workorder' | 'assets' | 'users' | 'locations' | 'security' | 'contact' | 'scan' | 'wrench' | 'reports' | 'survey' | 'line'
 
 const iconMap: Record<IconKey, React.ComponentType<{ active?: boolean }>> = {
   dashboard: IconDashboard,
@@ -37,7 +36,6 @@ const iconMap: Record<IconKey, React.ComponentType<{ active?: boolean }>> = {
   wrench: IconWrench,
   reports: IconReports,
   survey: IconSurvey,
-  checklist: IconChecklist,
   line: IconLine,
 }
 
@@ -57,7 +55,6 @@ const SIDEBAR_COLLAPSED_KEY = 'airservice-sidebar-collapsed'
 const adminItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
-  { type: 'link', href: '/admin/pm-planning', label: 'แผนงาน PM', icon: 'checklist' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },

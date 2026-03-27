@@ -93,6 +93,7 @@ export async function createWorkOrder(formData: FormData) {
     const assignedTechnicianId = sanitizeString(formData.get('assignedTechnicianId') as string)
     const assetIds = formData.getAll('assetIds') as string[]
     const formTemplate = formData.get('formTemplate') as string
+    const pmWashRaw = sanitizeString(formData.get('pmWashType') as string)
 
     // Validation
     if (!siteId) {
@@ -103,9 +104,6 @@ export async function createWorkOrder(formData: FormData) {
     }
     if (!scheduledDateStr) {
       throw new Error('Scheduled date is required')
-    }
-    if (assetIds.length === 0) {
-      throw new Error('At least one asset is required')
     }
 
     const scheduledDate = new Date(scheduledDateStr)
@@ -123,6 +121,73 @@ export async function createWorkOrder(formData: FormData) {
         select: { fullName: true, username: true },
       })
       assignedTeamDisplay = tech ? (tech.fullName || tech.username) : null
+    }
+
+    if (jobType === 'INSTALL') {
+      const newAssetsJson = formData.get('newAssets') as string
+      const roomId = sanitizeString(formData.get('roomId') as string)
+
+      if (!newAssetsJson || !roomId) {
+        throw new Error('New assets data and room ID are required for INSTALL')
+      }
+
+      const newAssets: Array<{ qrCode: string; btu: string }> = JSON.parse(newAssetsJson)
+      const validAssets = newAssets.filter((a) => (a.qrCode || '').trim() !== '')
+
+      if (validAssets.length === 0) {
+        throw new Error('At least one asset with QR Code is required')
+      }
+
+      const workOrder = await prisma.workOrder.create({
+        data: {
+          workOrderNumber,
+          siteId,
+          jobType,
+          scheduledDate,
+          assignedTeam: assignedTeamDisplay,
+          status: 'OPEN',
+        },
+      })
+
+      for (const assetData of validAssets) {
+        const qrCode = assetData.qrCode.trim()
+
+        const asset = await prisma.asset.create({
+          data: {
+            qrCode,
+            assetType: 'AIR_CONDITIONER',
+            btu: assetData.btu ? parseInt(assetData.btu, 10) : null,
+            installDate: scheduledDate,
+            roomId,
+            status: 'ACTIVE',
+          },
+        })
+
+        await prisma.jobItem.create({
+          data: {
+            workOrderId: workOrder.id,
+            assetId: asset.id,
+            status: 'PENDING',
+            technicianId: assignedTechnicianId || undefined,
+          },
+        })
+      }
+
+      revalidatePath('/work-orders')
+      revalidatePath('/assets')
+      redirect(`/work-orders/${workOrder.id}`)
+    }
+
+    if (assetIds.length === 0) {
+      throw new Error('At least one asset is required')
+    }
+
+    let adHocPmType: 'MAJOR' | 'MINOR' | undefined
+    if (jobType === 'PM') {
+      if (!pmWashRaw || !['MAJOR', 'MINOR'].includes(pmWashRaw)) {
+        throw new Error('กรุณาเลือกประเภทการล้าง PM (ล้างใหญ่ / ล้างย่อย)')
+      }
+      adHocPmType = pmWashRaw as 'MAJOR' | 'MINOR'
     }
 
     // สร้าง Work Order
@@ -145,6 +210,7 @@ export async function createWorkOrder(formData: FormData) {
         status: 'PENDING',
         technicianId: assignedTechnicianId || undefined,
         checklist: formTemplate ? JSON.stringify({ formType: formTemplate, data: {} }) : null,
+        adHocPmType: jobType === 'PM' ? adHocPmType : undefined,
       })),
     })
 

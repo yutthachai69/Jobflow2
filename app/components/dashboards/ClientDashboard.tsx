@@ -2,29 +2,27 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { getWOStatus } from '@/lib/status-colors'
 import ClientDashboardCharts from './ClientDashboardCharts'
-import DashboardPeriodPicker from './DashboardPeriodPicker'
 import DateTimeDisplay from '@/app/components/DateTimeDisplay'
+import {
+  type ChartGranularity,
+  parseChartDate,
+  toLocalDateKey,
+  clampChartRange,
+  buildWashChartSeries,
+} from '@/lib/client-wash-chart'
 
 interface ClientDashboardProps {
   siteId: string | null
-  year?: number
-  month?: number
+  chartFrom: string
+  chartTo: string
+  chartGranularity: ChartGranularity
 }
 
-function toDateKey(d: Date) {
-  return d.toISOString().slice(0, 10)
-}
+/** เป้าหมายจำนวนเครื่องต่อสัปดาห์ (ล้างใหญ่ / ล้างย่อย) — บนกราฟคำนวณตามจำนวนวันในช่วง (× วัน ÷ 7) */
+const CLIENT_WEEKLY_WASH_TARGET_MAJOR = 5
+const CLIENT_WEEKLY_WASH_TARGET_MINOR = 22.5
 
-function toMonthKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
-const MONTH_LABELS: Record<string, string> = {
-  '1': 'ม.ค.', '2': 'ก.พ.', '3': 'มี.ค.', '4': 'เม.ย.', '5': 'พ.ค.', '6': 'มิ.ย.',
-  '7': 'ก.ค.', '8': 'ส.ค.', '9': 'ก.ย.', '10': 'ต.ค.', '11': 'พ.ย.', '12': 'ธ.ค.',
-}
-
-export default async function ClientDashboard({ siteId, year, month }: ClientDashboardProps) {
+export default async function ClientDashboard({ siteId, chartFrom, chartTo, chartGranularity }: ClientDashboardProps) {
   if (!siteId) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
@@ -66,7 +64,11 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
       workOrders: {
         include: {
           jobItems: {
-            include: { asset: true, technician: true },
+            include: {
+              asset: true,
+              technician: true,
+              pmSchedule: { select: { pmType: true } },
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -89,8 +91,17 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
   }
 
   const now = new Date()
-  const selectedYear = year ?? now.getFullYear()
-  const selectedMonth = month ?? now.getMonth() + 1
+  const parsedFrom = parseChartDate(chartFrom) ?? new Date(now.getFullYear(), now.getMonth(), 1)
+  const parsedTo = parseChartDate(chartTo) ?? now
+  const { from: rangeFrom, to: rangeTo, wasClamped: rangeWasClamped } = clampChartRange(parsedFrom, parsedTo)
+
+  const granLabels: Record<ChartGranularity, string> = {
+    day: 'รายวัน',
+    week: 'รายสัปดาห์',
+    month: 'รายเดือน',
+    year: 'รายปี',
+  }
+  const filterSummary = `${rangeFrom.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} – ${rangeTo.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} • ${granLabels[chartGranularity]}`
 
   const allAssets = site.buildings.flatMap((b) =>
     b.floors.flatMap((f) => f.rooms.flatMap((r) => r.assets))
@@ -107,6 +118,10 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
   // Exhaust ให้นับจาก assetType = EXHAUST (ไม่ปนกับ machineType ของแอร์)
   const exhaustCount = allAssets.filter(a => (a as any).assetType === 'EXHAUST').length
 
+  /** ขอบเขตนับเครื่องสำหรับวางแผน/อธิบายเป้า: แอร์ = ล้างใหญ่+ล้างย่อย, Exhaust = ล้างย่อยอย่างเดียว (ไม่มีล้างใหญ่) */
+  const washMajorScopeCount = airAssets.length
+  const washMinorScopeCount = airAssets.length + exhaustCount
+
   const activeWorkOrders = site.workOrders.filter((wo) => wo.status === 'OPEN' || wo.status === 'IN_PROGRESS')
   const inProgressJobItems = allAssets.flatMap((a) =>
     a.jobItems.filter((ji) => ji.status === 'IN_PROGRESS' || ji.status === 'PENDING')
@@ -115,77 +130,52 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
     (wo) => wo.status === 'COMPLETED' && new Date(wo.updatedAt).toDateString() === new Date().toDateString()
   ).length
 
-  // สร้างข้อมูลกราฟรายวัน (ทั้งเดือนที่เลือก)
-  const startOfMonth = new Date(selectedYear, selectedMonth - 1, 1)
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
-  const dailyMap: Record<string, { PM: number; CM: number; INSTALL: number }> = {}
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(selectedYear, selectedMonth - 1, day)
-    const k = toDateKey(d)
-    dailyMap[k] = { PM: 0, CM: 0, INSTALL: 0 }
-  }
-  for (const wo of site.workOrders) {
-    const d = new Date(wo.scheduledDate)
-    if (d.getFullYear() !== selectedYear || d.getMonth() + 1 !== selectedMonth) continue
-    const k = toDateKey(d)
-    if (!dailyMap[k]) continue
-    const jt = wo.jobType as 'PM' | 'CM' | 'INSTALL'
-    if (jt === 'PM' || jt === 'CM' || jt === 'INSTALL') dailyMap[k][jt] += 1
-  }
-  const dailyData = Object.entries(dailyMap)
-    .map(([date, v]) => ({
-      date: new Date(date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }),
-      PM: v.PM,
-      CM: v.CM,
-      INSTALL: v.INSTALL,
-      รวม: v.PM + v.CM + v.INSTALL,
-    }))
+  // กราฟการล้าง: นับ JobItem PM ที่เสร็จ (DONE) — ประเภทจากแผน PM หรือใบมือ (adHocPmType)
+  const washDateForJobItem = (wo: { scheduledDate: Date }, ji: { endTime: Date | null; startTime: Date | null }) =>
+    new Date(ji.endTime ?? ji.startTime ?? wo.scheduledDate)
 
-  // สร้างข้อมูลกราฟรายเดือน (ทั้งปีที่เลือก)
-  const monthMap: Record<string, { PM: number; CM: number; INSTALL: number }> = {}
-  for (let m = 0; m < 12; m++) {
-    const d = new Date(selectedYear, m, 1)
-    const k = toMonthKey(d)
-    monthMap[k] = { PM: 0, CM: 0, INSTALL: 0 }
-  }
+  const washByDay = new Map<string, { majorWash: number; minorWashAir: number; minorWashExhaust: number }>()
   for (const wo of site.workOrders) {
-    const d = new Date(wo.scheduledDate)
-    if (d.getFullYear() !== selectedYear) continue
-    const k = toMonthKey(d)
-    if (!monthMap[k]) continue
-    const jt = wo.jobType as 'PM' | 'CM' | 'INSTALL'
-    if (jt === 'PM' || jt === 'CM' || jt === 'INSTALL') monthMap[k][jt] += 1
-  }
-  const monthlyData = Object.entries(monthMap)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => {
-      const [, m] = k.split('-')
-      return {
-        เดือน: MONTH_LABELS[m] || m,
-        PM: v.PM,
-        CM: v.CM,
-        INSTALL: v.INSTALL,
-        รวม: v.PM + v.CM + v.INSTALL,
+    if (wo.jobType !== 'PM') continue
+    for (const ji of wo.jobItems) {
+      if (ji.status !== 'DONE') continue
+      const pt = ji.pmSchedule?.pmType ?? ji.adHocPmType
+      if (pt !== 'MAJOR' && pt !== 'MINOR') continue
+      const d = washDateForJobItem(wo, ji)
+      const k = toLocalDateKey(d)
+      const cell = washByDay.get(k) ?? { majorWash: 0, minorWashAir: 0, minorWashExhaust: 0 }
+      const assetType = (ji.asset as { assetType?: string }).assetType
+      if (pt === 'MAJOR') {
+        cell.majorWash += 1
+      } else {
+        if (assetType === 'EXHAUST') cell.minorWashExhaust += 1
+        else cell.minorWashAir += 1
       }
-    })
+      washByDay.set(k, cell)
+    }
+  }
+
+  const { major: majorSeries, minor: minorSeries } = buildWashChartSeries(
+    washByDay,
+    rangeFrom,
+    rangeTo,
+    chartGranularity,
+    CLIENT_WEEKLY_WASH_TARGET_MAJOR,
+    CLIENT_WEEKLY_WASH_TARGET_MINOR
+  )
 
   return (
     <div className="p-4 md:p-8">
       <div className="w-full max-w-full">
-        {/* Welcome + สรุปสั้นๆ ให้ไม่งง + ตัวเลือกช่วงเดือน/ปี */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-app-heading mb-2">แดชบอร์ด</h1>
-            <p className="text-app-muted mb-1">
-              {site.name} • {site.client.name}
-            </p>
-            <p className="text-sm text-app-muted max-w-2xl">
-              ภาพรวมงานล้างแอร์ บำรุงรักษา และซ่อมแซมในสถานที่ของคุณ — ดูสถานะล่าสุด สถิติ และงานที่กำลังดำเนินการได้ด้านล่าง
-            </p>
-          </div>
-          <div className="flex items-center justify-end">
-            <DashboardPeriodPicker />
-          </div>
+        {/* หัวแดชบอร์ด — ตัวกรอกกราฟอยู่ใน ClientDashboardCharts.tsx (use client) */}
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-app-heading mb-2">แดชบอร์ด</h1>
+          <p className="text-app-muted mb-1">
+            {site.name} • {site.client.name}
+          </p>
+          <p className="text-sm text-app-muted max-w-2xl">
+            ภาพรวมงานล้างแอร์ บำรุงรักษา และซ่อมแซมในสถานที่ของคุณ — ดูสถานะล่าสุด สถิติ และงานที่กำลังดำเนินการได้ด้านล่าง
+          </p>
         </div>
 
         {/* ปฏิทินและเวลา */}
@@ -246,13 +236,20 @@ export default async function ClientDashboard({ siteId, year, month }: ClientDas
           ))}
         </div>
 
-        {/* กราฟ */}
+        {/* กราฟการล้าง (ตัวกรอง URL อยู่ใน ClientDashboardCharts.tsx) */}
         <div className="mb-8">
           <ClientDashboardCharts
-            dailyData={dailyData}
-            monthlyData={monthlyData}
+            majorSeries={majorSeries}
+            minorSeries={minorSeries}
+            weeklyWashTargetMajor={CLIENT_WEEKLY_WASH_TARGET_MAJOR}
+            weeklyWashTargetMinor={CLIENT_WEEKLY_WASH_TARGET_MINOR}
             siteName={site.name}
             clientName={site.client.name}
+            filterSummary={filterSummary}
+            granularity={chartGranularity}
+            rangeWasClamped={rangeWasClamped}
+            washMajorScopeCount={washMajorScopeCount}
+            washMinorScopeCount={washMinorScopeCount}
           />
         </div>
 

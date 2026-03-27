@@ -5,7 +5,13 @@ import QRCodeDisplay from "./QRCodeDisplay";
 import DeleteAssetButton from "./DeleteButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import JobHistoryPanel from "./JobHistoryPanel";
+import StartPmJobButton from "./StartPmJobButton";
 import type { Metadata } from "next";
+import {
+  effectiveDueDate,
+  isPmScheduleDueForFieldStart,
+  sortSchedulesByDueAsc,
+} from "@/lib/pm-due";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -106,16 +112,22 @@ export default async function AssetDetailPage({ params }: Props) {
             },
             technician: true,
             photos: true,
+            pmSchedule: { select: { pmType: true } },
           },
           orderBy: { startTime: "desc" },
         },
-        // pmSchedules ไม่ include ชั่วคราว — ถ้า production ยังไม่มีคอลัมน์ PMSchedule.dueDate จะ error (P2022)
+        pmSchedules: {
+          orderBy: [{ targetYear: "asc" }, { roundIndex: "asc" }],
+          include: {
+            jobItem: { select: { id: true, status: true } },
+          },
+        },
       },
     });
 
     if (!assetWithJobs) return <AssetMessage reason="no-asset" />;
 
-    const a = { ...assetWithJobs, pmSchedules: [] as any[] };
+    const a = assetWithJobs;
 
     const room = a.room;
     const floor = room?.floor;
@@ -139,9 +151,33 @@ export default async function AssetDetailPage({ params }: Props) {
     (ji: any) => ji.status === "PENDING" || ji.status === "IN_PROGRESS"
   );
 
-  const pmDoneCount = (a.pmSchedules as any[]).filter(
-    (s: any) => s.jobItem?.status === "DONE"
-  ).length;
+  const pmSchedules = a.pmSchedules;
+  const pmDoneCount = pmSchedules.filter((s) => s.jobItem?.status === "DONE").length;
+
+  const eligibleFieldPm = sortSchedulesByDueAsc(
+    pmSchedules.filter(
+      (s) =>
+        s.status === "PLANNED" &&
+        s.jobItem == null &&
+        isPmScheduleDueForFieldStart({
+          id: s.id,
+          dueDate: s.dueDate,
+          targetYear: s.targetYear,
+          targetMonth: s.targetMonth,
+          status: s.status,
+        })
+    )
+  );
+  const canStartPmFromField =
+    (user.role === "TECHNICIAN" || user.role === "ADMIN") && eligibleFieldPm.length > 0;
+  const nextEligible = eligibleFieldPm[0];
+  const nextPmHint = nextEligible
+    ? `รอบที่ ${nextEligible.roundIndex} — ${
+        nextEligible.pmType === "MAJOR" ? "ล้างใหญ่" : "ล้างย่อย"
+      } · กำหนด ${effectiveDueDate(nextEligible).toLocaleDateString("th-TH")}`
+    : undefined;
+  const pmPlanYear = pmSchedules[0]?.targetYear ?? new Date().getFullYear();
+  const pmTotalRounds = pmSchedules.length;
 
   return (
     <div className="min-h-screen bg-app-bg p-4 md:p-8 w-full max-w-full font-sans">
@@ -231,30 +267,54 @@ export default async function AssetDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* PM Progress */}
-      {a.assetType === "AIR_CONDITIONER" && a.pmSchedules.length > 0 && (
+      {/* PM Progress — แอร์ 6 รอบ / พัดลมดูดอากาศ 4 รอบ (ล้างย่อย) */}
+      {(a.assetType === "AIR_CONDITIONER" || a.assetType === "EXHAUST") &&
+        pmSchedules.length > 0 && (
         <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-xl font-bold text-app-heading flex items-center gap-2">
-                <span>🗓️</span> แผนบำรุงรักษาประจำปี {new Date().getFullYear()}
+                <span>🗓️</span> แผนบำรุงรักษาประจำปี {pmPlanYear}
               </h2>
-              <p className="text-sm text-app-muted">โควต้าล้างใหญ่ 2 ครั้ง และล้างย่อย 4 ครั้ง</p>
+              <p className="text-sm text-app-muted">
+                {a.assetType === "AIR_CONDITIONER"
+                  ? "ล้างใหญ่ 2 ครั้ง + ล้างย่อย 4 ครั้ง ต่อเครื่องต่อปี"
+                  : "ล้างย่อย 4 ครั้งต่อปี (พัดลมดูดอากาศ)"}
+              </p>
             </div>
             <div className="text-right">
               <span className="text-2xl font-black text-blue-600">
                 {pmDoneCount}
-                <span className="text-sm text-app-muted font-normal ml-1">/ 6 ครั้งเสร็จสิ้น</span>
+                <span className="text-sm text-app-muted font-normal ml-1">
+                  / {pmTotalRounds} ครั้งเสร็จสิ้น
+                </span>
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {(a.pmSchedules as any[]).map((schedule: any) => {
+          <div
+            className={`grid gap-4 ${
+              pmTotalRounds <= 4
+                ? "grid-cols-2 sm:grid-cols-4"
+                : "grid-cols-2 sm:grid-cols-3 md:grid-cols-6"
+            }`}
+          >
+            {pmSchedules.map((schedule) => {
               const isDone = schedule.jobItem?.status === "DONE";
               const isInProgress =
                 schedule.jobItem?.status === "IN_PROGRESS" ||
                 schedule.jobItem?.status === "PENDING";
+              const dueLabel = effectiveDueDate(schedule).toLocaleDateString("th-TH");
+              const isDueNow =
+                schedule.status === "PLANNED" &&
+                schedule.jobItem == null &&
+                isPmScheduleDueForFieldStart({
+                  id: schedule.id,
+                  dueDate: schedule.dueDate,
+                  targetYear: schedule.targetYear,
+                  targetMonth: schedule.targetMonth,
+                  status: schedule.status,
+                });
 
               return (
                 <div
@@ -264,7 +324,9 @@ export default async function AssetDetailPage({ params }: Props) {
                       ? "bg-green-50 border-green-500 text-green-700 shadow-sm"
                       : isInProgress
                       ? "bg-blue-50 border-blue-400 text-blue-700 animate-pulse"
-                      : "bg-app-section border-app text-app-muted opacity-60"
+                      : isDueNow
+                      ? "bg-amber-50 border-amber-400 text-amber-900"
+                      : "bg-app-section border-app text-app-muted opacity-80"
                   }`}
                 >
                   <div className="text-[10px] uppercase font-black opacity-60 mb-1">
@@ -274,17 +336,30 @@ export default async function AssetDetailPage({ params }: Props) {
                     {schedule.pmType === "MAJOR" ? "ล้างใหญ่" : "ล้างย่อย"}
                   </div>
                   <div className="text-[10px] mt-1">
-                    {isDone ? "✅ เสร็จเรียบร้อย" : `📅 เดือน ${schedule.targetMonth}`}
+                    {isDone
+                      ? "✅ เสร็จเรียบร้อย"
+                      : isInProgress
+                      ? "🔧 มีใบงานแล้ว"
+                      : isDueNow
+                      ? "⏰ ถึงกำหนด"
+                      : `📅 เดือน ${schedule.targetMonth}`}
                   </div>
+                  <div className="text-[9px] text-app-muted mt-0.5">ครบกำหนด {dueLabel}</div>
                   <div
                     className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
-                      isDone ? "bg-green-500" : isInProgress ? "bg-blue-500" : "bg-gray-300"
+                      isDone ? "bg-green-500" : isInProgress ? "bg-blue-500" : isDueNow ? "bg-amber-500" : "bg-gray-300"
                     }`}
                   />
                 </div>
               );
             })}
           </div>
+
+          {canStartPmFromField && (
+            <div className="mt-6">
+              <StartPmJobButton assetId={a.id} hint={nextPmHint} />
+            </div>
+          )}
         </div>
       )}
 
@@ -358,7 +433,12 @@ export default async function AssetDetailPage({ params }: Props) {
         </span>
       </h2>
 
-      <JobHistoryPanel jobItems={a.jobItems} />
+      <JobHistoryPanel
+        jobItems={a.jobItems.map((ji) => ({
+          ...ji,
+          pmType: ji.pmSchedule?.pmType ?? ji.adHocPmType ?? null,
+        }))}
+      />
     </div>
   );
   } catch (e) {

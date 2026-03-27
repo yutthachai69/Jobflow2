@@ -1,17 +1,4 @@
--- CreateTable
-CREATE TABLE "User" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "username" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
-    "fullName" TEXT,
-    "role" TEXT NOT NULL DEFAULT 'TECHNICIAN',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "clientId" TEXT,
-    CONSTRAINT "User_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-
--- CreateTable
+-- CreateTable (Client ก่อน User เพราะ User มี FK ไป Client)
 CREATE TABLE "Client" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
@@ -80,6 +67,19 @@ CREATE TABLE "WorkOrder" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "WorkOrder_siteId_fkey" FOREIGN KEY ("siteId") REFERENCES "Site" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable (หลัง Client เพราะมี FK ไป Client; ก่อน JobItem เพราะ JobItem มี FK มาที่ User)
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "fullName" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'TECHNICIAN',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "clientId" TEXT,
+    CONSTRAINT "User_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable

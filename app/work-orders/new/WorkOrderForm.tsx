@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createWorkOrder } from '@/app/actions'
+import { createWorkOrder } from '@/app/actions/work-orders'
 import Tooltip from '@/app/components/Tooltip'
 import toast from 'react-hot-toast'
 
@@ -90,6 +90,7 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [jobType, setJobType] = useState<string>('')
+  const [pmWashType, setPmWashType] = useState<'MAJOR' | 'MINOR' | ''>('')
   const [formTemplate, setFormTemplate] = useState<string>('')
   const [assignedTechnicianId, setAssignedTechnicianId] = useState<string>('')
   const [newAssets, setNewAssets] = useState<NewAssetEntry[]>([{ qrCode: '', btu: '' }])
@@ -290,6 +291,10 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
       newErrors.formTemplate = 'กรุณาเลือกแบบฟอร์มสำหรับงาน PM'
     }
 
+    if (jobType === 'PM' && !pmWashType) {
+      newErrors.pmWashType = 'กรุณาเลือกประเภทการล้าง (ล้างใหญ่ / ล้างย่อย) เพื่อให้ตรงกับกราฟสถิติ'
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       setIsSubmitting(false)
@@ -302,6 +307,9 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
     setErrors({})
     formData.set('siteId', selectedSiteId)
     formData.set('formTemplate', formTemplate)
+    if (jobType === 'PM' && pmWashType) {
+      formData.set('pmWashType', pmWashType)
+    }
     // ส่ง assignedTechnicianId จาก state เสมอ (ไม่พึ่งค่าจาก DOM ของ select)
     formData.set('assignedTechnicianId', assignedTechnicianId ?? '')
 
@@ -457,6 +465,10 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
               const val = e.target.value
               setJobType(val)
               if (errors.jobType) setErrors({ ...errors, jobType: '' })
+              if (val !== 'PM') {
+                setPmWashType('')
+                if (errors.pmWashType) setErrors({ ...errors, pmWashType: '' })
+              }
               // Reset newAssets when switching to INSTALL
               if (val === 'INSTALL') {
                 setNewAssets([{ qrCode: '', btu: '' }])
@@ -526,6 +538,50 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
             {!errors.formTemplate && (
               <p className="mt-2 text-xs text-gray-500">
                 เอกสารที่ช่างต้องกรอกและให้ลูกค้าเซ็นรับหลังทำงานเสร็จ
+              </p>
+            )}
+          </div>
+        )}
+
+        {jobType === 'PM' && (
+          <div data-error={errors.pmWashType ? 'true' : undefined}>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <span className="flex items-center gap-2">
+                ประเภทการล้าง PM <span className="text-red-500">*</span>
+                <Tooltip content="ล้างใหญ่ / ล้างย่อย — ใช้นับในกราฟสถิติการล้างของลูกค้าเมื่องาน PM เสร็จสิ้น">
+                  <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
+                </Tooltip>
+              </span>
+            </label>
+            <select
+              name="pmWashType"
+              aria-label="เลือกประเภทการล้าง PM"
+              aria-required="true"
+              aria-invalid={errors.pmWashType ? 'true' : 'false'}
+              value={pmWashType}
+              onChange={(e) => {
+                const v = e.target.value as 'MAJOR' | 'MINOR' | ''
+                setPmWashType(v)
+                if (errors.pmWashType) setErrors({ ...errors, pmWashType: '' })
+              }}
+              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 ${errors.pmWashType ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
+                }`}
+            >
+              <option value="">-- เลือกประเภทล้าง --</option>
+              <option value="MAJOR">🧹 ล้างใหญ่</option>
+              <option value="MINOR">💧 ล้างย่อย</option>
+            </select>
+            {errors.pmWashType && (
+              <div className="mt-2 flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert">
+                <span>⚠️</span>
+                <div>
+                  <p className="font-semibold">{errors.pmWashType}</p>
+                </div>
+              </div>
+            )}
+            {!errors.pmWashType && (
+              <p className="mt-2 text-xs text-gray-500">
+                ต้องตรงกับงานจริงเพื่อให้กราฟล้างใหญ่/ล้างย่อยถูกต้อง
               </p>
             )}
           </div>

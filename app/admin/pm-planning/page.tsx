@@ -83,7 +83,7 @@ export default function PMPlanningPage() {
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-app-heading">วางแผนบำรุงรักษา (PM Planning)</h1>
-                    <p className="text-app-muted">จัดสรรโควต้าล้างใหญ่ 2 ครั้ง ล้างย่อย 4 ครั้ง ให้กับแอร์แต่ละเครื่องล่วงหน้าทั้งปี</p>
+                    <p className="text-app-muted">จัดสรรโควต้า PM ให้แอร์แต่ละเครื่องล่วงหน้าทั้งปี</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -113,13 +113,13 @@ export default function PMPlanningPage() {
             <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-xl font-bold">เริ่มหน้างาน PM ของเดือนนี้</h2>
-                    <p className="text-blue-100 text-sm mt-1 opacity-90">ระบบจะตรวจสอบว่าเดือนนี้มีเครื่องไหนถึงกำหนดล้าง แล้วรวบรวมเป็นใบสั่งงานให้ช่างทันที</p>
+                    <p className="text-blue-100 text-sm mt-1 opacity-90">ระบบจะตรวจสอบว่าเดือนนี้มีเครื่องไหนถึงกำหนด PM แล้วรวบรวมเป็นใบสั่งงานให้ช่างทันที</p>
                 </div>
                 <Link
                     href="/admin/pm-planning/dispatch"
                     className="bg-white text-blue-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-all shadow-md whitespace-nowrap"
                 >
-                    ตรวจสอบรอบล้างเดือนนี้ →
+                    ตรวจสอบรอบ PM เดือนนี้ →
                 </Link>
             </div>
 
@@ -185,14 +185,6 @@ export default function PMPlanningPage() {
                                             <span className="text-[10px] uppercase font-bold text-app-muted tracking-wider">โควต้า PM ทั้งหมด</span>
                                             <span className="text-lg font-black text-app-heading">{(site.acCount ?? 0) * 6} <span className="text-xs font-normal">รายการ</span></span>
                                         </div>
-                                        <div className="flex flex-col border-l border-app pl-8">
-                                            <span className="text-[10px] uppercase font-bold text-app-muted tracking-wider">ล้างใหญ่ (Major)</span>
-                                            <span className="text-lg font-black text-blue-600">{(site.acCount ?? 0) * 2} <span className="text-xs font-normal text-app-muted">ครั้ง</span></span>
-                                        </div>
-                                        <div className="flex flex-col border-l border-app pl-8">
-                                            <span className="text-[10px] uppercase font-bold text-app-muted tracking-wider">ล้างย่อย (Minor)</span>
-                                            <span className="text-lg font-black text-orange-500">{(site.acCount ?? 0) * 4} <span className="text-xs font-normal text-app-muted">ครั้ง</span></span>
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -209,7 +201,7 @@ export default function PMPlanningPage() {
                 title={modal.type === 'generate' ? 'สร้างแผน PM รายปี' : 'ลบแผนงาน PM'}
                 description={
                     modal.type === 'generate'
-                        ? `ต้องการสร้างแผน PM ปี ${year} สำหรับ "${modal.siteName}" ใช่หรือไม่? ระบบจะรันตารางล้างแอร์ 6 ครั้ง (ย่อย 4, ใหญ่ 2) ให้แอร์ทั้งหมดโดยอัตโนมัติ`
+                        ? `ต้องการสร้างแผน PM ปี ${year} สำหรับ "${modal.siteName}" ใช่หรือไม่? ระบบจะสร้างตาราง PM รายปีให้แอร์ทั้งหมดโดยอัตโนมัติ`
                         : `ต้องการลบแผนงาน PM ปี ${year} ของ "${modal.siteName}" ใช่หรือไม่? ข้อมูลตารางที่ยังไม่ออกใบงานจะถูกลบทั้งหมด`
                 }
                 icon={modal.type === 'generate' ? '📅' : '🗑️'}

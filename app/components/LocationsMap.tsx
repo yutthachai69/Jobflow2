@@ -40,12 +40,18 @@ export default function LocationsMap({ markers }: Props) {
     }
 
     return (
-        <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg font-bold text-app-heading">🗺️ แผนที่สถานที่ทั้งหมด</span>
-                <span className="text-sm text-app-muted">({markers.length} สถานที่)</span>
+        <div className="mb-6 sm:mb-8 min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-3">
+                <span className="text-base sm:text-lg font-bold text-app-heading">🗺️ แผนที่สถานที่ทั้งหมด</span>
+                <span className="text-xs sm:text-sm text-app-muted">({markers.length} สถานที่)</span>
             </div>
-            <GoogleMap markers={markers} height="400px" onMarkerClick={handleMarkerClick} />
+            <div className="w-full min-w-0 rounded-xl overflow-hidden border border-app">
+                <GoogleMap
+                    markers={markers}
+                    height="clamp(220px, 50vh, 400px)"
+                    onMarkerClick={handleMarkerClick}
+                />
+            </div>
         </div>
     )
 }

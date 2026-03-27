@@ -4,5 +4,5 @@ CREATE TABLE "ContactInfo" (
     "email" TEXT NOT NULL DEFAULT 'support@airservice.com',
     "phone" TEXT NOT NULL DEFAULT '02-XXX-XXXX',
     "hours" TEXT NOT NULL DEFAULT 'จันทร์-ศุกร์ 08:00-17:00 น.',
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );

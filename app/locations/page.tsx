@@ -63,14 +63,22 @@ export default async function LocationsPage() {
       }))
   )
 
+  const actionBtn =
+    "inline-flex items-center justify-center rounded-lg font-medium text-sm whitespace-nowrap shrink-0";
+  const actionBtnPrimary = `${actionBtn} bg-blue-600 text-white px-3 py-2 hover:bg-blue-700`;
+  const actionBtnSuccess = `${actionBtn} bg-green-600 text-white px-3 py-2 hover:bg-green-700`;
+  const linkMuted = "text-blue-600 hover:underline text-xs sm:text-sm break-words";
+
   return (
-    <div className="min-h-screen bg-app-bg p-8">
-      <div className="w-full max-w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-app-heading">จัดการสถานที่</h1>
+    <div className="min-h-screen bg-app-bg p-3 sm:p-4 md:p-8 overflow-x-hidden">
+      <div className="w-full max-w-full min-w-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-app-heading pr-1">
+            จัดการสถานที่
+          </h1>
           <Link
             href="/locations/clients/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+            className={`${actionBtnPrimary} w-full sm:w-auto`}
           >
             + เพิ่มลูกค้าใหม่
           </Link>
@@ -95,36 +103,40 @@ export default async function LocationsPage() {
             </div>
           ) : (
             clients.map((client) => (
-              <div key={client.id} className="bg-app-card rounded-lg shadow border border-app">
+              <div key={client.id} className="bg-app-card rounded-lg shadow border border-app min-w-0">
                 {/* Client Header */}
-                <div className="p-6 border-b border-app bg-app-section">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-2xl font-bold text-app-heading mb-2">
+                <div className="p-4 sm:p-6 border-b border-app bg-app-section">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-xl sm:text-2xl font-bold text-app-heading mb-2 break-words">
                         {client.name}
                       </h2>
                       {client.contactInfo && (
-                        <p className="text-app-body">{client.contactInfo}</p>
+                        <p className="text-app-body text-sm sm:text-base break-words">
+                          {client.contactInfo}
+                        </p>
                       )}
                       <p className="text-sm text-app-muted mt-1">
                         {client._count.sites} สถานที่
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap gap-2 w-full lg:w-auto lg:max-w-none lg:justify-end">
                       {user.role === 'ADMIN' && (
                         <>
                           <Link
                             href={`/locations/clients/${client.id}/edit`}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+                            className={`${actionBtnPrimary} flex-1 min-[380px]:flex-none sm:flex-none`}
                           >
                             แก้ไข
                           </Link>
-                          <DeleteClientButton clientId={client.id} clientName={client.name} />
+                          <div className="flex-1 min-[380px]:flex-none sm:flex-none min-w-0 [&_button]:w-full [&_button]:justify-center">
+                            <DeleteClientButton clientId={client.id} clientName={client.name} />
+                          </div>
                         </>
                       )}
                       <Link
                         href={`/locations/sites/new?clientId=${client.id}`}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+                        className={`${actionBtnSuccess} w-full sm:w-auto lg:flex-none`}
                       >
                         + เพิ่มสถานที่
                       </Link>
@@ -133,7 +145,7 @@ export default async function LocationsPage() {
                 </div>
 
                 {/* Sites */}
-                <div className="p-6">
+                <div className="p-3 sm:p-6">
                   {client.sites.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <p>ยังไม่มีสถานที่</p>
@@ -147,32 +159,40 @@ export default async function LocationsPage() {
                   ) : (
                     <div className="space-y-6">
                       {client.sites.map((site) => (
-                        <div key={site.id} id={`site-${site.id}`} className="border border-app rounded-lg p-4 bg-app-bg/50 transition-all duration-500">
+                        <div
+                          key={site.id}
+                          id={`site-${site.id}`}
+                          className="border border-app rounded-lg p-3 sm:p-4 bg-app-bg/50 transition-all duration-500 min-w-0"
+                        >
                           {/* Site Header */}
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <h3 className="text-lg font-bold text-app-heading mb-1">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-4">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-base sm:text-lg font-bold text-app-heading mb-1 break-words">
                                 {site.name}
                               </h3>
                               {site.address && (
-                                <p className="text-sm text-app-muted">{site.address}</p>
+                                <p className="text-xs sm:text-sm text-app-muted break-words">
+                                  {site.address}
+                                </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
                               {user.role === 'ADMIN' && (
                                 <>
                                   <Link
                                     href={`/locations/sites/${site.id}/edit`}
-                                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm font-medium"
+                                    className={`${actionBtnPrimary} px-3 py-1.5 flex-1 min-[360px]:flex-none`}
                                   >
                                     แก้ไข
                                   </Link>
-                                  <DeleteSiteButton siteId={site.id} siteName={site.name} />
+                                  <div className="flex-1 min-[360px]:flex-none min-w-0 [&_button]:w-full [&_button]:justify-center">
+                                    <DeleteSiteButton siteId={site.id} siteName={site.name} />
+                                  </div>
                                 </>
                               )}
                               <Link
                                 href={`/locations/buildings/new?siteId=${site.id}`}
-                                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm font-medium"
+                                className={`${actionBtnSuccess} px-3 py-1.5 w-full sm:w-auto`}
                               >
                                 + เพิ่มอาคาร
                               </Link>
@@ -193,17 +213,17 @@ export default async function LocationsPage() {
                           ) : (
                             <div className="space-y-4">
                               {site.buildings.map((building) => (
-                                <div key={building.id} className="bg-app-card rounded p-3 border border-app">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-semibold text-app-heading">
+                                <div key={building.id} className="bg-app-card rounded p-2 sm:p-3 border border-app min-w-0">
+                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 mb-2">
+                                    <h4 className="font-semibold text-app-heading text-sm sm:text-base break-words min-w-0 pr-1">
                                       🏛️ {building.name}
                                     </h4>
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full sm:w-auto sm:justify-end">
                                       {user.role === 'ADMIN' && (
                                         <>
                                           <Link
                                             href={`/locations/buildings/${building.id}/edit`}
-                                            className="text-blue-600 hover:text-blue-800 hover:underline text-xs sm:text-sm"
+                                            className={linkMuted}
                                           >
                                             แก้ไข
                                           </Link>
@@ -212,7 +232,7 @@ export default async function LocationsPage() {
                                       )}
                                       <Link
                                         href={`/locations/floors/new?buildingId=${building.id}`}
-                                        className="text-blue-600 hover:underline text-xs sm:text-sm"
+                                        className={linkMuted}
                                       >
                                         + เพิ่มชั้น
                                       </Link>
@@ -225,17 +245,17 @@ export default async function LocationsPage() {
                                       ยังไม่มีชั้น
                                     </div>
                                   ) : (
-                                    <div className="space-y-2 pl-4">
+                                    <div className="space-y-2 pl-2 sm:pl-4">
                                       {building.floors.map((floor) => (
-                                        <div key={floor.id} className="border-l-2 border-app pl-3">
-                                          <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                              <div className="flex items-center gap-2 mb-1">
-                                                <h5 className="font-medium text-app-body text-sm">
+                                        <div key={floor.id} className="border-l-2 border-app pl-2 sm:pl-3 min-w-0">
+                                          <div className="flex flex-col gap-1 min-w-0">
+                                            <div className="min-w-0">
+                                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                                                <h5 className="font-medium text-app-body text-sm break-words">
                                                   🏢 {floor.name}
                                                 </h5>
                                                 {user.role === 'ADMIN' && (
-                                                  <>
+                                                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 shrink-0">
                                                     <Link
                                                       href={`/locations/floors/${floor.id}/edit`}
                                                       className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
@@ -243,7 +263,7 @@ export default async function LocationsPage() {
                                                       แก้ไข
                                                     </Link>
                                                     <DeleteFloorButton floorId={floor.id} floorName={floor.name} />
-                                                  </>
+                                                  </span>
                                                 )}
                                               </div>
                                               {/* Rooms */}
@@ -258,18 +278,18 @@ export default async function LocationsPage() {
                                                   </Link>
                                                 </div>
                                               ) : (
-                                                <div className="space-y-1">
+                                                <div className="space-y-2">
                                                   {floor.rooms.map((room) => (
                                                     <div
                                                       key={room.id}
-                                                      className="text-xs text-app-muted flex justify-between items-center"
+                                                      className="text-xs text-app-muted flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 py-1.5 border-b border-app/40 last:border-0"
                                                     >
-                                                      <div className="flex items-center gap-2">
-                                                        <span>
+                                                      <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                        <span className="break-words">
                                                           🚪 {room.name} ({room._count.assets} แอร์)
                                                         </span>
                                                         {user.role === 'ADMIN' && (
-                                                          <>
+                                                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 shrink-0">
                                                             <Link
                                                               href={`/locations/rooms/${room.id}/edit`}
                                                               className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
@@ -277,12 +297,12 @@ export default async function LocationsPage() {
                                                               แก้ไข
                                                             </Link>
                                                             <DeleteRoomButton roomId={room.id} roomName={room.name} />
-                                                          </>
+                                                          </span>
                                                         )}
                                                       </div>
                                                       <Link
                                                         href={`/locations/rooms/new?floorId=${floor.id}`}
-                                                        className="text-blue-600 hover:underline ml-2"
+                                                        className="text-blue-600 hover:underline shrink-0 text-xs sm:self-center"
                                                       >
                                                         + เพิ่มห้อง
                                                       </Link>

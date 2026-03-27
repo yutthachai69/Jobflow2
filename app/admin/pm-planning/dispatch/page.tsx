@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Breadcrumbs from '@/app/components/Breadcrumbs';
-import { getDuePMSchedules, createWorkOrderFromPM, dispatchDuePMSchedules } from '@/app/actions/pm';
+import { getDuePMSchedules, createWorkOrderFromPM } from '@/app/actions/pm';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -44,7 +44,7 @@ export default function PMDispatchBoard() {
 
     const handleCreateWorkOrder = async () => {
         if (selectedIds.length === 0) {
-            toast.error("กรุณาเลือกรายการแอร์");
+            toast.error("กรุณาเลือกรายการอย่างน้อย 1 รายการ");
             return;
         }
 
@@ -71,23 +71,6 @@ export default function PMDispatchBoard() {
         }
     };
 
-    const handleAutoDispatch = async () => {
-        setIsProcessing(true);
-        try {
-            const res = await dispatchDuePMSchedules();
-            if (res.created === 0) {
-                toast.success('ไม่มีรอบที่ถึงกำหนดใหม่สำหรับ auto-dispatch');
-            } else {
-                toast.success(`Auto-dispatch สำเร็จ: สร้างใบงาน ${res.workOrders} ใบ (${res.created} รอบ)`);
-                router.push('/work-orders');
-            }
-        } catch (error: any) {
-            toast.error(error.message || 'Auto-dispatch ล้มเหลว');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
     return (
         <div className="p-4 md:p-8">
             <Breadcrumbs
@@ -101,7 +84,9 @@ export default function PMDispatchBoard() {
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-app-heading">ออกใบงาน PM ประจำเดือน</h1>
-                    <p className="text-app-muted">เลือกแอร์ที่ถึงกำหนดล้างในเดือนนี้เพื่อออกใบสั่งงานให้ช่าง</p>
+                    <p className="text-app-muted max-w-3xl">
+                        เลือกรายการที่ถึงกำหนดในเดือนนี้เพื่อออกใบสั่งงานแบบมือ (แอร์และพัดลมดูดอากาศ) — โดยค่าเริ่มต้นใบงาน PM จะถูกสร้างเมื่อช่างสแกน QR แล้วกดเริ่มที่หน้าทรัพย์สิน
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -123,15 +108,16 @@ export default function PMDispatchBoard() {
                         {isProcessing ? 'กำลังประมวลผล...' : `📦 ออกใบงาน (${selectedIds.length} รายการ)`}
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={handleAutoDispatch}
-                        disabled={isProcessing}
-                        className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-app text-app-heading bg-app-card hover:bg-app-section transition-colors disabled:opacity-50"
-                    >
-                        ⚙️ Auto-dispatch รอบที่ถึงกำหนด
-                    </button>
                 </div>
+            </div>
+
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50/90 dark:border-blue-900 dark:bg-blue-950/40 px-4 py-3 text-sm text-app-body">
+                <p className="font-semibold text-app-heading mb-1">เกี่ยวกับ Auto-dispatch</p>
+                <p className="text-app-muted leading-relaxed">
+                    ฟังก์ชัน Auto-dispatch (สร้างใบงานอัตโนมัติทุกรอบที่ถึง due) <strong>ปิดใช้งานแล้ว</strong> เพื่อลดใบงานค้างที่ยังไม่ได้ไปทำในสนาม
+                    — ช่างใช้เมนูสแกน QR แล้วเปิดหน้าทรัพย์สิน จากนั้นกด <strong>เริ่มงาน PM</strong> เมื่อถึงกำหนด
+                    หากต้องการมอบหมายล่วงหน้า ให้ใช้ปุ่ม &quot;ออกใบงาน&quot; ด้านบน
+                </p>
             </div>
 
             {loading ? (
@@ -141,7 +127,7 @@ export default function PMDispatchBoard() {
             ) : schedules.length === 0 ? (
                 <div className="text-center py-20 bg-app-card rounded-2xl border border-dashed border-app">
                     <div className="text-4xl mb-4 text-app-muted opacity-30">📭</div>
-                    <p className="text-app-muted">ไม่มีรายการแอร์ที่ถึงกำหนดล้างในเดือนนี้ (หรือออกใบงานไปครบแล้ว)</p>
+                    <p className="text-app-muted">ไม่มีรายการที่ถึงกำหนดในเดือนนี้ (หรือออกใบงานไปครบแล้ว)</p>
                 </div>
             ) : (
                 <div className="bg-app-card rounded-2xl border border-app shadow-sm overflow-hidden">
@@ -157,9 +143,6 @@ export default function PMDispatchBoard() {
                                     />
                                 </th>
                                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-app-muted">QR Code / เครื่อง</th>
-                                <th className="p-4 text-xs font-bold uppercase tracking-wider text-app-muted flex items-center gap-1">
-                                    <span>ประเภท</span>
-                                </th>
                                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-app-muted">สถานที่ (Site)</th>
                                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-app-muted">ตำแหน่ง (Room)</th>
                             </tr>
@@ -178,15 +161,6 @@ export default function PMDispatchBoard() {
                                     <td className="p-4">
                                         <div className="font-bold text-app-heading">{schedule.asset.qrCode}</div>
                                         <div className="text-[10px] text-app-muted">{schedule.asset.model || '-'}</div>
-                                    </td>
-                                    <td className="p-4">
-                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tighter
-                                            ${schedule.pmType === 'MAJOR' 
-                                                ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                                                : 'bg-orange-100 text-orange-700 border border-orange-200'}
-                                        `}>
-                                            {schedule.pmType === 'MAJOR' ? 'ใหญ่ (Major)' : 'ย่อย (Minor)'}
-                                        </span>
                                     </td>
                                     <td className="p-4">
                                         <div className="text-sm font-medium text-app-heading">{schedule.asset.room.floor.building.site.name}</div>
