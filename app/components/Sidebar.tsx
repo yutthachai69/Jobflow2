@@ -57,6 +57,7 @@ const adminItems: NavItem[] = [
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
+  { type: 'link', href: '/admin/pm-import', label: 'อัปโหลดแผน PM', icon: 'reports' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
   { type: 'link', href: '/locations', label: 'สถานที่', icon: 'locations' },
   { type: 'link', href: '/security-incidents', label: 'ความปลอดภัย', icon: 'security' },

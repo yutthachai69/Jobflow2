@@ -86,7 +86,13 @@ export default function PMPlanningPage() {
                     <p className="text-app-muted">จัดสรรโควต้า PM ให้แอร์แต่ละเครื่องล่วงหน้าทั้งปี</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <Link
+                        href="/admin/pm-import"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm"
+                    >
+                        📤 อัปโหลดแผน PM (Excel)
+                    </Link>
                     <Link
                         href="/admin/pm-planning/dispatch"
                         className="bg-white text-primary border border-primary hover:bg-primary hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm"
