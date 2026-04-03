@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { markNotificationAsRead } from '@/app/actions/notifications'
+import {
+  isClientSignRequestNotificationTitle,
+  isTechSignCompleteNotificationTitle,
+} from '@/lib/pm-signature-notifications'
 
 interface Notification {
   id: string
@@ -27,6 +31,7 @@ export default function NotificationList({ notifications: initialNotifications }
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       )
+      window.dispatchEvent(new CustomEvent('jobflow:notifications-unread-changed'))
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
@@ -38,6 +43,20 @@ export default function NotificationList({ notifications: initialNotifications }
     }
     if (notification.type === 'FEEDBACK_RECEIVED' && notification.relatedId) {
       return `/work-orders/${notification.relatedId}`
+    }
+    if (
+      notification.type === 'MESSAGE_RECEIVED' &&
+      isClientSignRequestNotificationTitle(notification.title) &&
+      notification.relatedId
+    ) {
+      return `/client/pm-sign/${notification.relatedId}`
+    }
+    if (
+      notification.type === 'MESSAGE_RECEIVED' &&
+      isTechSignCompleteNotificationTitle(notification.title) &&
+      notification.relatedId
+    ) {
+      return `/technician/job-item/${notification.relatedId}`
     }
     return null
   }
@@ -51,7 +70,7 @@ export default function NotificationList({ notifications: initialNotifications }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-5">
       {notifications.map((notification) => {
         const link = getNotificationLink(notification)
         const content = (
@@ -97,13 +116,21 @@ export default function NotificationList({ notifications: initialNotifications }
 
         if (link) {
           return (
-            <Link key={notification.id} href={link}>
+            <Link
+              key={notification.id}
+              href={link}
+              className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-btn-primary)] focus-visible:ring-offset-2"
+            >
               {content}
             </Link>
           )
         }
 
-        return <div key={notification.id}>{content}</div>
+        return (
+          <div key={notification.id} className="block">
+            {content}
+          </div>
+        )
       })}
     </div>
   )

@@ -9,7 +9,11 @@ import AirborneInfectionForm from "@/app/components/forms/AirborneInfectionForm"
 import ExhaustFanForm from "@/app/components/forms/ExhaustFanForm";
 import AssetHistoryTimeline from "@/app/components/AssetHistoryTimeline";
 import JobItemReportDownloadButton from "./JobItemReportDownloadButton";
-import CompleteJobItemButton from "./CompleteButton";
+import PmCompleteSignatureSection from "./PmCompleteSignatureSection";
+import {
+  hasPmChecklistCustomerSignature,
+  jobItemRequiresCustomerSignatureInChecklist,
+} from "@/lib/pm-customer-signature";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -115,6 +119,23 @@ export default async function TechnicianJobItemPage({ params }: Props) {
     formType = 'EXHAUST_FAN';
   }
 
+  const adminStoredReportFormType =
+    parsedChecklist &&
+    typeof parsedChecklist.formType === "string" &&
+    parsedChecklist.formType.length > 0;
+  const showReportForms =
+    jobItem.workOrder.jobType === "PM" ||
+    (jobItem.workOrder.jobType === "CM" && adminStoredReportFormType);
+
+  const requiresCustomerSignature = jobItemRequiresCustomerSignatureInChecklist(
+    jobItem.workOrder.jobType,
+    jobItem.checklist,
+    asset
+  );
+  const hasPmCustomerSignature = hasPmChecklistCustomerSignature(
+    jobItem.checklist
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
       <div className="w-full max-w-full">
@@ -211,11 +232,13 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                     </div>
                   </div>
                 )}
-                <div className="flex-shrink-0">
-                  <CompleteJobItemButton
+                <div className="flex-shrink-0 w-full sm:w-auto">
+                  <PmCompleteSignatureSection
                     jobItemId={id}
-                    disabled={!canComplete}
-                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
+                    requiresCustomerSignature={requiresCustomerSignature}
+                    hasCustomerSignature={hasPmCustomerSignature}
+                    canComplete={canComplete}
+                    completeButtonClassName={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
                       ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                       : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                       }`}
@@ -239,8 +262,8 @@ export default async function TechnicianJobItemPage({ params }: Props) {
         </div>
 
 
-        {/* Report Forms (Only for PM) - แสดงเมื่อเริ่มงานแล้วเท่านั้น ตาม formType ที่ admin เลือกตอนสร้างใบงาน */}
-        {jobItem.workOrder.jobType === 'PM' && (
+        {/* Report Forms: PM เสมอ; CM เมื่อมี formType ใน checklist (เปิดใบ CM พร้อมเลือกฟอร์ม) */}
+        {showReportForms && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6 p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
@@ -459,10 +482,12 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   </div>
                 </div>
               )}
-              <CompleteJobItemButton
+              <PmCompleteSignatureSection
                 jobItemId={id}
-                disabled={!canComplete}
-                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canComplete
+                requiresCustomerSignature={requiresCustomerSignature}
+                hasCustomerSignature={hasPmCustomerSignature}
+                canComplete={canComplete}
+                completeButtonClassName={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canComplete
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                   : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                   }`}

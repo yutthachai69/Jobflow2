@@ -13,14 +13,10 @@ export default function NotificationBell({ initialCount, href = '/messages' }: N
   const [count, setCount] = useState(initialCount)
   const pathname = usePathname()
 
-  // Update count when navigating to notification page
+  // แสดงเลขจากข้อมูลจริงเท่านั้น — ห้ามปิด badge แค่เพราะเข้าหน้าแจ้งเตือน (ยังไม่ได้กดอ่านแล้วใน DB)
   useEffect(() => {
-    if (pathname === href) {
-      setTimeout(() => setCount(0), 0)
-    } else {
-      setTimeout(() => setCount(initialCount), 0)
-    }
-  }, [pathname, initialCount, href])
+    setCount(initialCount)
+  }, [initialCount])
 
   const isActive = pathname === href
 

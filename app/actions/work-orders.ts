@@ -1,6 +1,16 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import {
+  hasPmChecklistCustomerSignature,
+  inferPmReportFormType,
+  jobItemRequiresCustomerSignatureInChecklist,
+  mergeCustomerSignatureIntoPmChecklist,
+} from '@/lib/pm-customer-signature'
+import {
+  CLIENT_SIGN_REQUEST_TITLE,
+  TECH_SIGN_COMPLETE_TITLE,
+} from '@/lib/pm-signature-notifications'
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { sanitizeString } from "@/lib/validation"
@@ -190,6 +200,14 @@ export async function createWorkOrder(formData: FormData) {
       adHocPmType = pmWashRaw as 'MAJOR' | 'MINOR'
     }
 
+    const formTemplateSanitized = sanitizeString(formTemplate)
+    const allowedPmCmForms = ['AIRBORNE_INFECTION', 'EXHAUST_FAN'] as const
+    if (jobType === 'PM' || jobType === 'CM') {
+      if (!allowedPmCmForms.includes(formTemplateSanitized as (typeof allowedPmCmForms)[number])) {
+        throw new Error('กรุณาเลือกแบบฟอร์มบันทึกการทำงาน')
+      }
+    }
+
     // สร้าง Work Order
     const workOrder = await prisma.workOrder.create({
       data: {
@@ -209,7 +227,10 @@ export async function createWorkOrder(formData: FormData) {
         assetId,
         status: 'PENDING',
         technicianId: assignedTechnicianId || undefined,
-        checklist: formTemplate ? JSON.stringify({ formType: formTemplate, data: {} }) : null,
+        checklist:
+          jobType === 'PM' || jobType === 'CM'
+            ? JSON.stringify({ formType: formTemplateSanitized, data: {} })
+            : null,
         adHocPmType: jobType === 'PM' ? adHocPmType : undefined,
       })),
     })
@@ -363,19 +384,11 @@ export async function assignTechnicianToJobItem(jobItemId: string, technicianId:
       // Find the work order and its creator/requester to get lineUserId
       const jobItem = await prisma.jobItem.findUnique({
         where: { id: jobItemId },
-        include: {
-          workOrder: {
-            include: {
-              jobItems: { include: { asset: { include: { room: true } } } }
-            }
-          },
-          technician: true,
-          asset: {
-            include: {
-              room: true
-            }
-          }
-        }
+        select: {
+          technicianId: true,
+          workOrderId: true,
+          asset: { select: { qrCode: true } },
+        },
       })
 
       if (jobItem && jobItem.technicianId) {
@@ -437,13 +450,22 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
       throw new Error('Unauthorized')
     }
 
-    // Get job item with technician info
     const jobItem = await prisma.jobItem.findUnique({
       where: { id: jobItemId },
-      include: {
-        technician: true,
-        photos: true,
-        asset: true // Include asset here to be used later
+      select: {
+        id: true,
+        status: true,
+        technicianId: true,
+        workOrderId: true,
+        startTime: true,
+        endTime: true,
+        checklist: true,
+        technician: {
+          select: { fullName: true, username: true },
+        },
+        photos: { select: { id: true, type: true, url: true } },
+        asset: { select: { qrCode: true, assetType: true } },
+        workOrder: { select: { jobType: true } },
       },
     })
 
@@ -511,6 +533,20 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
 
       if (beforePhotos.length === 0 || afterPhotos.length === 0) {
         throw new Error('ต้องแนบรูปภาพทั้งก่อนและหลังการทำงานก่อนที่จะเสร็จสิ้นงาน')
+      }
+
+      if (
+        user.role === 'TECHNICIAN' &&
+        jobItemRequiresCustomerSignatureInChecklist(
+          jobItem.workOrder.jobType,
+          jobItem.checklist,
+          jobItem.asset
+        ) &&
+        !hasPmChecklistCustomerSignature(jobItem.checklist)
+      ) {
+        throw new Error(
+          'กรุณาให้ลูกค้าเซ็นในรายงานก่อนปิดงาน (กรอกในฟอร์มด้านล่าง หรือส่งลิงก์ให้ลูกค้าเซ็น)'
+        )
       }
     }
 
@@ -685,12 +721,12 @@ export async function createJobPhoto(jobItemId: string, formData: FormData) {
       throw new Error('Invalid photo type')
     }
 
-    // Get job item to check authorization and status
     const jobItem = await prisma.jobItem.findUnique({
       where: { id: jobItemId },
-      include: {
-        technician: true,
-        workOrder: true,
+      select: {
+        technicianId: true,
+        status: true,
+        workOrderId: true,
       },
     })
 
@@ -746,11 +782,11 @@ export async function updateJobItemNote(jobItemId: string, formData: FormData) {
 
     const techNote = sanitizeString(formData.get('techNote') as string)
 
-    // Get job item to check authorization and status
     const jobItem = await prisma.jobItem.findUnique({
       where: { id: jobItemId },
-      include: {
-        technician: true,
+      select: {
+        technicianId: true,
+        status: true,
       },
     })
 
@@ -803,6 +839,12 @@ export async function updateJobItemChecklist(jobItemId: string, checklistJson: s
 
     const jobItem = await prisma.jobItem.findUnique({
       where: { id: jobItemId },
+      select: {
+        id: true,
+        status: true,
+        technicianId: true,
+        workOrderId: true,
+      },
     })
 
     if (!jobItem) {
@@ -838,6 +880,181 @@ export async function updateJobItemChecklist(jobItemId: string, checklistJson: s
     console.error('Error updating checklist:', error)
     return { success: false, error: error instanceof Error ? error.message : 'Failed to update checklist' }
   }
+}
+
+/** แจ้ง user CLIENT ของสถานที่ให้เข้าระบบเซ็น PM (ไม่ใช้ลิงก์สาธารณะ) */
+export async function notifySiteClientsForPmSignature(jobItemId: string) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      throw new Error('Unauthorized')
+    }
+
+    const jobItem = await prisma.jobItem.findUnique({
+      where: { id: jobItemId },
+      select: {
+        id: true,
+        status: true,
+        technicianId: true,
+        checklist: true,
+        asset: { select: { qrCode: true, assetType: true } },
+        workOrder: { select: { jobType: true, siteId: true } },
+      },
+    })
+
+    if (!jobItem) {
+      throw new Error('Job Item not found')
+    }
+
+    if (user.role === 'TECHNICIAN') {
+      if (jobItem.technicianId && jobItem.technicianId !== user.id) {
+        throw new Error('Unauthorized')
+      }
+    } else if (user.role !== 'ADMIN') {
+      throw new Error('Unauthorized')
+    }
+
+    if (jobItem.status !== 'IN_PROGRESS') {
+      throw new Error('แจ้งได้เฉพาะขณะกำลังทำงาน')
+    }
+    if (
+      !jobItemRequiresCustomerSignatureInChecklist(
+        jobItem.workOrder.jobType,
+        jobItem.checklist,
+        jobItem.asset
+      )
+    ) {
+      throw new Error('ใช้ได้เฉพาะงาน PM/CM ที่มีแบบฟอร์มรายงานและต้องมีลายเซ็นลูกค้า')
+    }
+
+    const clients = await prisma.user.findMany({
+      where: {
+        role: 'CLIENT',
+        siteId: jobItem.workOrder.siteId,
+      },
+      select: { id: true },
+    })
+
+    if (clients.length === 0) {
+      return {
+        success: false as const,
+        error:
+          'ไม่พบบัญชีลูกค้า (CLIENT) ของสถานที่นี้ในระบบ — ให้แอดมินผูก user กับ site ก่อน',
+      }
+    }
+
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const signPath = `/client/pm-sign/${jobItemId}`
+
+    for (const c of clients) {
+      await prisma.notification.create({
+        data: {
+          type: 'MESSAGE_RECEIVED',
+          title: CLIENT_SIGN_REQUEST_TITLE,
+          message: `มีงานรอลายเซ็นลูกค้า (${jobItem.asset.qrCode}) กรุณาเข้าระบบที่เมนูแจ้งเตือน หรือเปิด ${base.replace(/\/$/, '')}${signPath}`,
+          userId: c.id,
+          relatedId: jobItemId,
+        },
+      })
+    }
+
+    revalidatePath(`/technician/job-item/${jobItemId}`)
+    revalidatePath('/notifications')
+    return { success: true as const, notifiedCount: clients.length }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'ส่งแจ้งเตือนไม่สำเร็จ'
+    return { success: false as const, error: msg }
+  }
+}
+
+/** ลูกค้าเซ็น PM หลังล็อกอิน — site ต้องตรงกับใบงาน */
+export async function submitPmCustomerSignatureAsClient(
+  jobItemId: string,
+  signatureDataUrl: string
+) {
+  if (
+    typeof signatureDataUrl !== 'string' ||
+    !signatureDataUrl.startsWith('data:image')
+  ) {
+    return { success: false as const, error: 'ข้อมูลลายเซ็นไม่ถูกต้อง' }
+  }
+
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'CLIENT') {
+    return { success: false as const, error: 'กรุณาเข้าสู่ระบบในฐานะลูกค้า' }
+  }
+
+  const siteId = user.siteId
+  if (!siteId) {
+    return { success: false as const, error: 'บัญชีลูกค้ายังไม่ผูกสถานที่' }
+  }
+
+  const jobItem = await prisma.jobItem.findUnique({
+    where: { id: jobItemId },
+    select: {
+      id: true,
+      status: true,
+      technicianId: true,
+      checklist: true,
+      asset: { select: { qrCode: true, assetType: true } },
+      workOrder: { select: { jobType: true, siteId: true } },
+    },
+  })
+
+  if (!jobItem || jobItem.status !== 'IN_PROGRESS') {
+    return { success: false as const, error: 'งานนี้ปิดแล้วหรือไม่พร้อมรับลายเซ็น' }
+  }
+
+  if (
+    !jobItemRequiresCustomerSignatureInChecklist(
+      jobItem.workOrder.jobType,
+      jobItem.checklist,
+      jobItem.asset
+    )
+  ) {
+    return {
+      success: false as const,
+      error: 'งานนี้ไม่รองรับการเซ็นลูกค้าแบบนี้หรือยังไม่พร้อม',
+    }
+  }
+
+  if (jobItem.workOrder.siteId !== siteId) {
+    return { success: false as const, error: 'คุณไม่มีสิทธิ์เซ็นงานของสถานที่นี้' }
+  }
+
+  const formType = inferPmReportFormType(jobItem.checklist, jobItem.asset)
+  if (formType !== 'EXHAUST_FAN' && formType !== 'AIRBORNE_INFECTION') {
+    return { success: false as const, error: 'ประเภทฟอร์มไม่รองรับ' }
+  }
+
+  const newChecklist = mergeCustomerSignatureIntoPmChecklist(
+    jobItem.checklist,
+    formType,
+    signatureDataUrl
+  )
+
+  await prisma.jobItem.update({
+    where: { id: jobItem.id },
+    data: { checklist: newChecklist },
+  })
+
+  if (jobItem.technicianId) {
+    await prisma.notification.create({
+      data: {
+        type: 'MESSAGE_RECEIVED',
+        title: TECH_SIGN_COMPLETE_TITLE,
+        message: `ลูกค้าได้ลงลายเซ็นในรายงานแล้ว (${jobItem.asset.qrCode}) คุณสามารถกดปิดงานได้`,
+        userId: jobItem.technicianId,
+        relatedId: jobItem.id,
+      },
+    })
+  }
+
+  revalidatePath(`/technician/job-item/${jobItem.id}`)
+  revalidatePath(`/reports/job/${jobItem.id}`)
+  revalidatePath(`/client/pm-sign/${jobItem.id}`)
+  revalidatePath('/notifications')
+  return { success: true as const }
 }
 
 export async function createRepairRequest(assetId: string, description: string, requesterUserId: string, sourceJobItemId?: string) {

@@ -55,7 +55,14 @@ export default function Header({ role, username, fullName, siteName, onMenuToggl
       }
       fetchUnread()
       const interval = setInterval(fetchUnread, 30000)
-      return () => clearInterval(interval)
+      const onNotificationsChanged = () => {
+        fetchUnread()
+      }
+      window.addEventListener('jobflow:notifications-unread-changed', onNotificationsChanged)
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('jobflow:notifications-unread-changed', onNotificationsChanged)
+      }
     }
   }, [role])
 

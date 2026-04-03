@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { cache } from "react";
 import AppLayout from "./components/AppLayout";
 import ToastProvider from "./components/ToastProvider";
 import ThemeProvider from "./components/ThemeProvider";
-import ViewTransitionHandler from "./components/ViewTransitionHandler";
 import { validateEnvVars } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -57,6 +57,38 @@ export const metadata: Metadata = {
   },
 };
 
+/** ดึงโปรไฟล์ครั้งเดียวต่อ request — ลด query ซ้ำถ้า React render ซ้อน */
+const getUserProfileForLayout = cache(async (userId: string) => {
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      username: true,
+      fullName: true,
+      role: true,
+      siteId: true,
+      lineUserId: true,
+      site: { select: { name: true } },
+    },
+  });
+  if (!dbUser) return null;
+  let siteName = dbUser.site?.name ?? null;
+  const finalSiteId = dbUser.siteId;
+  if (!siteName && finalSiteId) {
+    const site = await prisma.site.findUnique({
+      where: { id: finalSiteId },
+      select: { name: true },
+    });
+    siteName = site?.name ?? null;
+  }
+  return {
+    role: dbUser.role as "ADMIN" | "TECHNICIAN" | "CLIENT",
+    username: dbUser.username,
+    fullName: dbUser.fullName,
+    siteName,
+    lineUserId: dbUser.lineUserId,
+  };
+});
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -68,50 +100,19 @@ export default async function RootLayout({
   // (แต่ให้ middleware จัดการก่อน เพราะ middleware จะทำงานก่อน)
   // ตรงนี้เป็น fallback สำหรับกรณีที่ middleware ไม่ได้ทำงาน
 
-  // ดึงข้อมูล user เพิ่มเติมจาก DB (username, fullName, siteName)
   let userData = null;
   if (user) {
     try {
-      // [Performance] Optimized: dbUser query already includes siteId and site data.
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: {
-          username: true,
-          fullName: true,
-          role: true,
-          siteId: true,
-          lineUserId: true,
-          site: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      });
-
-      const siteId = dbUser?.siteId ?? user.siteId;
-
-      if (dbUser) {
-        // ใช้ siteId จาก DB ถ้ามี (ใหม่กว่า JWT)
-        const finalSiteId = dbUser.siteId || siteId;
-        // siteName จาก relation หรือ query เพิ่มถ้าจำเป็น
-        let siteName = dbUser.site?.name || null;
-
-        // ถ้ายังไม่มี siteName แต่มี siteId ให้ query ใหม่
-        if (!siteName && finalSiteId) {
-          const site = await prisma.site.findUnique({
-            where: { id: finalSiteId },
-            select: { name: true },
-          });
-          siteName = site?.name || null;
-        }
-
+      const profile = await getUserProfileForLayout(user.userId);
+      if (profile) {
+        userData = profile;
+      } else {
         userData = {
-          role: dbUser.role as "ADMIN" | "TECHNICIAN" | "CLIENT",
-          username: dbUser.username,
-          fullName: dbUser.fullName,
-          siteName,
-          lineUserId: dbUser.lineUserId,
+          role: user.role as "ADMIN" | "TECHNICIAN" | "CLIENT",
+          username: undefined,
+          fullName: null,
+          siteName: null,
+          lineUserId: null,
         };
       }
     } catch (error) {
@@ -143,7 +144,6 @@ export default async function RootLayout({
           {`(function(){var t=localStorage.getItem("airservice-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);})();`}
         </Script>
         <ThemeProvider>
-          <ViewTransitionHandler />
           <ToastProvider />
           {userData ? (
             <AppLayout

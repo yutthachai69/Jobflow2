@@ -20,6 +20,8 @@ export {
   deleteJobPhoto,
   createJobPhoto,
   updateJobItemNote,
+  notifySiteClientsForPmSignature,
+  submitPmCustomerSignatureAsClient,
 } from './work-orders'
 
 // Locations (Client, Site, Building, Floor, Room)

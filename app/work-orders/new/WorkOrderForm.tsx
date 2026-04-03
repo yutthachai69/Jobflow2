@@ -286,9 +286,10 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
       }
     }
 
-    // สำหรับ PM ต้องบังคับเลือกฟอร์ม
-    if (jobType === 'PM' && !formTemplate) {
-      newErrors.formTemplate = 'กรุณาเลือกแบบฟอร์มสำหรับงาน PM'
+    // PM / CM ต้องเลือกแบบฟอร์ม (CM ไม่มีประเภทล้าง)
+    if ((jobType === 'PM' || jobType === 'CM') && !formTemplate) {
+      newErrors.formTemplate =
+        jobType === 'CM' ? 'กรุณาเลือกแบบฟอร์มสำหรับงาน CM' : 'กรุณาเลือกแบบฟอร์มสำหรับงาน PM'
     }
 
     if (jobType === 'PM' && !pmWashType) {
@@ -469,6 +470,10 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
                 setPmWashType('')
                 if (errors.pmWashType) setErrors({ ...errors, pmWashType: '' })
               }
+              if (val !== 'PM' && val !== 'CM') {
+                setFormTemplate('')
+                if (errors.formTemplate) setErrors({ ...errors, formTemplate: '' })
+              }
               // Reset newAssets when switching to INSTALL
               if (val === 'INSTALL') {
                 setNewAssets([{ qrCode: '', btu: '' }])
@@ -498,13 +503,13 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
           )}
         </div>
 
-        {/* เลือกแบบฟอร์ม (Form Template) - เฉพาะ PM */}
-        {jobType === 'PM' && (
+        {/* เลือกแบบฟอร์ม — PM และ CM (CM ไม่มีฟิลด์ประเภทล้าง) */}
+        {(jobType === 'PM' || jobType === 'CM') && (
           <div data-error={errors.formTemplate ? 'true' : undefined}>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               <span className="flex items-center gap-2">
                 แบบฟอร์มบันทึกการทำงาน <span className="text-red-500">*</span>
-                <Tooltip content="เลือกแบบฟอร์มที่ช่างจะต้องใช้สำหรับงาน PM นี้">
+                <Tooltip content="เลือกแบบฟอร์มที่ช่างจะกรอกสำหรับงาน PM หรือ CM นี้">
                   <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
                 </Tooltip>
               </span>

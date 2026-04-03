@@ -63,7 +63,7 @@ export default function AppLayout({ role, username, fullName, siteName, lineUser
         </div>
 
         {/* 🔥 Main Scroll Area: ให้ Scroll เฉพาะเนื้อหาตรงนี้ */}
-        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth print:p-0" key={pathname} style={{ viewTransitionName: 'main-content' }}>
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth print:p-0" style={{ viewTransitionName: 'main-content' }}>
           <div className="w-full max-w-full min-w-0 min-h-full">
             {/* Breadcrumb - ไม่แสดงตอนพิมพ์ */}
             <div className="print:hidden">

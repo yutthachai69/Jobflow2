@@ -169,6 +169,8 @@ export default function Sidebar({ role, lineUserId, isMobileOpen: externalIsOpen
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
+    // หน้ารายงานการซ่อมใช้ ?filter= ภายในหน้า — เมนูชี้แค่ /reports/repair ให้ไฮไลต์ทุกมุมมอง
+    if (href === '/reports/repair') return pathname === '/reports/repair'
     return pathname?.startsWith(href)
   }
 

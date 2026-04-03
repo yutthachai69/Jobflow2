@@ -4,17 +4,17 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// ใน development mode ให้ใช้ global variable เพื่อป้องกันการสร้าง connection มากเกินไป
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = globalForPrisma.prisma || new PrismaClient({
-    log: ['error', 'warn'],
+function createPrismaClient() {
+  return new PrismaClient({
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['error', 'warn']
+        : ['error'],
   })
 }
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
-})
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
+// ผูก client กับ globalThis ทุก environment — Turbopack/HMR ใน dev โหลดโมดูลซ้ำได้;
+// ถ้าไม่ทำแบบนี้จะเกิด PrismaClient หลายตัว → connection pool เต็ม (P2024)
+export const prisma =
+  globalForPrisma.prisma ??
+  (globalForPrisma.prisma = createPrismaClient())

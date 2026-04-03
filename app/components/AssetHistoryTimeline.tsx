@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
 
 interface AssetHistoryTimelineProps {
   assetId: string;
@@ -10,16 +9,33 @@ export default async function AssetHistoryTimeline({
   assetId,
   currentJobItemId,
 }: AssetHistoryTimelineProps) {
+  // select ชัดเจน — ไม่ดึงคอลัมน์ที่ DB อาจยังไม่มี (เช่น หลังถอดฟิลด์ออกจาก schema แต่ prisma generate ยังไม่รัน)
   const jobItems = await prisma.jobItem.findMany({
     where: { assetId },
-    include: {
+    select: {
+      id: true,
+      status: true,
+      techNote: true,
+      startTime: true,
+      endTime: true,
       workOrder: {
-        include: {
-          site: { include: { client: true } },
+        select: {
+          jobType: true,
         },
       },
-      technician: true,
-      photos: true,
+      technician: {
+        select: {
+          fullName: true,
+          username: true,
+        },
+      },
+      photos: {
+        select: {
+          id: true,
+          url: true,
+          type: true,
+        },
+      },
     },
     orderBy: { startTime: "desc" },
     take: 10, // แสดง 10 รายการล่าสุด

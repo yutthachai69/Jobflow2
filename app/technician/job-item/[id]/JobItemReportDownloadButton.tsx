@@ -137,16 +137,20 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
       if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST' || (asset.qrCode || '').startsWith('EX-'))) {
         formType = 'EXHAUST_FAN'
       }
-      if (workOrder.jobType === 'PM' && jobItem.checklist) {
+      const includeFormInPrint =
+        (workOrder.jobType === 'PM' || workOrder.jobType === 'CM') &&
+        !!jobItem.checklist
+      if (includeFormInPrint && jobItem.checklist) {
+        const checklistStr = jobItem.checklist
         if (formType === 'EXHAUST_FAN') {
           formReportHtml = buildExhaustFanReportHtml(
-            { checklist: jobItem.checklist, asset: jobItem.asset },
+            { checklist: checklistStr, asset: jobItem.asset },
             workOrder
           )
           formReportCss = EXHAUST_REPORT_CSS
         } else {
           formReportHtml = buildAirborneReportHtml(
-            { checklist: jobItem.checklist, asset: jobItem.asset },
+            { checklist: checklistStr, asset: jobItem.asset },
             workOrder
           )
           formReportCss = AIRBORNE_REPORT_CSS

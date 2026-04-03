@@ -9,7 +9,32 @@ export const metadata = {
   description: 'รายงานงานซ่อม (CM) ตามสถานที่',
 }
 
-export default async function ReportsRepairPage() {
+/** กรองตาม JobItem (แนว A): ยังไม่ปิดรายการ vs ปิดแล้ว */
+const CM_ACTIVE_ITEM_STATUSES = ['PENDING', 'IN_PROGRESS', 'ISSUE_FOUND'] as const
+
+function filterRepairRowsByJobItem<T extends { jobItemStatus: string }>(
+  rows: T[],
+  filter: string | undefined
+): T[] {
+  if (filter === 'active') {
+    return rows.filter((r) =>
+      (CM_ACTIVE_ITEM_STATUSES as readonly string[]).includes(r.jobItemStatus)
+    )
+  }
+  if (filter === 'done') {
+    return rows.filter((r) => r.jobItemStatus === 'DONE')
+  }
+  return rows
+}
+
+export default async function ReportsRepairPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>
+}) {
+  const { filter: filterRaw } = await searchParams
+  const filter =
+    filterRaw === 'active' || filterRaw === 'done' ? filterRaw : undefined
   const user = await getCurrentUser()
   if (!user) redirect('/welcome')
   if (user.role !== 'CLIENT') {
@@ -100,6 +125,14 @@ export default async function ReportsRepairPage() {
       return (a.asset.qrCode || '').localeCompare(b.asset.qrCode || '')
     })
 
+  const filteredRows = filterRepairRowsByJobItem(rows, filter)
+  const filterLabel =
+    filter === 'active'
+      ? 'กำลังดำเนินการ (รายการยังไม่ปิด)'
+      : filter === 'done'
+        ? 'ซ่อมเสร็จแล้ว (รายการปิดแล้ว)'
+        : 'ทั้งหมด'
+
   return (
     <div>
       <div className="mt-4 mb-8">
@@ -107,6 +140,38 @@ export default async function ReportsRepairPage() {
         <p className="text-sm text-app-muted mt-1">
           {site.name} • {site.client.name}
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/reports/repair"
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${
+              !filter
+                ? 'border-[var(--app-btn-primary)] bg-[var(--app-btn-primary)]/10 text-[var(--app-btn-primary)]'
+                : 'border-app text-app-muted hover:bg-app-section'
+            }`}
+          >
+            ทั้งหมด
+          </Link>
+          <Link
+            href="/reports/repair?filter=active"
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${
+              filter === 'active'
+                ? 'border-[var(--app-btn-primary)] bg-[var(--app-btn-primary)]/10 text-[var(--app-btn-primary)]'
+                : 'border-app text-app-muted hover:bg-app-section'
+            }`}
+          >
+            กำลังดำเนินการ
+          </Link>
+          <Link
+            href="/reports/repair?filter=done"
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${
+              filter === 'done'
+                ? 'border-[var(--app-btn-primary)] bg-[var(--app-btn-primary)]/10 text-[var(--app-btn-primary)]'
+                : 'border-app text-app-muted hover:bg-app-section'
+            }`}
+          >
+            เสร็จแล้ว
+          </Link>
+        </div>
       </div>
 
       <div className="bg-app-card rounded-xl border border-app shadow-lg overflow-hidden">
@@ -114,11 +179,20 @@ export default async function ReportsRepairPage() {
           <h2 className="text-base sm:text-lg font-semibold text-app-heading">
             รายการงานซ่อม (CM) : {site.name}
           </h2>
-          <p className="text-sm text-app-muted mt-1">รวม {rows.length} รายการ</p>
+          <p className="text-sm text-app-muted mt-1">
+            มุมมอง: {filterLabel}
+            {filter
+              ? ` — แสดง ${filteredRows.length} จาก ${rows.length} รายการ`
+              : ` — รวม ${rows.length} รายการ`}
+          </p>
         </div>
 
         {rows.length === 0 ? (
           <div className="p-8 sm:p-12 text-center text-app-muted text-sm sm:text-base">ยังไม่มีรายการงานซ่อม</div>
+        ) : filteredRows.length === 0 ? (
+          <div className="p-8 sm:p-12 text-center text-app-muted text-sm sm:text-base">
+            ไม่มีรายการในหมวดนี้ (ลองเปลี่ยนแท็บด้านบน)
+          </div>
         ) : (
           <div className="overflow-x-auto -mx-px">
             <table className="w-full min-w-[640px] sm:min-w-0 table-fixed text-left text-sm" role="table">
@@ -139,7 +213,7 @@ export default async function ReportsRepairPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {filteredRows.map((r) => {
                   const st = getWOStatus(r.status)
                   const jobSt = getJobStatus(r.jobItemStatus)
                   const loc = r.asset.room?.floor?.building

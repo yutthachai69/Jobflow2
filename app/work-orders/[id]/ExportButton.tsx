@@ -206,7 +206,7 @@ export default function ExportButton({ workOrder }: Props) {
     }
     .text-muted { color: #64748b; font-size: 14px; }
     ${(function () {
-      if (workOrder.jobType !== 'PM') return ''
+      if (workOrder.jobType !== 'PM' && workOrder.jobType !== 'CM') return ''
       const hasChecklist = workOrder.jobItems.some((j) => j.checklist)
       if (!hasChecklist) return ''
       const hasExhaust = workOrder.jobItems.some((j) => {
@@ -234,7 +234,7 @@ export default function ExportButton({ workOrder }: Props) {
   </div>
   <h2>รายการงานและรูปภาพที่ช่างแนบ</h2>
   ${reportItemsHtml}
-  ${workOrder.jobType === 'PM' ? workOrder.jobItems.filter((j) => j.checklist).map((j) => {
+  ${(workOrder.jobType === 'PM' || workOrder.jobType === 'CM') ? workOrder.jobItems.filter((j) => j.checklist).map((j) => {
     let formType = 'AIRBORNE_INFECTION'
     try {
       const p = JSON.parse(j.checklist!) as { formType?: string }
@@ -261,7 +261,9 @@ export default function ExportButton({ workOrder }: Props) {
       // รอให้เนื้อหาและรูปโหลดก่อน แล้วค่อยสั่งพิมพ์
       printWindow.onload = () => {
         const hasPhotos = workOrder.jobItems.some((j) => (j.photos?.length ?? 0) > 0)
-        const hasAirborneSheets = workOrder.jobType === 'PM' && workOrder.jobItems.some((j) => j.checklist)
+        const hasAirborneSheets =
+          (workOrder.jobType === 'PM' || workOrder.jobType === 'CM') &&
+          workOrder.jobItems.some((j) => j.checklist)
         const waitMs = hasAirborneSheets ? 1500 : hasPhotos ? 1200 : 600
 
         setTimeout(() => {
