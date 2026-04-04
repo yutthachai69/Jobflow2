@@ -50,8 +50,10 @@ export function buildExhaustFanReportHtml(
   workOrder: {
     site: { name: string; client: { name: string } }
     scheduledDate: Date | string
-  }
+  },
+  options?: { pmWashLabel?: string | null }
 ): string {
+  const pmWashLabel = options?.pmWashLabel ?? null
   let data: ExhaustFanData = {}
   if (jobItem.checklist) {
     try {
@@ -110,6 +112,12 @@ export function buildExhaustFanReportHtml(
         <td class="exhaust-bg-blue">ROOM TYPE</td>
         <td class="exhaust-data">${esc(roomName)} (Asset: ${esc(assetLabel)})</td>
       </tr>
+      ${pmWashLabel
+        ? `<tr>
+        <td class="exhaust-bg-blue">ประเภทการล้าง</td>
+        <td class="exhaust-data" colspan="3">${esc(pmWashLabel)}</td>
+      </tr>`
+        : ''}
     </tbody>
   </table>
   <div class="exhaust-fan-type">EXHAUST FAN TYPE</div>

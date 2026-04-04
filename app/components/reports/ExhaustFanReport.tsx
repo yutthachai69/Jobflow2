@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
+import { getPmWashTypeLabelThai } from "@/lib/pm-wash-label";
 
 interface ExhaustFanReportProps {
   jobItem: any;
@@ -38,6 +39,11 @@ export default function ExhaustFanReport({ jobItem }: ExhaustFanReportProps) {
   const dateStr = jobItem?.workOrder?.scheduledDate
     ? new Date(jobItem.workOrder.scheduledDate).toLocaleDateString("th-TH")
     : "";
+
+  const pmWashLabel = useMemo(
+    () => getPmWashTypeLabelThai(jobItem?.workOrder?.jobType ?? "", jobItem ?? {}),
+    [jobItem]
+  );
 
   const data = useMemo((): ExhaustData => {
     if (!jobItem?.checklist) return {};
@@ -143,6 +149,12 @@ export default function ExhaustFanReport({ jobItem }: ExhaustFanReportProps) {
                 <td className="bg-blue-left">ROOM TYPE</td>
                 <td>{roomType}</td>
               </tr>
+              {pmWashLabel && (
+                <tr>
+                  <td className="bg-blue-left">ประเภทการล้าง</td>
+                  <td colSpan={3}>{pmWashLabel}</td>
+                </tr>
+              )}
             </tbody>
           </table>
 

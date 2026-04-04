@@ -7,6 +7,7 @@ import AlertDialog from '@/app/components/AlertDialog'
 import { getWorkOrderDisplayNumber } from '@/lib/work-order-number'
 import { buildAirborneReportHtml, AIRBORNE_REPORT_CSS } from '@/lib/airborne-report-html'
 import { buildExhaustFanReportHtml, EXHAUST_REPORT_CSS } from '@/lib/exhaust-fan-report-html'
+import { getPmWashTypeLabelThai } from '@/lib/pm-wash-label'
 
 // ใช้ตัวแปรระดับโมดูลเพื่อกันการแสดง Alert ซ้ำระหว่าง onload หลายครั้งหรือ Strict Mode remount
 let hasShownPrintAlertThisSession = false
@@ -50,6 +51,8 @@ interface WorkOrder {
       username: string
     } | null
     photos?: Array<{ id: string; url: string; type: PhotoType }>
+    adHocPmType?: 'MAJOR' | 'MINOR' | null
+    pmSchedule?: { pmType: 'MAJOR' | 'MINOR' } | null
   }>
 }
 
@@ -119,11 +122,11 @@ export default function ExportButton({ workOrder }: Props) {
       }
 
       const reportItemsHtml = workOrder.jobItems.map((item, index) => {
-        const photos = item.photos || []
+        const printPhotos = (item.photos || []).filter((p) => p.type === 'BEFORE')
         const photosHtml =
-          photos.length === 0
-            ? '<p class="text-muted">ไม่มีรูปภาพ</p>'
-            : photos
+          printPhotos.length === 0
+            ? '<p class="text-muted">ไม่มีรูปก่อนทำ</p>'
+            : printPhotos
                 .map(
                   (p) => `
                 <div class="photo-block">
@@ -133,14 +136,19 @@ export default function ExportButton({ workOrder }: Props) {
                 )
                 .join('')
         const techNoteHtml = item.techNote ? `<p class="tech-note"><strong>หมายเหตุช่าง:</strong> ${escapeHtml(item.techNote)}</p>` : ''
+        const pmWashLabel = getPmWashTypeLabelThai(workOrder.jobType, item)
+        const pmWashHtml = pmWashLabel
+          ? `<p><strong>ประเภทการล้าง:</strong> ${escapeHtml(pmWashLabel)}</p>`
+          : ''
         return `
         <div class="report-item">
           <h3>รายการที่ ${index + 1}: ${escapeHtml(item.asset.qrCode)}</h3>
           <p><strong>สถานที่:</strong> ${escapeHtml(locationString(item))}</p>
+          ${pmWashHtml}
           <p><strong>ช่าง:</strong> ${escapeHtml(item.technician?.fullName || item.technician?.username || '-')} &nbsp;|&nbsp; <strong>สถานะ:</strong> ${jobItemStatusLabels[item.status] || item.status}</p>
           ${techNoteHtml}
           <div class="photos-section">
-            <p class="photos-title">รูปภาพที่ช่างแนบ</p>
+            <p class="photos-title">รูปภาพก่อนทำ</p>
             <div class="photos-grid">${photosHtml}</div>
           </div>
         </div>`
@@ -232,7 +240,7 @@ export default function ExportButton({ workOrder }: Props) {
     <p><strong>วันนัดหมาย:</strong> ${new Date(workOrder.scheduledDate as Date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
     <p><strong>สถานะ:</strong> ${statusLabels[workOrder.status] || workOrder.status}</p>
   </div>
-  <h2>รายการงานและรูปภาพที่ช่างแนบ</h2>
+  <h2>รายการงานและรูปก่อนทำ</h2>
   ${reportItemsHtml}
   ${(workOrder.jobType === 'PM' || workOrder.jobType === 'CM') ? workOrder.jobItems.filter((j) => j.checklist).map((j) => {
     let formType = 'AIRBORNE_INFECTION'
@@ -243,7 +251,10 @@ export default function ExportButton({ workOrder }: Props) {
     const asset = j.asset as { qrCode?: string; assetType?: string }
     if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST' || (asset.qrCode || '').startsWith('EX-'))) formType = 'EXHAUST_FAN'
     const jobForReport = { ...j, checklist: j.checklist ?? null }
-    return formType === 'EXHAUST_FAN' ? buildExhaustFanReportHtml(jobForReport, workOrder) : buildAirborneReportHtml(jobForReport, workOrder)
+    const pmOpts = { pmWashLabel: getPmWashTypeLabelThai(workOrder.jobType, j) }
+    return formType === 'EXHAUST_FAN'
+      ? buildExhaustFanReportHtml(jobForReport, workOrder, pmOpts)
+      : buildAirborneReportHtml(jobForReport, workOrder, pmOpts)
   }).join('') : ''}
 </body>
 </html>
@@ -260,7 +271,9 @@ export default function ExportButton({ workOrder }: Props) {
 
       // รอให้เนื้อหาและรูปโหลดก่อน แล้วค่อยสั่งพิมพ์
       printWindow.onload = () => {
-        const hasPhotos = workOrder.jobItems.some((j) => (j.photos?.length ?? 0) > 0)
+        const hasPhotos = workOrder.jobItems.some((j) =>
+          (j.photos || []).some((p) => p.type === 'BEFORE')
+        )
         const hasAirborneSheets =
           (workOrder.jobType === 'PM' || workOrder.jobType === 'CM') &&
           workOrder.jobItems.some((j) => j.checklist)

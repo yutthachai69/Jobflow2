@@ -49,7 +49,7 @@ export default function NotificationList({ notifications: initialNotifications }
       isClientSignRequestNotificationTitle(notification.title) &&
       notification.relatedId
     ) {
-      return `/client/pm-sign/${notification.relatedId}`
+      return '/work-orders'
     }
     if (
       notification.type === 'MESSAGE_RECEIVED' &&

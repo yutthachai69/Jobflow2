@@ -2,10 +2,26 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getPmWashTypeLabelThai } from "@/lib/pm-wash-label";
 
 interface Props {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
+}
+
+type JobItemPmSlice = {
+  adHocPmType?: "MAJOR" | "MINOR" | null;
+  pmSchedule?: { pmType: "MAJOR" | "MINOR" } | null;
+};
+
+function PmWashLine({ jobType, jobItem }: { jobType: string; jobItem: JobItemPmSlice }) {
+  const label = getPmWashTypeLabelThai(jobType, jobItem);
+  if (!label) return null;
+  return (
+    <div className="text-xs text-violet-700 dark:text-violet-300 mt-1 font-semibold">
+      ประเภทการล้าง: {label}
+    </div>
+  );
 }
 
 export default async function TechnicianWorkOrderPage({ params, searchParams }: Props) {
@@ -39,6 +55,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
             },
           },
           technician: true,
+          pmSchedule: { select: { pmType: true } },
           photos: true,
         },
       },
@@ -156,6 +173,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                         <div className="text-xs text-app-muted">
                           {jobItem.asset.room.floor.building.site.name} → {jobItem.asset.room.floor.building.name} → {jobItem.asset.room.floor.name} → {jobItem.asset.room.name}
                         </div>
+                        <PmWashLine jobType={workOrder.jobType} jobItem={jobItem} />
                         {jobItem.technician && (
                           <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                             ช่าง: {jobItem.technician.fullName || jobItem.technician.username}
@@ -194,6 +212,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                         <div className="text-xs text-app-muted mt-1">
                           {jobItem.asset.room.floor.building.site.name} → {jobItem.asset.room.floor.building.name} → {jobItem.asset.room.floor.name} → {jobItem.asset.room.name}
                         </div>
+                        <PmWashLine jobType={workOrder.jobType} jobItem={jobItem} />
                         {jobItem.technician && (
                           <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                             ช่าง: {jobItem.technician.fullName || jobItem.technician.username}
@@ -233,6 +252,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                         <div className="text-xs text-app-muted mt-1">
                           {jobItem.asset.room.floor.building.site.name} → {jobItem.asset.room.floor.building.name} → {jobItem.asset.room.floor.name} → {jobItem.asset.room.name}
                         </div>
+                        <PmWashLine jobType={workOrder.jobType} jobItem={jobItem} />
                       </div>
                       <div className="text-blue-600 font-medium ml-4">→</div>
                     </div>
@@ -265,6 +285,7 @@ export default async function TechnicianWorkOrderPage({ params, searchParams }: 
                         <div className="text-xs text-app-muted mt-1">
                           {jobItem.asset.room.floor.building.site.name} → {jobItem.asset.room.floor.building.name} → {jobItem.asset.room.floor.name} → {jobItem.asset.room.name}
                         </div>
+                        <PmWashLine jobType={workOrder.jobType} jobItem={jobItem} />
                         {jobItem.photos.length > 0 && (
                           <div className="text-xs text-green-600 dark:text-green-400 mt-2">
                             มีรูปภาพ {jobItem.photos.length} ภาพ

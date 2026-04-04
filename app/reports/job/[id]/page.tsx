@@ -37,6 +37,7 @@ export default async function JobReportPage({ params }: Props) {
         },
       },
       technician: true,
+      pmSchedule: { select: { pmType: true } },
       photos: { orderBy: { createdAt: "asc" } },
     },
   });

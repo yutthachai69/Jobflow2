@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import NextImage from "next/image";
+import { getPmWashTypeLabelThai } from "@/lib/pm-wash-label";
 
 interface AirborneFormData {
     [key: string]: any;
@@ -13,6 +14,10 @@ interface AirborneReportProps {
 
 export default function AirborneInfectionReport({ jobItem }: AirborneReportProps) {
     const [data, setData] = useState<AirborneFormData>({});
+    const pmWashLabel = useMemo(
+        () => getPmWashTypeLabelThai(jobItem?.workOrder?.jobType ?? "", jobItem ?? {}),
+        [jobItem]
+    );
 
     useEffect(() => {
         if (jobItem?.checklist) {
@@ -182,6 +187,12 @@ export default function AirborneInfectionReport({ jobItem }: AirborneReportProps
                                         <td>ROOM TYPE</td>
                                         <td className="data">{jobItem?.asset?.room?.name || ""} (Asset: {jobItem?.asset?.name || jobItem?.asset?.qrCode || ""})</td>
                                     </tr>
+                                    {pmWashLabel && (
+                                        <tr>
+                                            <td>ประเภทการล้าง</td>
+                                            <td className="data" colSpan={3}>{pmWashLabel}</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
 

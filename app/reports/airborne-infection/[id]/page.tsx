@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import AirborneInfectionReport from "@/app/components/reports/AirborneInfectionReport";
 import { notFound } from "next/navigation";
-
-const prisma = new PrismaClient();
 
 export default async function AirborneReportPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: jobItemId } = await params;
@@ -25,6 +23,7 @@ export default async function AirborneReportPage({ params }: { params: Promise<{
                 },
             },
             technician: true,
+            pmSchedule: { select: { pmType: true } },
         },
     });
 

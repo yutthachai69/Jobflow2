@@ -85,8 +85,10 @@ export function buildAirborneReportHtml(
   workOrder: {
     site: { name: string; client: { name: string } }
     scheduledDate: Date | string
-  }
+  },
+  options?: { pmWashLabel?: string | null }
 ): string {
+  const pmWashLabel = options?.pmWashLabel ?? null
   let data: AirborneData = {}
   if (jobItem.checklist) {
     try {
@@ -143,6 +145,12 @@ export function buildAirborneReportHtml(
         <td>ROOM TYPE</td>
         <td class="airborne-data">${esc(roomName)} (Asset: ${esc(assetLabel)})</td>
       </tr>
+      ${pmWashLabel
+        ? `<tr>
+        <td>ประเภทการล้าง</td>
+        <td class="airborne-data" colspan="3">${esc(pmWashLabel)}</td>
+      </tr>`
+        : ''}
     </tbody>
   </table>
   <table class="airborne-main-table">

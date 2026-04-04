@@ -12,10 +12,6 @@ import Breadcrumbs from "@/app/components/Breadcrumbs";
 import { getWOStatus, getJobStatus } from "@/lib/status-colors";
 import { getWorkOrderDisplayNumber } from "@/lib/work-order-number";
 import type { Metadata } from "next";
-import {
-  hasPmChecklistCustomerSignature,
-  jobItemRequiresCustomerSignatureInChecklist,
-} from "@/lib/pm-customer-signature";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -108,6 +104,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
             },
           },
           technician: true,
+          pmSchedule: { select: { pmType: true } },
           photos: {
             orderBy: { createdAt: 'asc' },
           },
@@ -140,21 +137,6 @@ export default async function WorkOrderDetailPage({ params }: Props) {
     ? (doneCount / workOrder.jobItems.length) * 100
     : 0;
 
-  const jobItemNeedsClientSign = (ji: (typeof workOrder.jobItems)[0]) => {
-    if (ji.status !== "IN_PROGRESS") return false;
-    return (
-      jobItemRequiresCustomerSignatureInChecklist(
-        workOrder.jobType,
-        ji.checklist,
-        ji.asset
-      ) && !hasPmChecklistCustomerSignature(ji.checklist)
-    );
-  };
-
-  const anyAwaitingClientSign =
-    user.role === "CLIENT" &&
-    workOrder.jobItems.some(jobItemNeedsClientSign);
-
   // Get all technicians for assignment (only for ADMIN)
   const technicians = user.role === 'ADMIN' ? await prisma.user.findMany({
     where: { role: 'TECHNICIAN' },
@@ -184,26 +166,6 @@ export default async function WorkOrderDetailPage({ params }: Props) {
             { label: `${jobTypeLabels[workOrder.jobType] || workOrder.jobType} - ${workOrder.site.name}`, href: undefined },
           ]}
         />
-
-        {anyAwaitingClientSign && (
-          <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-600 p-5 shadow-md">
-            <p className="font-bold text-amber-900 dark:text-amber-200 text-lg">
-              รอลายเซ็นลูกค้า
-            </p>
-            <p className="text-sm text-amber-800 dark:text-amber-300 mt-2">
-              ทีมงานแจ้งให้ลงลายมือชื่อรับรองงาน — กดปุ่ม <strong>ลงลายเซ็น</strong> ในแต่ละรายการด้านล่าง
-              หรือดูแจ้งเตือนที่ไอคอนกระดิ่ง / หน้าแจ้งเตือน
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href="/notifications"
-                className="inline-flex items-center px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700"
-              >
-                ไปหน้าแจ้งเตือน
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* Header Card - Status Card style (border-left) */}
         <div className="bg-app-card rounded-2xl shadow-xl p-6 mb-6 border border-app border-l-4" style={{ borderLeftColor: woStatusConfig.hex }}>
@@ -304,23 +266,8 @@ export default async function WorkOrderDetailPage({ params }: Props) {
           <div className="divide-y divide-app">
             {workOrder.jobItems.map((jobItem) => {
               const jobSt = getJobStatus(jobItem.status);
-              const showClientSignCta =
-                user.role === "CLIENT" && jobItemNeedsClientSign(jobItem);
               return (
                 <div key={jobItem.id} className="p-6 hover:bg-app-section/50 transition-all border-l-4 border-app" style={{ borderLeftColor: jobSt.hex }}>
-                  {showClientSignCta && (
-                    <div className="mb-4 rounded-xl border border-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 dark:border-indigo-600 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
-                        รายการนี้รอลายเซ็นลูกค้าเพื่อปิดงาน
-                      </p>
-                      <Link
-                        href={`/client/pm-sign/${jobItem.id}`}
-                        className="inline-flex justify-center items-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 shadow"
-                      >
-                        ลงลายเซ็น
-                      </Link>
-                    </div>
-                  )}
                   <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import AirborneInfectionReport from "@/app/components/reports/AirborneInfectionReport";
 
 export default function AirborneInfectionReportDemoClient({ jobItem }: { jobItem: any }) {
@@ -15,9 +16,9 @@ export default function AirborneInfectionReportDemoClient({ jobItem }: { jobItem
                             <span>📄</span>
                             Demo: Airborne Infection Control Room Report Template
                         </h1>
-                        <a href="/" className="text-gray-500 hover:text-gray-900">
+                        <Link href="/" className="text-gray-500 hover:text-gray-900">
                             กลับหน้าแรก
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </header>

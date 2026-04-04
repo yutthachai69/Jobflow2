@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+const globalForPrisma = globalThis as typeof globalThis & {
+  prisma?: PrismaClient
 }
 
 function createPrismaClient() {
@@ -13,8 +13,14 @@ function createPrismaClient() {
   })
 }
 
-// ผูก client กับ globalThis ทุก environment — Turbopack/HMR ใน dev โหลดโมดูลซ้ำได้;
-// ถ้าไม่ทำแบบนี้จะเกิด PrismaClient หลายตัว → connection pool เต็ม (P2024)
-export const prisma =
-  globalForPrisma.prisma ??
-  (globalForPrisma.prisma = createPrismaClient())
+// ผูก client กับ global — Turbopack/HMR / `new PrismaClient()` ในไฟล์อื่นจะทำให้ pool เต็ม (P2024)
+// ถ้ายัง timeout: ลองต่อท้าย DATABASE_URL ด้วย &pool_timeout=30 หรือลด connection_limit ตามเอกสาร Prisma
+function getOrCreatePrisma(): PrismaClient {
+  const existing = globalForPrisma.prisma
+  if (existing) return existing
+  const client = createPrismaClient()
+  globalForPrisma.prisma = client
+  return client
+}
+
+export const prisma = getOrCreatePrisma()

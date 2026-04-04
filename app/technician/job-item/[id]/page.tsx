@@ -3,17 +3,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateJobItemStatus, updateJobItemNote } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
+import { getPmWashTypeLabelThai } from "@/lib/pm-wash-label";
 import PhotoUpload from "./PhotoUpload";
 import DeletePhotoButton from "./DeletePhotoButton";
 import AirborneInfectionForm from "@/app/components/forms/AirborneInfectionForm";
 import ExhaustFanForm from "@/app/components/forms/ExhaustFanForm";
 import AssetHistoryTimeline from "@/app/components/AssetHistoryTimeline";
 import JobItemReportDownloadButton from "./JobItemReportDownloadButton";
-import PmCompleteSignatureSection from "./PmCompleteSignatureSection";
-import {
-  hasPmChecklistCustomerSignature,
-  jobItemRequiresCustomerSignatureInChecklist,
-} from "@/lib/pm-customer-signature";
+import CompleteJobItemButton from "./CompleteButton";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -40,6 +37,8 @@ export default async function TechnicianJobItemPage({ params }: Props) {
       startTime: true,
       endTime: true,
       checklist: true,
+      adHocPmType: true,
+      pmSchedule: { select: { pmType: true } },
       customerSignature: true,
       signedAt: true,
       asset: {
@@ -97,6 +96,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
   };
 
   const statusConfig = getStatusConfig(jobItem.status);
+  const pmWashLabel = getPmWashTypeLabelThai(jobItem.workOrder.jobType, jobItem);
 
   // Parse checklist to determine form type (ตามที่แอดมินเลือกตอนสร้างใบงาน)
   let parsedChecklist: any = null;
@@ -126,15 +126,6 @@ export default async function TechnicianJobItemPage({ params }: Props) {
   const showReportForms =
     jobItem.workOrder.jobType === "PM" ||
     (jobItem.workOrder.jobType === "CM" && adminStoredReportFormType);
-
-  const requiresCustomerSignature = jobItemRequiresCustomerSignatureInChecklist(
-    jobItem.workOrder.jobType,
-    jobItem.checklist,
-    asset
-  );
-  const hasPmCustomerSignature = hasPmChecklistCustomerSignature(
-    jobItem.checklist
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
@@ -196,6 +187,12 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               <span className="font-semibold text-gray-600 min-w-20">BTU:</span>
               <span className="text-gray-900">{jobItem.asset.btu?.toLocaleString() || "-"}</span>
             </div>
+            {jobItem.workOrder.jobType === "PM" && (
+              <div className="flex items-center gap-3 p-3 bg-violet-50 rounded-xl border border-violet-100">
+                <span className="font-semibold text-gray-600 min-w-20">ประเภทการล้าง:</span>
+                <span className="text-gray-900 font-medium">{pmWashLabel ?? "—"}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -233,12 +230,10 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   </div>
                 )}
                 <div className="flex-shrink-0 w-full sm:w-auto">
-                  <PmCompleteSignatureSection
+                  <CompleteJobItemButton
                     jobItemId={id}
-                    requiresCustomerSignature={requiresCustomerSignature}
-                    hasCustomerSignature={hasPmCustomerSignature}
-                    canComplete={canComplete}
-                    completeButtonClassName={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
+                    disabled={!canComplete}
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${canComplete
                       ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                       : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                       }`}
@@ -482,12 +477,10 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   </div>
                 </div>
               )}
-              <PmCompleteSignatureSection
+              <CompleteJobItemButton
                 jobItemId={id}
-                requiresCustomerSignature={requiresCustomerSignature}
-                hasCustomerSignature={hasPmCustomerSignature}
-                canComplete={canComplete}
-                completeButtonClassName={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canComplete
+                disabled={!canComplete}
+                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canComplete
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                   : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                   }`}
@@ -503,7 +496,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">ดาวน์โหลดรายงาน</h3>
-                <p className="text-sm text-gray-600">ดาวน์โหลด PDF รวมรายละเอียดงาน ฟอร์ม และรูปภาพที่ช่างแนบ (เลือก Save as PDF ในหน้าพิมพ์)</p>
+                <p className="text-sm text-gray-600">ดาวน์โหลด PDF รวมรายละเอียดงาน ฟอร์ม และรูปก่อนทำ (เลือก Save as PDF ในหน้าพิมพ์)</p>
               </div>
               <JobItemReportDownloadButton jobItem={jobItem} workOrder={jobItem.workOrder} />
             </div>

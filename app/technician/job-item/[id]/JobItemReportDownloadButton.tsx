@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { getWorkOrderDisplayNumber } from '@/lib/work-order-number'
 import { buildAirborneReportHtml, AIRBORNE_REPORT_CSS } from '@/lib/airborne-report-html'
 import { buildExhaustFanReportHtml, EXHAUST_REPORT_CSS } from '@/lib/exhaust-fan-report-html'
+import { getPmWashTypeLabelThai } from '@/lib/pm-wash-label'
 
 type PhotoType = 'BEFORE' | 'AFTER' | 'DEFECT' | 'METER'
 
@@ -22,6 +23,8 @@ interface JobItemForReport {
   }
   technician?: { fullName: string | null; username: string } | null
   photos?: Array<{ id: string; url: string; type: PhotoType }>
+  adHocPmType?: 'MAJOR' | 'MINOR' | null
+  pmSchedule?: { pmType: 'MAJOR' | 'MINOR' } | null
 }
 
 interface WorkOrderForReport {
@@ -92,11 +95,11 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
     setIsExporting(true)
     try {
       const workOrderNumber = getWorkOrderDisplayNumber(workOrder)
-      const photos = jobItem.photos || []
+      const printPhotos = (jobItem.photos || []).filter((p) => p.type === 'BEFORE')
       const photosHtml =
-        photos.length === 0
-          ? '<p class="text-muted">ไม่มีรูปภาพ</p>'
-          : photos
+        printPhotos.length === 0
+          ? '<p class="text-muted">ไม่มีรูปก่อนทำ</p>'
+          : printPhotos
               .map(
                 (p) => `
                 <div class="photo-block">
@@ -108,15 +111,20 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
       const techNoteHtml = jobItem.techNote
         ? `<p class="tech-note"><strong>หมายเหตุช่าง:</strong> ${escapeHtml(jobItem.techNote)}</p>`
         : ''
+      const pmWashLabel = getPmWashTypeLabelThai(workOrder.jobType, jobItem)
+      const pmWashHtml = pmWashLabel
+        ? `<p><strong>ประเภทการล้าง:</strong> ${escapeHtml(pmWashLabel)}</p>`
+        : ''
 
       const reportItemHtml = `
         <div class="report-item">
           <h3>รายการงาน: ${escapeHtml(jobItem.asset.qrCode)}</h3>
           <p><strong>สถานที่:</strong> ${escapeHtml(locationString())}</p>
+          ${pmWashHtml}
           <p><strong>ช่าง:</strong> ${escapeHtml(jobItem.technician?.fullName || jobItem.technician?.username || '-')} &nbsp;|&nbsp; <strong>สถานะ:</strong> ${jobItemStatusLabels[jobItem.status] || jobItem.status}</p>
           ${techNoteHtml}
           <div class="photos-section">
-            <p class="photos-title">รูปภาพที่ช่างแนบ</p>
+            <p class="photos-title">รูปภาพก่อนทำ</p>
             <div class="photos-grid">${photosHtml}</div>
           </div>
         </div>`
@@ -142,16 +150,19 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
         !!jobItem.checklist
       if (includeFormInPrint && jobItem.checklist) {
         const checklistStr = jobItem.checklist
+        const formPmOpts = { pmWashLabel }
         if (formType === 'EXHAUST_FAN') {
           formReportHtml = buildExhaustFanReportHtml(
             { checklist: checklistStr, asset: jobItem.asset },
-            workOrder
+            workOrder,
+            formPmOpts
           )
           formReportCss = EXHAUST_REPORT_CSS
         } else {
           formReportHtml = buildAirborneReportHtml(
             { checklist: checklistStr, asset: jobItem.asset },
-            workOrder
+            workOrder,
+            formPmOpts
           )
           formReportCss = AIRBORNE_REPORT_CSS
         }
@@ -210,7 +221,7 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
     <p><strong>วันนัดหมาย:</strong> ${new Date(workOrder.scheduledDate as Date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
     <p><strong>สถานะงาน:</strong> ${statusLabels[workOrder.status] || workOrder.status}</p>
   </div>
-  <h2>รายละเอียดงานและรูปภาพที่ช่างแนบ</h2>
+  <h2>รายละเอียดงานและรูปก่อนทำ</h2>
   ${reportItemHtml}
   ${formReportHtml}
 </body>
@@ -223,7 +234,7 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
       printWindow.document.write(htmlContent)
       printWindow.document.close()
 
-      const hasPhotos = (jobItem.photos?.length ?? 0) > 0
+      const hasPhotos = printPhotos.length > 0
       const hasFormReport = !!formReportHtml
       const waitMs = hasFormReport ? 1500 : hasPhotos ? 1200 : 600
 
