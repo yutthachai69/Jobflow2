@@ -50,7 +50,7 @@ export default async function JobReportPage({ params }: Props) {
       where: { id: user.userId },
       select: { siteId: true },
     }))?.siteId ?? null;
-    const jobSiteId = jobItem.asset?.room?.floor?.building?.siteId ?? null;
+    const jobSiteId = jobItem.asset?.room?.floor?.building?.siteId ?? jobItem.workOrder.siteId ?? null;
     if (!siteId || !jobSiteId || siteId !== jobSiteId) notFound();
   }
 

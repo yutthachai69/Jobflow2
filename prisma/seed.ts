@@ -10,6 +10,7 @@ async function main() {
   // 1. ล้างข้อมูลเก่าทิ้งก่อน (เรียงตามลำดับเพื่อไม่ให้ติด Relation)
   await prisma.jobPhoto.deleteMany()
   await prisma.jobItem.deleteMany()
+  await prisma.feedback.deleteMany()
   await prisma.workOrder.deleteMany()
   await prisma.contactMessage.deleteMany()
   // หมายเหตุ: SecurityIncident ไม่มีใน migrations ปัจจุบัน — ถ้าเพิ่ม migration สร้างตารางนี้ ให้เพิ่ม deleteMany ตรงนี้
@@ -108,7 +109,7 @@ async function main() {
   const sparePartTypes = ['Filter', 'Compressor', 'Fan Motor', 'Capacitor', 'Thermostat', 'Coil', 'Drain Pan']
   const toolTypes = ['Vacuum Pump', 'Gauges Set', 'Refrigerant Scale', 'Leak Detector', 'Multimeter', 'Drill', 'Wrench Set']
   
-  const assetTypes = ['AIR_CONDITIONER', 'REFRIGERANT', 'SPARE_PART', 'TOOL', 'OTHER'] as const
+  const assetTypes = ['AIR_CONDITIONER', 'REFRIGERANT', 'SPARE_PART', 'TOOL', 'EXHAUST'] as const
   const statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'BROKEN', 'RETIRED'] as const
   const btuRanges = [12000, 18000, 24000, 30000, 36000]
   
@@ -137,8 +138,8 @@ async function main() {
       // เครื่องมือ - ไม่มี QR Code
       qrCode = `TOOL-2024-${String(i).padStart(3, '0')}`
     } else {
-      // อื่นๆ - ไม่มี QR Code
-      qrCode = `OTHER-2024-${String(i).padStart(3, '0')}`
+      // EXHAUST - Exhaust Fan/Duct
+      qrCode = `ExF-2024-${String(i).padStart(3, '0')}`
     }
     
     // สุ่มวันที่ติดตั้ง (เฉพาะเครื่องปรับอากาศ)

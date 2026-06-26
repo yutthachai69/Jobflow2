@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateBuilding } from '@/app/actions'
+import { updateBuilding } from '@/app/actions/locations'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
 interface Building {
   id: string
   name: string
+  buildingCode: string | null
   site: {
     id: string
     name: string
@@ -25,6 +26,7 @@ interface Props {
 export default function EditBuildingForm({ building }: Props) {
   const router = useRouter()
   const [name, setName] = useState<string>(building.name)
+  const [buildingCode, setBuildingCode] = useState<string>(building.buildingCode || '')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -50,15 +52,18 @@ export default function EditBuildingForm({ building }: Props) {
     const formData = new FormData(e.currentTarget)
     formData.set('buildingId', building.id)
     formData.set('siteId', building.site.id)
+    formData.set('buildingCode', buildingCode)
 
     try {
       await updateBuilding(formData)
       toast.success('แก้ไขอาคารเรียบร้อยแล้ว')
       router.push('/locations')
       router.refresh()
-    } catch (error) {
+    } catch (error: any) {
+      // NEXT_REDIRECT ต้อง re-throw ให้ Next.js router จัดการ navigation เอง
+      if (error?.message === 'NEXT_REDIRECT' || error?.digest?.includes?.('NEXT_REDIRECT')) throw error
       console.error('Error updating building:', error)
-      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล'
+      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการแก้ไข'
       toast.error(errorMessage)
       setIsSubmitting(false)
     }
@@ -89,6 +94,23 @@ export default function EditBuildingForm({ building }: Props) {
           {errors.name && (
             <p className="mt-1 text-sm text-red-600">{errors.name}</p>
           )}
+        </div>
+
+        {/* Building Code */}
+        <div>
+          <label htmlFor="buildingCode" className="block text-sm font-semibold text-gray-700 mb-2">
+            Building Code (รหัสอาคาร)
+          </label>
+          <input
+            id="buildingCode"
+            name="buildingCode"
+            type="text"
+            value={buildingCode}
+            onChange={(e) => setBuildingCode(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-400"
+            placeholder="เช่น A, MAIN, 1 (1-4 ตัวอักษร)"
+          />
+          <p className="mt-1 text-xs text-gray-500">ใช้ในการสร้าง QR Code อัตโนมัติ (เช่น AC-PTS1-A-F1-001)</p>
         </div>
 
         <div className="flex items-center gap-4 pt-4">

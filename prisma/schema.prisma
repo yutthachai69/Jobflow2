@@ -65,6 +65,7 @@ model Client {
 model Site {
   id        String  @id @default(cuid())
   name      String
+  siteCode  String? // รหัสย่อสำหรับ QR เช่น PTS1, PHY
   address   String?
   latitude  Float?
   longitude Float?
@@ -78,10 +79,11 @@ model Site {
 }
 
 model Building {
-  id     String @id @default(cuid())
-  name   String
-  siteId String
-  site   Site   @relation(fields: [siteId], references: [id])
+  id           String @id @default(cuid())
+  name         String
+  buildingCode String? // รหัสย่อสำหรับ QR เช่น A, B, MAIN
+  siteId       String
+  site         Site   @relation(fields: [siteId], references: [id])
 
   floors Floor[]
 }
@@ -115,21 +117,20 @@ enum AssetStatus {
 }
 
 enum AssetType {
-  AIR_CONDITIONER
+  AIR_CONDITIONER  // เครื่องปรับอากาศ (AC)
+  EXHAUST_DUCT     // ท่อดูดอากาศ (ExD)
+  EXHAUST_FAN      // พัดลมดูดอากาศ (ExF)
+  FRESH_AIR        // พัดลมเติมอากาศบริสุทธิ์ (FA)
   REFRIGERANT
   SPARE_PART
   TOOL
-  EXHAUST
-  OTHER
 }
 
 enum MachineType {
-  SPLIT_TYPE  // แอร์แบบแยกส่วน
-  FCU         // เครื่องเป่าลมเย็น
-  AHU         // เครื่องส่งลมเย็นขนาดใหญ่
-  EXHAUST     // พัดลมดูดอากาศ
-  VRF         // เครื่องปรับอากาศแบบ VRF
-  OTHER       // อื่นๆ
+  SPLIT_TYPE      // แอร์แบบแยกส่วน
+  FCU             // เครื่องเป่าลมเย็น
+  AHU             // เครื่องส่งลมเย็นขนาดใหญ่
+  VRF             // เครื่องปรับอากาศแบบ VRF
 }
 
 model Asset {
@@ -163,6 +164,20 @@ enum JobType {
   PM
   CM
   INSTALL
+  AD_HOC         // ซ่อมนอกแผน
+}
+
+enum RepairType {
+  WASH_AC        // ล้างแอร์
+  REPAIR_AC      // ซ่อมแอร์
+  WASH_FAN       // ล้างพัดลม
+  REPAIR_FAN     // ซ่อมพัดลม
+  OTHER          // อื่นๆ
+}
+
+enum ReportFormType {
+  AIRBORNE_INFECTION  // Clean Room & Airborne Infection Report
+  EXHAUST_FAN         // Exhaust Fan Type Report
 }
 
 enum OrderStatus {
@@ -187,21 +202,34 @@ model WorkOrder {
 
   assignedTeam String?
 
+  // Ad-hoc repair fields
+  repairType          RepairType?     // ประเภทการซ่อม (for AD_HOC only)
+  reportFormType      ReportFormType? // ประเภทฟร้อมรายงาน (for AD_HOC only)
+  locationDescription String?         // สถานที่ที่ admin กรอก (for AD_HOC only)
+  problemDescription  String?         // รายละเอียดปัญหา (for AD_HOC only)
+
   // Approval System
   approvalToken   String?   @unique // Token for public access
   approvedAt      DateTime?
   rejectedAt      DateTime?
   rejectionReason String?
-  
+
   jobItems  JobItem[]
   sourceJobItem JobItem? @relation("SourceJobItem")
   feedbacks  Feedback[]
+
+  // Duplicate tracking
+  duplicateOfId String?
+  duplicateOf WorkOrder? @relation("DuplicateWorkOrder", fields: [duplicateOfId], references: [id])
+  duplicates WorkOrder[] @relation("DuplicateWorkOrder")
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   @@index([status])
   @@index([scheduledDate])
   @@index([siteId])
+  @@index([duplicateOfId])
   @@index([workOrderNumber])
   @@index([approvalToken]) // Add index for fast lookup by token
 }

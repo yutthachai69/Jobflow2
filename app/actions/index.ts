@@ -11,6 +11,9 @@
 export {
   createMockMaintenance,
   createWorkOrder,
+  createAdHocRepair,
+  updateAdHocRepair,
+  deleteAdHocRepair,
   updateWorkOrderStatus,
   updateWorkOrder,
   deleteWorkOrder,

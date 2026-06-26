@@ -69,10 +69,7 @@ export async function POST(req: Request) {
                 // หา user ใน DB
                 const user = await prisma.user.findFirst({
                     where: {
-                        username: {
-                            equals: username,
-                            mode: 'insensitive',
-                        },
+                        username: username,
                     },
                     select: { id: true, username: true, fullName: true, lineUserId: true },
                 })

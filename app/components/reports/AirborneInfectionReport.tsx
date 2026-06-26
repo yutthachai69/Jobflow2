@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import NextImage from "next/image";
 import { getPmWashTypeLabelThai } from "@/lib/pm-wash-label";
+import ReportPdfDownloadButton from "./ReportPdfDownloadButton";
 
 interface AirborneFormData {
     [key: string]: any;
@@ -138,9 +139,10 @@ export default function AirborneInfectionReport({ jobItem }: AirborneReportProps
             <div className="report-body bg-gray-100 min-h-screen py-8 flex justify-center">
 
                 <div className="no-print export-actions-panel fixed bottom-8 right-8 z-50 bg-white p-4 rounded-xl shadow-2xl border border-gray-200 flex flex-col gap-3" aria-hidden="true">
-                    <button onClick={handleExportPDF} className="px-6 py-3 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 font-bold transition-colors flex items-center justify-center gap-2">
-                        ⬇️ Download PDF
-                    </button>
+                    <ReportPdfDownloadButton
+                        jobItemId={jobItem?.id}
+                        className="px-6 py-3 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    />
                     <button onClick={() => window.print()} className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 font-bold transition-colors">
                         🖨️ Print (A4 Format)
                     </button>
@@ -218,14 +220,14 @@ export default function AirborneInfectionReport({ jobItem }: AirborneReportProps
                                     <tr><td className="bg-yellow">AIR FLOW  (CFM.)</td><td className="text-center bold">{data.airFlowCfm}</td><td className="text-center bold">{data.airFlowCfmAfter}</td><td>แผ่นกรองอากาศ</td><td className="text-center bold">{renderCheck("airFilter", "normal")}</td><td className="text-center bold">{renderCheck("airFilter", "abnormal")}</td><td className="text-center">{data.remarksAirFilter}</td></tr>
                                     <tr><td className="bg-yellow"></td><td className="text-center bold"></td><td className="text-center bold"></td><td>TWO WAY VALVE</td><td className="text-center bold">{renderCheck("twoWayValve", "normal")}</td><td className="text-center bold">{renderCheck("twoWayValve", "abnormal")}</td><td className="text-center">{data.remarksTwoWayValve}</td></tr>
 
-                                    <tr><td colSpan={3} className="bg-yellow bold">COMPRESSOR CURRENT</td><td>ฉนวนหุ้มท่อน้ำเย็น</td><td className="text-center bold">{renderCheck("waterPipeInsulation", "normal")}</td><td className="text-center bold">{renderCheck("waterPipeInsulation", "abnormal")}</td><td className="text-center">{data.remarksWaterPipeInsulation}</td></tr>
+                                    <tr><td colSpan={3} className="bg-yellow bold">COMPRESSOR CURRENT (Amp.)</td><td>ฉนวนหุ้มท่อน้ำเย็น</td><td className="text-center bold">{renderCheck("waterPipeInsulation", "normal")}</td><td className="text-center bold">{renderCheck("waterPipeInsulation", "abnormal")}</td><td className="text-center">{data.remarksWaterPipeInsulation}</td></tr>
 
                                     <tr><td className="bg-yellow">L 1</td><td className="text-center bold">{data.compL1}</td><td className="text-center bold">{data.compL1After}</td><td>ท่อส่งลมเย็น Chiller</td><td className="text-center bold">{renderCheck("chillerPipe", "normal")}</td><td className="text-center bold">{renderCheck("chillerPipe", "abnormal")}</td><td className="text-center">{data.remarksChillerPipe}</td></tr>
                                     <tr><td className="bg-yellow">L 2</td><td className="text-center bold">{data.compL2}</td><td className="text-center bold">{data.compL2After}</td><td>Board Control  คอยล์เย็น</td><td className="text-center bold">{renderCheck("boardControlCoilYen", "normal")}</td><td className="text-center bold">{renderCheck("boardControlCoilYen", "abnormal")}</td><td className="text-center">{data.remarksBoardControlCoilYen}</td></tr>
                                     <tr><td className="bg-yellow">L 3</td><td className="text-center bold">{data.compL3}</td><td className="text-center bold">{data.compL3After}</td><td>ชุดคอยล์ร้อน Condensing</td><td className="text-center bold">{renderCheck("condensingCoil", "normal")}</td><td className="text-center bold">{renderCheck("condensingCoil", "abnormal")}</td><td className="text-center">{data.remarksCondensingCoil}</td></tr>
                                     <tr><td className="bg-yellow"></td><td className="text-center bold"></td><td className="text-center bold"></td><td>แมกเนติก โอเวอร์โหลด</td><td className="text-center bold">{renderCheck("magneticOverload", "normal")}</td><td className="text-center bold">{renderCheck("magneticOverload", "abnormal")}</td><td className="text-center">{data.remarksMagneticOverload}</td></tr>
 
-                                    <tr><td colSpan={3} className="bg-yellow bold">MOTOR CURRENT (AIR SIDE)</td><td>MOTOR CONDENSING</td><td className="text-center bold">{renderCheck("motorCondensing", "normal")}</td><td className="text-center bold">{renderCheck("motorCondensing", "abnormal")}</td><td className="text-center">{data.remarksMotorCondensing}</td></tr>
+                                    <tr><td colSpan={3} className="bg-yellow bold">MOTOR CURRENT (AIR SIDE) (Amp.)</td><td>MOTOR CONDENSING</td><td className="text-center bold">{renderCheck("motorCondensing", "normal")}</td><td className="text-center bold">{renderCheck("motorCondensing", "abnormal")}</td><td className="text-center">{data.remarksMotorCondensing}</td></tr>
 
                                     <tr><td className="bg-yellow">L 1</td><td className="text-center bold">{data.motorAirL1}</td><td className="text-center bold">{data.motorAirL1After}</td><td>COMPRESSOR</td><td className="text-center bold">{renderCheck("compressorCheck", "normal")}</td><td className="text-center bold">{renderCheck("compressorCheck", "abnormal")}</td><td className="text-center">{data.remarksCompressorCheck}</td></tr>
                                     <tr><td className="bg-yellow">L 2</td><td className="text-center bold">{data.motorAirL2}</td><td className="text-center bold">{data.motorAirL2After}</td><td>DISCHARGE PRESSURE (PSIG)</td><td className="text-center bold">{renderCheck("dischargePressure", "normal")}</td><td className="text-center bold">{renderCheck("dischargePressure", "abnormal")}</td><td className="text-center">{data.remarksDischargePressure}</td></tr>

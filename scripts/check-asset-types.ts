@@ -21,8 +21,9 @@ async function main() {
   })
   const typeLabels: Record<string, string> = {
     AIR_CONDITIONER: 'เครื่องปรับอากาศ (แอร์)',
-    EXHAUST: 'พัดลมดูดอากาศ (EXHAUST)',
-    OTHER: 'อื่นๆ',
+    EXHAUST_DUCT: 'พัดลมดูดอากาศ - ท่อ (ExD)',
+    EXHAUST_FAN: 'พัดลมดูดอากาศ - พัดลม (ExF)',
+    FRESH_AIR: 'พัดลมอากาศบริสุทธิ์ (FA)',
     REFRIGERANT: 'สารทำความเย็น',
     SPARE_PART: 'อะไหล่',
     TOOL: 'เครื่องมือ',
@@ -67,7 +68,7 @@ async function main() {
     }
     const c = map.get(siteId)!
     if (a.assetType === 'AIR_CONDITIONER') c.air++
-    else if (a.assetType === 'EXHAUST') c.exhaust++
+    else if (a.assetType === 'EXHAUST_DUCT' || a.assetType === 'EXHAUST_FAN') c.exhaust++
     else c.other++
   }
 

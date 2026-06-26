@@ -49,12 +49,12 @@ export async function setSession(
 ) {
   const cookieStore = await cookies()
 
-  // Session expiration: 7 days for absolute timeout, but we'll track last activity
-  const token = await new SignJWT({ 
-    userId, 
-    role, 
+  // Session expiration: 7 days (absolute timeout)
+  // Inactivity timeout removed — users stay logged in until absolute expiration
+  const token = await new SignJWT({
+    userId,
+    role,
     siteId,
-    lastActivity: Math.floor(Date.now() / 1000) // Track last activity (in seconds for JWT)
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -99,26 +99,8 @@ export async function verifySession(): Promise<CurrentUser | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET_KEY)
 
-    // Check inactivity timeout (30 minutes)
-    const INACTIVITY_TIMEOUT = 30 * 60 // 30 minutes in seconds
-    const lastActivity = (payload.lastActivity as number) || payload.iat!
-    const now = Math.floor(Date.now() / 1000) // Current time in seconds
-    
-    if (now - lastActivity > INACTIVITY_TIMEOUT) {
-      // Session expired due to inactivity
-      // Log only if debugging auth issues
-      // if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_AUTH === 'true') {
-      //   console.log('[Auth] Session expired due to inactivity')
-      // }
-      // Note: Cannot delete cookie here because this might be called from a Server Component
-      // The cookie will expire naturally based on maxAge, or client-side can handle it
-      // Just return null to indicate no valid session
-      return null
-    }
-
-    // Update last activity (refresh token with new lastActivity)
-    // Note: We don't update the token here to avoid too frequent updates
-    // The token will be refreshed on next request if needed
+    // Inactivity timeout removed — users stay logged in until 7-day absolute expiration
+    // JWT exp claim is checked automatically by jwtVerify() above
 
     const user = {
       userId: payload.userId as string,

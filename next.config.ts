@@ -4,6 +4,10 @@ import packageJson from './package.json'
 const isDev = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
+  // จำเป็นสำหรับ Dockerfile (คัดลอก .next/standalone)
+  output: 'standalone',
+  // puppeteer-core ใช้ dynamic import ใน API route — บอก Next.js ไม่ต้อง bundle
+  serverExternalPackages: ['puppeteer-core'],
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -17,6 +21,10 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
     // NEXT_PUBLIC_APP_NAME: 'Flomac Service',
     NEXT_PUBLIC_APP_NAME: 'LMT air service',
+    // Vercel function body ~4.5MB — default 4MB on Vercel builds unless overridden
+    NEXT_PUBLIC_MAX_UPLOAD_MB:
+      process.env.NEXT_PUBLIC_MAX_UPLOAD_MB ??
+      (process.env.VERCEL === '1' ? '4' : '10'),
   },
   async headers() {
     return [
@@ -27,7 +35,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: isDev
               ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://*.line-scdn.net https://profile.line-scdn.net; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.line.me https://*.line-scdn.net; frame-ancestors https://line.me https://*.line.me;"
-              : "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://*.line-scdn.net https://profile.line-scdn.net; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.line.me https://*.line-scdn.net; frame-ancestors https://line.me https://*.line.me; base-uri 'self'; form-action 'self'",
+              : "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.line-scdn.net https://d.line-scdn.net https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://*.line-scdn.net https://profile.line-scdn.net https://maps.googleapis.com https://maps.gstatic.com; connect-src 'self' https://*.supabase.co https://*.public.blob.vercel-storage.com https://api.line.me https://*.line-scdn.net https://maps.googleapis.com; frame-ancestors https://line.me https://*.line.me; base-uri 'self'; form-action 'self'",
           },
           {
             key: 'X-Content-Type-Options',

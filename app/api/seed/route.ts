@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Create assets - 50 รายการคละประเภท
-      const assetTypes = ['AIR_CONDITIONER', 'REFRIGERANT', 'SPARE_PART', 'TOOL', 'OTHER'] as const
+      const assetTypes = ['AIR_CONDITIONER', 'REFRIGERANT', 'SPARE_PART', 'TOOL'] as const
       const statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'BROKEN', 'RETIRED'] as const
       const btuRanges = [12000, 18000, 24000, 30000, 36000]
       const rooms = [roomLobby, roomServer]

@@ -28,7 +28,7 @@ export async function getClientPMPlan(year: number) {
     const inMonth = schedules.filter((s) => s.targetMonth === month)
 
     const ac = inMonth.filter((s) => s.asset.assetType === "AIR_CONDITIONER")
-    const exhaust = inMonth.filter((s) => s.asset.assetType === "EXHAUST")
+    const exhaust = inMonth.filter((s) => s.asset.assetType === "EXHAUST_FAN" || s.asset.assetType === "EXHAUST_DUCT" || s.asset.assetType === "FRESH_AIR")
 
     const done = inMonth.filter((s) => s.jobItem && s.jobItem.status === "DONE").length
     const inProgress = inMonth.filter(

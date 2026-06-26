@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import EmptyState from "@/app/components/EmptyState"
-import { getWOStatus } from "@/lib/status-colors"
 import DateTimeDisplay from "@/app/components/DateTimeDisplay"
 import SiteFilter from "./SiteFilter"
 import { Suspense } from "react"
+import { formatThaiDate } from "@/lib/date-utils"
+import { getDashboardJobItemStats } from "@/lib/dashboard-job-stats"
 
 interface Props {
   siteId?: string;
@@ -23,33 +23,24 @@ export default async function AdminDashboard({ siteId }: Props) {
     ? { room: { floor: { building: { siteId } } } }
     : {};
 
-  const [
-    totalAssets,
-    activeWorkOrders,
-    completedToday,
-    totalWorkOrders,
-  ] = await Promise.all([
+  const [totalAssets, jobStats, recentJobItems] = await Promise.all([
     prisma.asset.count({ where: assetWhere }),
-    prisma.workOrder.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] }, ...siteWhere } }),
-    prisma.workOrder.count({
-      where: {
-        status: "COMPLETED",
-        updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-        ...siteWhere,
-      },
-    }),
-    prisma.workOrder.count({ where: siteWhere }),
+    getDashboardJobItemStats(prisma, siteId),
+    prisma.jobItem.findMany({
+      where: siteId ? { workOrder: { siteId } } : {},
+      take: 10,
+      orderBy: { id: 'desc' }, // Simple ordering for recent work
+      include: {
+        asset: true,
+        workOrder: {
+          include: { site: true },
+        },
+        technician: {
+          select: { fullName: true, username: true }
+        }
+      }
+    })
   ])
-
-  const recentWorkOrders = await prisma.workOrder.findMany({
-    take: 5,
-    orderBy: { createdAt: "desc" },
-    where: siteWhere,
-    include: {
-      site: { include: { client: true } },
-      jobItems: { include: { asset: true } },
-    },
-  })
 
   const progressData = await prisma.workOrder.findMany({
     where: { status: "IN_PROGRESS", ...siteWhere },
@@ -78,6 +69,11 @@ export default async function AdminDashboard({ siteId }: Props) {
             <p className="text-sm text-app-muted">
               {selectedSite ? `ภาพรวม: ${selectedSite.name}` : 'ภาพรวมทั้งระบบ'}
             </p>
+            {selectedSite && (
+              <p className="text-xs text-amber-600/90 mt-1">
+                กรองเฉพาะไซต์นี้ — ตัวเลขจะไม่เท่ากับแดชบอร์ดช่าง (ช่างเห็นทั้งระบบ)
+              </p>
+            )}
           </div>
           <Suspense>
             <SiteFilter sites={sites} selectedSiteId={siteId ?? ''} />
@@ -90,13 +86,14 @@ export default async function AdminDashboard({ siteId }: Props) {
         </div>
 
         {/* สถิติการ์ด */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
           {[
-            { label: 'แอร์ทั้งหมด', value: totalAssets, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets' },
-            { label: 'งานที่ดำเนินการ', value: activeWorkOrders, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders' },
-            { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders' },
-            { label: 'งานทั้งหมด', value: totalWorkOrders, emoji: '📊', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/work-orders' },
-          ].map(({ label, value, emoji, from, to, glow, href }) => (
+            { label: 'แอร์ทั้งหมด', sub: selectedSite ? `เฉพาะ ${selectedSite.name}` : 'ทุกไซต์', value: totalAssets, emoji: '❄️', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/assets' },
+            { label: 'งานที่ดำเนินการ', sub: 'รายการเครื่องที่ยังไม่เสร็จ', value: jobStats.activeJobItems, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders' },
+            { label: 'เสร็จสิ้นวันนี้', sub: 'ตามเวลา endTime (วันนี้)', value: jobStats.completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders' },
+            { label: 'งานที่เสร็จแล้วทั้งหมด', sub: 'สะสมทุกสถานะ DONE', value: jobStats.totalDone, emoji: '🏆', from: '#0d9488', to: '#0f766e', glow: 'rgba(13,148,136,0.25)', href: '/work-orders' },
+            { label: 'รายการงานทั้งหมด', sub: 'จำนวน JobItem ทั้งระบบที่เลือก', value: jobStats.totalJobItems, emoji: '📊', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/work-orders' },
+          ].map(({ label, sub, value, emoji, from, to, glow, href }) => (
             <Link
               key={label}
               href={href}
@@ -110,6 +107,7 @@ export default async function AdminDashboard({ siteId }: Props) {
                 </div>
                 <p className="text-white font-bold text-3xl leading-none mb-1">{value}</p>
                 <p className="text-white/70 text-xs font-medium">{label}</p>
+                <p className="text-white/50 text-[10px] mt-1 leading-snug">{sub}</p>
               </div>
             </Link>
           ))}
@@ -127,7 +125,7 @@ export default async function AdminDashboard({ siteId }: Props) {
                       <Link href={`/work-orders/${info.workOrder.id}`} className="font-semibold hover:underline" style={{ color: '#C2A66A' }}>
                         {info.workOrder.jobType} - {info.workOrder.site.name}
                       </Link>
-                      <p className="text-sm text-app-muted">{new Date(info.workOrder.scheduledDate).toLocaleDateString("th-TH")}</p>
+                      <p className="text-sm text-app-muted">{formatThaiDate(info.workOrder.scheduledDate, 'numeric')}</p>
                     </div>
                     <span className="text-sm font-medium text-app-body">{info.done}/{info.total}</span>
                   </div>
@@ -140,42 +138,47 @@ export default async function AdminDashboard({ siteId }: Props) {
           </div>
         )}
 
-        {/* งานล่าสุด */}
+        {/* งานล่าสุด (แสดงแบบรายเครื่อง) */}
         <div className="bg-app-card rounded-lg border border-app shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-app-heading">งานล่าสุด</h2>
+            <h2 className="text-lg font-semibold text-app-heading">งานล่าสุด (แยกตามเครื่อง)</h2>
             <Link href="/work-orders" className="text-sm font-medium hover:underline" style={{ color: '#C2A66A' }}>ดูทั้งหมด →</Link>
           </div>
           <div className="min-w-0 overflow-x-auto -mx-px">
-            {recentWorkOrders.length === 0 ? (
-              <div className="py-12">
-                <EmptyState icon="📋" title="ยังไม่มีงานล่าสุด" description="เมื่อมีการสร้างใบสั่งงานใหม่ จะแสดงที่นี่" actionLabel="สร้างใบสั่งงานใหม่" actionHref="/work-orders/new" />
-              </div>
+            {recentJobItems.length === 0 ? (
+              <div className="py-8 text-center text-app-muted">ยังไม่มีงานล่าสุด</div>
             ) : (
               <table className="w-full text-sm">
                 <thead className="bg-app-section border-b border-app">
                   <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">ทรัพย์สิน</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">ชนิดงาน</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">สถานที่</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">วันที่</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">สถานะ</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">รายการ</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-app-muted uppercase tracking-wider">ช่าง</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-app">
-                  {recentWorkOrders.map((wo) => {
-                    const st = getWOStatus(wo.status)
+                  {recentJobItems.map((ji) => {
+                    const st = ji.status === 'DONE' ? { label: 'เสร็จสิ้น', tailwind: 'bg-green-100 text-green-700' } :
+                               ji.status === 'IN_PROGRESS' ? { label: 'กำลังทำ', tailwind: 'bg-blue-100 text-blue-700' } :
+                               { label: 'รอดำเนินการ', tailwind: 'bg-gray-100 text-gray-700' };
+                    
                     return (
-                      <tr key={wo.id} className="hover:bg-app-section/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-app-heading">
-                          <Link href={`/work-orders/${wo.id}`} className="hover:underline">{wo.jobType}</Link>
+                      <tr key={ji.id} className="hover:bg-app-section/50 transition-colors">
+                        <td className="px-4 py-3 font-bold text-app-heading">
+                          <Link href={`/technician/job-item/${ji.id}`} className="hover:underline">{ji.asset.qrCode}</Link>
                         </td>
-                        <td className="px-4 py-3 text-app-body">{wo.site.name} ({wo.site.client.name})</td>
-                        <td className="px-4 py-3 text-app-body">{new Date(wo.scheduledDate).toLocaleDateString("th-TH")}</td>
+                        <td className="px-4 py-3 text-app-body">{ji.workOrder.jobType}</td>
+                        <td className="px-4 py-3 text-app-body">{ji.workOrder.site.name}</td>
+                        <td className="px-4 py-3 text-app-body">{formatThaiDate(ji.workOrder.scheduledDate, 'numeric')}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${st.tailwind}`}>{st.label}</span>
+                          <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${st.tailwind}`}>{st.label}</span>
                         </td>
-                        <td className="px-4 py-3 text-app-body">{wo.jobItems.length} รายการ</td>
+                        <td className="px-4 py-3 text-app-body text-xs">
+                          {ji.technician ? (ji.technician.fullName || ji.technician.username) : '-'}
+                        </td>
                       </tr>
                     )
                   })}

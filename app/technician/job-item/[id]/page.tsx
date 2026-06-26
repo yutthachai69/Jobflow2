@@ -59,8 +59,22 @@ export default async function TechnicianJobItemPage({ params }: Props) {
         },
       },
       workOrder: {
-        include: {
-          site: { include: { client: true } },
+        select: {
+          id: true,
+          workOrderNumber: true,
+          jobType: true,
+          scheduledDate: true,
+          status: true,
+          repairType: true,
+          reportFormType: true,
+          locationDescription: true,
+          problemDescription: true,
+          siteId: true,
+          site: {
+            include: {
+              client: true,
+            },
+          },
         },
       },
       generatedWorkOrder: true,
@@ -75,15 +89,18 @@ export default async function TechnicianJobItemPage({ params }: Props) {
     notFound();
   }
 
-  // Authorization: TECHNICIAN can view job items assigned to them or unassigned (unless ADMIN)
-  if (user.role === 'TECHNICIAN' && jobItem.technicianId !== null && jobItem.technicianId !== user.id) {
+  // Authorization: TECHNICIAN สามารถดูได้เฉพาะงานที่ assign ให้ตัวเองเท่านั้น (รวมถึงงานที่ยังไม่ได้ assign จะไม่ให้ดู เพื่อป้องกัน data leak)
+  if (user.role === 'TECHNICIAN' && jobItem.technicianId !== user.id) {
     redirect('/technician?error=unauthorized');
   }
 
   // Check if required photos exist
+  const isCM = jobItem.workOrder.jobType === "CM"
   const hasBefore = jobItem.photos.some(photo => photo.type === 'BEFORE')
   const hasAfter = jobItem.photos.some(photo => photo.type === 'AFTER')
-  const canComplete = hasBefore && hasAfter
+  const hasDefect = jobItem.photos.some(photo => photo.type === 'DEFECT')
+  
+  const canComplete = isCM ? hasDefect : (hasBefore && hasAfter)
 
   const getStatusConfig = (status: string) => {
     const configs = {
@@ -100,9 +117,12 @@ export default async function TechnicianJobItemPage({ params }: Props) {
 
   // Parse checklist to determine form type (ตามที่แอดมินเลือกตอนสร้างใบงาน)
   let parsedChecklist: any = null;
-  let formType: string = 'AIRBORNE_INFECTION'; // Default for PM jobs
+  let formType: string = 'AIRBORNE_INFECTION'; // Default
 
-  if (jobItem.checklist) {
+  // For AD_HOC: use reportFormType from WorkOrder
+  if (jobItem.workOrder.jobType === 'AD_HOC' && jobItem.workOrder.reportFormType) {
+    formType = jobItem.workOrder.reportFormType;
+  } else if (jobItem.checklist) {
     try {
       parsedChecklist = JSON.parse(jobItem.checklist);
       if (parsedChecklist && parsedChecklist.formType) {
@@ -115,7 +135,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
   }
   // Fallback: ถ้า checklist ไม่มี formType ให้ดูจากประเภททรัพย์สิน (Exhaust -> Exhaust Fan form)
   const asset = jobItem.asset as { qrCode: string; assetType?: string };
-  if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST' || (asset.qrCode || '').startsWith('EX-'))) {
+  if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST_DUCT' || asset.assetType === 'EXHAUST_FAN' || /^(EX|ExD|ExF)-/.test(asset.qrCode || ''))) {
     formType = 'EXHAUST_FAN';
   }
 
@@ -125,6 +145,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
     parsedChecklist.formType.length > 0;
   const showReportForms =
     jobItem.workOrder.jobType === "PM" ||
+    jobItem.workOrder.jobType === "AD_HOC" ||
     (jobItem.workOrder.jobType === "CM" && adminStoredReportFormType);
 
   return (
@@ -144,9 +165,11 @@ export default async function TechnicianJobItemPage({ params }: Props) {
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                {jobItem.asset.qrCode}
+                {jobItem.workOrder.jobType === "AD_HOC" ? "งานซ่อมนอกแผน" : jobItem.asset.qrCode}
               </h1>
-              <p className="text-sm text-gray-500">ข้อมูลเครื่องปรับอากาศ</p>
+              <p className="text-sm text-gray-500">
+                {jobItem.workOrder.jobType === "AD_HOC" ? "รายละเอียดการซ่อมนอกแผน" : "ข้อมูลเครื่องปรับอากาศ"}
+              </p>
             </div>
             <div className={`px-4 py-2 bg-gradient-to-r ${statusConfig.bg} text-white rounded-xl shadow-md flex items-center gap-2`}>
               <span>{statusConfig.icon}</span>
@@ -155,43 +178,109 @@ export default async function TechnicianJobItemPage({ params }: Props) {
           </div>
 
           <div className="space-y-3 text-sm">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-              <span className="font-semibold text-gray-600 min-w-20">QR Code:</span>
-              <span className="font-mono text-gray-900 bg-white px-3 py-1 rounded-lg">{jobItem.asset.qrCode}</span>
-            </div>
+            {jobItem.workOrder.jobType !== "AD_HOC" && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <span className="font-semibold text-gray-600 min-w-20">QR Code:</span>
+                <span className="font-mono text-gray-900 bg-white px-3 py-1 rounded-lg">{jobItem.asset.qrCode}</span>
+              </div>
+            )}
+            {jobItem.technician && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <span className="font-semibold text-gray-600 min-w-20">ช่าง:</span>
+                <span className="text-gray-900 bg-white px-3 py-1 rounded-lg">{jobItem.technician.fullName || jobItem.technician.username}</span>
+              </div>
+            )}
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
               <span className="font-semibold text-gray-600 min-w-20">สถานที่:</span>
               <div className="text-gray-900">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.floor.building.site.name}</span>
-                  <span className="text-gray-400">→</span>
-                  <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.floor.building.name}</span>
-                  <span className="text-gray-400">→</span>
-                  <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.floor.name}</span>
-                  <span className="text-gray-400">→</span>
-                  <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.name}</span>
-                </div>
-                {jobItem.asset.room.floor.building.site.latitude && jobItem.asset.room.floor.building.site.longitude && (
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${jobItem.asset.room.floor.building.site.latitude},${jobItem.asset.room.floor.building.site.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
-                  >
-                    🗺️ นำทางไปสถานที่
-                  </a>
+                {jobItem.workOrder.jobType === "AD_HOC" ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-white px-2 py-1 rounded-lg">{jobItem.workOrder.site.name}</span>
+                    {jobItem.workOrder.locationDescription && (
+                      <>
+                        <span className="text-gray-400">→</span>
+                        <span className="bg-white px-2 py-1 rounded-lg">{jobItem.workOrder.locationDescription}</span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset?.room?.floor?.building?.site?.name || jobItem.workOrder.site.name}</span>
+                    {jobItem.asset?.room?.floor?.building?.name && (
+                      <>
+                        <span className="text-gray-400">→</span>
+                        <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.floor.building.name}</span>
+                      </>
+                    )}
+                    {jobItem.asset?.room?.floor?.name && (
+                      <>
+                        <span className="text-gray-400">→</span>
+                        <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.floor.name}</span>
+                      </>
+                    )}
+                    {jobItem.asset?.room?.name && (
+                      <>
+                        <span className="text-gray-400">→</span>
+                        <span className="bg-white px-2 py-1 rounded-lg">{jobItem.asset.room.name}</span>
+                      </>
+                    )}
+                  </div>
+                )}
+                {/* Geolocation Button */}
+                {jobItem.workOrder.jobType === "AD_HOC" ? (
+                  jobItem.workOrder.site.latitude && jobItem.workOrder.site.longitude && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${jobItem.workOrder.site.latitude},${jobItem.workOrder.site.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
+                    >
+                      🗺️ นำทางไปสถานที่
+                    </a>
+                  )
+                ) : (
+                  jobItem.asset?.room?.floor?.building?.site?.latitude && jobItem.asset?.room?.floor?.building?.site?.longitude && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${jobItem.asset.room.floor.building.site.latitude},${jobItem.asset.room.floor.building.site.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
+                    >
+                      🗺️ นำทางไปสถานที่
+                    </a>
+                  )
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-              <span className="font-semibold text-gray-600 min-w-20">BTU:</span>
-              <span className="text-gray-900">{jobItem.asset.btu?.toLocaleString() || "-"}</span>
-            </div>
+            {jobItem.workOrder.jobType !== "AD_HOC" && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <span className="font-semibold text-gray-600 min-w-20">BTU:</span>
+                <span className="text-gray-900">{jobItem.asset.btu?.toLocaleString() || "-"}</span>
+              </div>
+            )}
             {jobItem.workOrder.jobType === "PM" && (
               <div className="flex items-center gap-3 p-3 bg-violet-50 rounded-xl border border-violet-100">
                 <span className="font-semibold text-gray-600 min-w-20">ประเภทการล้าง:</span>
                 <span className="text-gray-900 font-medium">{pmWashLabel ?? "—"}</span>
               </div>
+            )}
+            {jobItem.workOrder.jobType === "AD_HOC" && (
+              <>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <span className="font-semibold text-gray-600 min-w-20">ประเภทการซ่อม:</span>
+                  <span className="text-gray-900">
+                    {jobItem.workOrder.repairType === 'WASH_AC' && 'ล้างแอร์'}
+                    {jobItem.workOrder.repairType === 'REPAIR_AC' && 'ซ่อมแอร์'}
+                    {jobItem.workOrder.repairType === 'WASH_FAN' && 'ล้างพัดลม'}
+                    {jobItem.workOrder.repairType === 'REPAIR_FAN' && 'ซ่อมพัดลม'}
+                    {jobItem.workOrder.repairType === 'OTHER' && 'อื่นๆ'}
+                  </span>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <span className="font-semibold text-gray-600 min-w-20">รายละเอียดปัญหา:</span>
+                  <span className="text-gray-900 whitespace-pre-wrap">{jobItem.workOrder.problemDescription || '-'}</span>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -217,15 +306,23 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                 {!canComplete && (
                   <div className="w-full p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800 flex items-center gap-2">
-                      <span>ต้องอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน</span>
+                      <span>{isCM ? 'ต้องอัปโหลดรูปจุดชำรุด (DEFECT) ก่อนเสร็จสิ้นงาน' : 'ต้องอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน'}</span>
                     </p>
                     <div className="mt-2 text-xs text-yellow-700 flex items-center gap-4">
-                      <span className={hasBefore ? 'text-green-600' : ''}>
-                        {hasBefore ? '✓' : '○'} รูปก่อนทำ
-                      </span>
-                      <span className={hasAfter ? 'text-green-600' : ''}>
-                        {hasAfter ? '✓' : '○'} รูปหลังทำ
-                      </span>
+                      {isCM ? (
+                        <span className={hasDefect ? 'text-green-600' : ''}>
+                          {hasDefect ? '✓' : '○'} รูปจุดชำรุด
+                        </span>
+                      ) : (
+                        <>
+                          <span className={hasBefore ? 'text-green-600' : ''}>
+                            {hasBefore ? '✓' : '○'} รูปก่อนทำ
+                          </span>
+                          <span className={hasAfter ? 'text-green-600' : ''}>
+                            {hasAfter ? '✓' : '○'} รูปหลังทำ
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -237,7 +334,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                       ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                       : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                       }`}
-                    titleWhenDisabled="กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน"
+                    titleWhenDisabled={isCM ? "กรุณาอัปโหลดรูปจุดชำรุด (DEFECT) ก่อนเสร็จสิ้นงานซ่อม (CM)" : "กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน"}
                   />
                 </div>
               </>
@@ -255,19 +352,18 @@ export default async function TechnicianJobItemPage({ params }: Props) {
           </div>
 
         </div>
-
-
-        {/* Report Forms: PM เสมอ; CM เมื่อมี formType ใน checklist (เปิดใบ CM พร้อมเลือกฟอร์ม) */}
+        {/* Report Forms: PM เสมอ; AD_HOC ใช้ AdHocRepairForm; CM เมื่อมี formType ใน checklist */}
         {showReportForms && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6 p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
-                {formType === 'GENERAL' && 'ฟอร์ม General'}
-                {formType === 'AIRBORNE_INFECTION' && 'ฟอร์ม Clean Room & Airborne Infection Control Room Report'}
-                {formType === 'EXHAUST_FAN' && 'ฟอร์ม Exhaust Fan Type Report'}
-                {!['GENERAL', 'AIRBORNE_INFECTION', 'EXHAUST_FAN'].includes(formType) && 'ฟอร์มรายงาน'}
+                {jobItem.workOrder.jobType === 'AD_HOC' && 'ฟอร์มรายงานซ่อมนอกแผน'}
+                {jobItem.workOrder.jobType !== 'AD_HOC' && formType === 'GENERAL' && 'ฟอร์ม General'}
+                {jobItem.workOrder.jobType !== 'AD_HOC' && formType === 'AIRBORNE_INFECTION' && 'ฟอร์ม Clean Room & Airborne Infection Control Room Report'}
+                {jobItem.workOrder.jobType !== 'AD_HOC' && formType === 'EXHAUST_FAN' && 'ฟอร์ม Exhaust Fan Type Report'}
+                {jobItem.workOrder.jobType !== 'AD_HOC' && !['GENERAL', 'AIRBORNE_INFECTION', 'EXHAUST_FAN'].includes(formType) && 'ฟอร์มรายงาน'}
               </h2>
-              {formType !== 'GENERAL' && jobItem.status !== 'PENDING' && (
+              {jobItem.status !== 'PENDING' && (
                 <Link
                   href={`/reports/job/${id}`}
                   className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition"
@@ -281,6 +377,68 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               <div className="text-center py-8 px-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <p className="text-gray-600 font-medium">กรุณากดปุ่ม <strong>เริ่มงาน</strong> ด้านบนก่อนจึงจะกรอกฟอร์มได้</p>
               </div>
+            ) : jobItem.workOrder.jobType === 'AD_HOC' ? (
+              <>
+                {/* AD-HOC Info Card */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+                  <h3 className="font-bold text-gray-900 mb-4">รายละเอียดการซ่อมนอกแผน</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">สถานที่</label>
+                      <p className="text-gray-900 font-semibold">{jobItem.workOrder.locationDescription || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">ประเภทการซ่อม</label>
+                      <p className="text-gray-900 font-semibold">
+                        {jobItem.workOrder.repairType === 'WASH_AC' && 'ล้างแอร์'}
+                        {jobItem.workOrder.repairType === 'REPAIR_AC' && 'ซ่อมแอร์'}
+                        {jobItem.workOrder.repairType === 'WASH_FAN' && 'ล้างพัดลม'}
+                        {jobItem.workOrder.repairType === 'REPAIR_FAN' && 'ซ่อมพัดลม'}
+                        {jobItem.workOrder.repairType === 'OTHER' && 'อื่นๆ'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">รายละเอียดปัญหา</label>
+                      <p className="text-gray-900 whitespace-pre-wrap">{jobItem.workOrder.problemDescription || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Use existing form */}
+                {formType === 'EXHAUST_FAN' ? (
+                  <ExhaustFanForm
+                    jobItemId={id}
+                    initialData={jobItem.checklist || undefined}
+                    onSaveAction={async (jobItemId, data) => {
+                      "use server";
+                      const { updateJobItemChecklist } = await import("@/app/actions");
+                      try {
+                        const wrappedData = JSON.stringify({ formType: 'EXHAUST_FAN', data: JSON.parse(data) });
+                        await updateJobItemChecklist(jobItemId, wrappedData);
+                        return { success: true };
+                      } catch (e: any) {
+                        return { success: false, error: e.message };
+                      }
+                    }}
+                  />
+                ) : (
+                  <AirborneInfectionForm
+                    jobItemId={id}
+                    initialData={jobItem.checklist || undefined}
+                    onSaveAction={async (jobItemId, data) => {
+                      "use server";
+                      const { updateJobItemChecklist } = await import("@/app/actions");
+                      try {
+                        const wrappedData = JSON.stringify({ formType: 'AIRBORNE_INFECTION', data: JSON.parse(data) });
+                        await updateJobItemChecklist(jobItemId, wrappedData);
+                        return { success: true };
+                      } catch (e: any) {
+                        return { success: false, error: e.message };
+                      }
+                    }}
+                  />
+                )}
+              </>
             ) : formType === 'GENERAL' ? (
               <div className="text-center p-8 text-gray-500">
                 (ฟอร์มทั่วไป ปัจจุบันยังไม่เปิดให้ใช้งาน)
@@ -408,7 +566,7 @@ export default async function TechnicianJobItemPage({ params }: Props) {
           {jobItem.status !== 'DONE' && jobItem.status !== 'PENDING' && (
             <div className="mt-6 pt-6 border-t border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">อัปโหลดรูปภาพ</h3>
-              <PhotoUpload jobItemId={id} />
+              <PhotoUpload jobItemId={id} isCM={isCM} defaultPhotoType={isCM ? 'DEFECT' : 'BEFORE'} />
             </div>
           )}
           {jobItem.status === 'DONE' && (
@@ -422,14 +580,38 @@ export default async function TechnicianJobItemPage({ params }: Props) {
           )}
         </div>
 
-        {/* Asset History Timeline */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl">📜</span>
-            <h2 className="text-lg font-bold text-gray-900">ประวัติเครื่อง</h2>
+        {/* Signature - แสดงเมื่องานเสร็จ */}
+        {jobItem.status === 'DONE' && jobItem.customerSignature && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">✍️</span>
+              <h2 className="text-lg font-bold text-gray-900">ลายเซ็นลูกค้า</h2>
+            </div>
+            <div className="border-2 border-gray-300 rounded-xl overflow-hidden bg-gray-50 p-4">
+              <img
+                src={jobItem.customerSignature}
+                alt="ลายเซ็นลูกค้า"
+                className="w-full max-h-48 object-contain"
+              />
+            </div>
+            {jobItem.signedAt && (
+              <p className="text-sm text-gray-600 mt-3">
+                ลงนาม: {new Date(jobItem.signedAt).toLocaleString("th-TH")}
+              </p>
+            )}
           </div>
-          <AssetHistoryTimeline assetId={jobItem.assetId} currentJobItemId={id} />
-        </div>
+        )}
+
+        {/* Asset History Timeline */}
+        {jobItem.workOrder.jobType !== "AD_HOC" && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">📜</span>
+              <h2 className="text-lg font-bold text-gray-900">ประวัติเครื่อง</h2>
+            </div>
+            <AssetHistoryTimeline assetId={jobItem.assetId} currentJobItemId={id} />
+          </div>
+        )}
 
         {/* Time Info */}
         {jobItem.startTime && (
@@ -469,11 +651,17 @@ export default async function TechnicianJobItemPage({ params }: Props) {
               {!canComplete && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex-1">
                   <p className="text-sm text-yellow-800">
-                    ต้องอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนกดเสร็จสิ้น
+                    {isCM ? 'ต้องอัปโหลดรูปจุดชำรุด (DEFECT) ก่อนกดเสร็จสิ้น' : 'ต้องอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนกดเสร็จสิ้น'}
                   </p>
                   <div className="mt-2 text-xs text-yellow-700 flex gap-4">
-                    <span className={hasBefore ? 'text-green-600' : ''}>{hasBefore ? '✓' : '○'} รูปก่อนทำ</span>
-                    <span className={hasAfter ? 'text-green-600' : ''}>{hasAfter ? '✓' : '○'} รูปหลังทำ</span>
+                    {isCM ? (
+                      <span className={hasDefect ? 'text-green-600' : ''}>{hasDefect ? '✓' : '○'} รูปจุดชำรุด</span>
+                    ) : (
+                      <>
+                        <span className={hasBefore ? 'text-green-600' : ''}>{hasBefore ? '✓' : '○'} รูปก่อนทำ</span>
+                        <span className={hasAfter ? 'text-green-600' : ''}>{hasAfter ? '✓' : '○'} รูปหลังทำ</span>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -484,19 +672,19 @@ export default async function TechnicianJobItemPage({ params }: Props) {
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
                   : 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                   }`}
-                titleWhenDisabled="กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน"
+                titleWhenDisabled={isCM ? "กรุณาอัปโหลดรูปจุดชำรุด (DEFECT) ก่อนเสร็จสิ้นงานซ่อม (CM)" : "กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน"}
               />
             </div>
           </div>
         )}
 
-        {/* ดาวน์โหลด Report (PDF) - แสดงเมื่องานเสร็จสิ้นแล้ว */}
-        {jobItem.status === "DONE" && (
+        {/* ดาวน์โหลด Report (PDF) - แสดงเมื่อเริ่มงานแล้ว */}
+        {jobItem.status !== "PENDING" && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">ดาวน์โหลดรายงาน</h3>
-                <p className="text-sm text-gray-600">ดาวน์โหลด PDF รวมรายละเอียดงาน ฟอร์ม และรูปก่อนทำ (เลือก Save as PDF ในหน้าพิมพ์)</p>
+                <p className="text-sm text-gray-600">ดาวน์โหลด PDF รวมรายละเอียดงาน ฟอร์ม และรูป (เลือก Save as PDF ในหน้าพิมพ์)</p>
               </div>
               <JobItemReportDownloadButton jobItem={jobItem} workOrder={jobItem.workOrder} />
             </div>

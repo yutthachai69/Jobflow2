@@ -26,8 +26,9 @@ const MACHINE_CONFIG = [
     { key: 'FCU', label: 'FCU', icon: '💨', gradient: 'from-cyan-500 to-cyan-700' },
     { key: 'VRF', label: 'VRF', icon: '🔄', gradient: 'from-violet-600 to-violet-800' },
     { key: 'SPLIT_TYPE', label: 'Split Type', icon: '❄️', gradient: 'from-emerald-600 to-emerald-800' },
-    { key: 'EXHAUST', label: 'Exhaust', icon: '💭', gradient: 'from-amber-600 to-amber-800' },
-    { key: 'OTHER', label: 'อื่นๆ', icon: '⚙️', gradient: 'from-slate-600 to-slate-800' },
+    { key: 'EXHAUST_DUCT', label: 'Exhaust Duct', icon: '💭', gradient: 'from-amber-600 to-amber-800' },
+    { key: 'EXHAUST_FAN', label: 'Exhaust Fan', icon: '💨', gradient: 'from-amber-600 to-amber-800' },
+    { key: 'FRESH_AIR', label: 'Fresh Air', icon: '🌬️', gradient: 'from-teal-600 to-teal-800' },
 ]
 
 const BADGE_STYLE: Record<string, string> = {
@@ -35,8 +36,9 @@ const BADGE_STYLE: Record<string, string> = {
     FCU: 'bg-cyan-600/20 text-cyan-300 border border-cyan-500/30',
     VRF: 'bg-violet-600/20 text-violet-300 border border-violet-500/30',
     SPLIT_TYPE: 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30',
-    EXHAUST: 'bg-amber-600/20 text-amber-300 border border-amber-500/30',
-    OTHER: 'bg-slate-600/20 text-slate-300 border border-slate-500/30',
+    EXHAUST_DUCT: 'bg-amber-600/20 text-amber-300 border border-amber-500/30',
+    EXHAUST_FAN: 'bg-amber-600/20 text-amber-300 border border-amber-500/30',
+    FRESH_AIR: 'bg-teal-600/20 text-teal-300 border border-teal-500/30',
 }
 
 function isoDate(d: string) { return new Date(d).toISOString().split('T')[0] }

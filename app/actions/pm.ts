@@ -17,7 +17,7 @@ function pmJobItemNote(pmType: PMType, roundIndex: number) {
 }
 
 function pmChecklistJsonForAsset(assetType: AssetType): string | null {
-  if (assetType === "EXHAUST") {
+  if (assetType === "EXHAUST_FAN" || assetType === "EXHAUST_DUCT" || assetType === "FRESH_AIR") {
     return JSON.stringify({ formType: "EXHAUST_FAN", data: {} })
   }
   return null
@@ -52,7 +52,7 @@ export async function getSitesWithPMStatus(year: number) {
     })
     const exhaustCount = await prisma.asset.count({
       where: {
-        assetType: 'EXHAUST',
+        assetType: { in: ['EXHAUST_FAN', 'EXHAUST_DUCT', 'FRESH_AIR'] },
         status: 'ACTIVE',
         room: { floor: { building: { siteId: site.id } } }
       }
@@ -95,7 +95,7 @@ export async function generatePMContract(siteId: string, year: number) {
 
   const exhaustAssets = await prisma.asset.findMany({
     where: {
-      assetType: 'EXHAUST',
+      assetType: { in: ['EXHAUST_FAN', 'EXHAUST_DUCT', 'FRESH_AIR'] },
       room: { floor: { building: { siteId } } },
       status: 'ACTIVE'
     },

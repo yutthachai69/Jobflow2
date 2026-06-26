@@ -6,7 +6,6 @@ import QRCodeDisplay from "./QRCodeDisplay";
 import DeleteAssetButton from "./DeleteButton";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import JobHistoryPanel from "./JobHistoryPanel";
-import StartPmJobButton from "./StartPmJobButton";
 import type { Metadata } from "next";
 import {
   effectiveDueDate,
@@ -93,14 +92,37 @@ async function loadJobItemsForAssetDetail(assetId: string) {
 
 async function loadPmSchedulesForAssetDetail(assetId: string) {
   try {
-    return await prisma.pMSchedule.findMany({
+    const rows = await prisma.pMSchedule.findMany({
       where: { assetId },
       orderBy: [{ targetYear: "asc" }, { roundIndex: "asc" }],
-      include: {
+      select: {
+        id: true,
+        targetYear: true,
+        targetMonth: true,
+        roundIndex: true,
+        dueDate: true,
+        pmType: true,
         jobItem: { select: { id: true, status: true } },
       },
     });
+
+    return rows.map((row) => ({
+      ...row,
+      status:
+        row.jobItem?.status === "DONE"
+          ? "DONE"
+          : row.jobItem
+          ? "DISPATCHED"
+          : "PLANNED",
+    }));
   } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2022"
+    ) {
+      // Keep this guard for safety in case other schema drift appears.
+      return [];
+    }
     console.error("[AssetDetail] pmSchedules load failed", e);
     return [];
   }
@@ -263,14 +285,8 @@ export default async function AssetDetailPage({ params }: Props) {
         })
     )
   );
-  const canStartPmFromField =
-    (user.role === "TECHNICIAN" || user.role === "ADMIN") && eligibleFieldPm.length > 0;
-  const nextEligible = eligibleFieldPm[0];
-  const nextPmHint = nextEligible
-    ? `รอบที่ ${nextEligible.roundIndex} — ${
-        nextEligible.pmType === "MAJOR" ? "ล้างใหญ่" : "ล้างย่อย"
-      } · กำหนด ${effectiveDueDate(nextEligible).toLocaleDateString("th-TH")}`
-    : undefined;
+  const canStartPmJobFromField =
+    (user.role === "ADMIN") && eligibleFieldPm.length > 0;
   const pmPlanYear = pmSchedules[0]?.targetYear ?? new Date().getFullYear();
   const pmTotalRounds = pmSchedules.length;
 
@@ -362,8 +378,8 @@ export default async function AssetDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* PM Progress — แอร์ 6 รอบ / พัดลมดูดอากาศ 4 รอบ (ล้างย่อย) */}
-      {(a.assetType === "AIR_CONDITIONER" || a.assetType === "EXHAUST") &&
+      {/* PM Progress — แอร์ 6 รอบ / พัดลมดูดอากาศ 4 รอบ (ล้างย่อย)
+      {(a.assetType === "AIR_CONDITIONER" || a.assetType === "EXHAUST_DUCT" || a.assetType === "EXHAUST_FAN") &&
         pmSchedules.length > 0 && (
         <div className="bg-app-card rounded-xl shadow-lg border border-app p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -450,13 +466,17 @@ export default async function AssetDetailPage({ params }: Props) {
             })}
           </div>
 
-          {canStartPmFromField && (
-            <div className="mt-6">
-              <StartPmJobButton assetId={a.id} hint={nextPmHint} />
-            </div>
+          {!canStartPmJobFromField && user.role === "TECHNICIAN" && (
+             <div className="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-700">
+               <p className="flex items-center gap-2">
+                 <span className="text-lg">ℹ️</span> 
+                 หากต้องการเริ่มงาน PM ให้ติดต่อแอดมินเพื่อมอบหมายใบงานเข้าเครื่องนี้ก่อนครับ
+               </p>
+             </div>
           )}
         </div>
       )}
+      */}
 
       {/* Technician: Pending Jobs */}
       {user.role === "TECHNICIAN" && pendingJobItems.length > 0 && (
@@ -554,7 +574,7 @@ export default async function AssetDetailPage({ params }: Props) {
                 รายการ)
               </span>
             </h2>
-            <JobHistoryPanel jobItems={JSON.parse(JSON.stringify(panelPayload))} />
+            <JobHistoryPanel jobItems={JSON.parse(JSON.stringify(panelPayload))} userRole={user.role} />
           </>
         );
       })()}

@@ -80,6 +80,20 @@ export default function NewSiteForm({ clients, defaultClientId }: Props) {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                รหัสสถานที่ (Site Code) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="siteCode"
+                required
+                maxLength={10}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 uppercase"
+                placeholder="เช่น PTS1, PHY, BKK1"
+              />
+              <p className="mt-1 text-xs text-gray-500">ใช้สร้าง QR Code เช่น AC-<strong>PTS1</strong>-A-F2-001 (ตัวอักษรหรือตัวเลข ไม่เกิน 10 ตัว)</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
               <textarea
                 name="address"

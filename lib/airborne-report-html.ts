@@ -85,6 +85,8 @@ export function buildAirborneReportHtml(
   workOrder: {
     site: { name: string; client: { name: string } }
     scheduledDate: Date | string
+    jobType?: string
+    locationDescription?: string | null
   },
   options?: { pmWashLabel?: string | null }
 ): string {
@@ -143,7 +145,11 @@ export function buildAirborneReportHtml(
         <td>LOCATION</td>
         <td class="airborne-data">${esc(locationName)}</td>
         <td>ROOM TYPE</td>
-        <td class="airborne-data">${esc(roomName)} (Asset: ${esc(assetLabel)})</td>
+        <td class="airborne-data">
+          ${workOrder.jobType === 'AD_HOC' 
+            ? esc(workOrder.locationDescription || '') 
+            : `${esc(roomName)} (Asset: ${esc(assetLabel)})`}
+        </td>
       </tr>
       ${pmWashLabel
         ? `<tr>

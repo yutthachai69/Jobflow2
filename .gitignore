@@ -42,6 +42,9 @@ next-env.d.ts
 
 /app/generated/prisma
 
+# local DB dumps (scripts/db-dump-supabase.ps1)
+/backups/
+
 # database
 *.db
 *.db-journal
@@ -55,3 +58,22 @@ fix-*.js
 # local job photos (dev only)
 public/job-photos/
 .env*.local
+
+# Docker image tar
+*.tar
+
+# DB backups / sensitive SQL dumps
+*.sql.bak
+jobflow2_backup.sql
+restore-backup.js
+extract-data.sh
+
+# Scratch / one-off scripts
+scratch_*.js
+scratch_*.ts
+
+# Raw data files (CSV/Excel planning docs)
+DeleteData.csv
+DeleteData.xlsx
+*.csv
+*.xlsx

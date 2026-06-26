@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { getJobStatus } from "@/lib/status-colors"
 import DateTimeDisplay from "@/app/components/DateTimeDisplay"
+import { getDashboardJobItemStats, getTechnicianPersonalStats } from "@/lib/dashboard-job-stats"
 
 interface TechnicianDashboardProps {
   userId: string
@@ -27,7 +28,12 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
     orderBy: { id: 'desc' },
   })
 
-  // นับงานที่ยังไม่ assign (แยกต่างหาก)
+  // ยอดรวมทุกไซต์ — ตรงกับแอดมินเมื่อเลือก "ภาพรวมทั้งระบบ"
+  const jobStatsAllSites = await getDashboardJobItemStats(prisma)
+  const myStats = await getTechnicianPersonalStats(prisma, userId)
+  const myInProgress = allJobItems.filter((j) => j.status === 'IN_PROGRESS').length
+
+  // งานที่ยังไม่ assign (ยอดสะสม)
   const unassignedCount = await prisma.jobItem.count({
     where: {
       technicianId: null,
@@ -35,13 +41,7 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
     },
   })
 
-  // คำนวณสถิติ
-  const pendingJobs = allJobItems.filter(j => j.status === 'PENDING')
-  const inProgressJobs = allJobItems.filter(j => j.status === 'IN_PROGRESS')
-  const doneJobs = allJobItems.filter(j => j.status === 'DONE')
-  const issueJobs = allJobItems.filter(j => j.status === 'ISSUE_FOUND')
-
-  // งานที่ต้องทำวันนี้
+  // งานที่ต้องทำวันนี้ (ยอดรวมทั้งไซต์เพื่อให้ตรงกับแอดมิน)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const todayJobs = allJobItems.filter(j => {
@@ -51,23 +51,15 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
     return scheduledDate.getTime() === today.getTime()
   })
 
-  // งานที่เสร็จวันนี้
-  const completedToday = doneJobs.filter(j => {
-    if (!j.endTime) return false
-    const endDate = new Date(j.endTime)
-    endDate.setHours(0, 0, 0, 0)
-    return endDate.getTime() === today.getTime()
-  }).length
-
-  // งานที่กำลังทำอยู่ (IN_PROGRESS)
-  const currentJobs = inProgressJobs.slice(0, 5)
+  // งานที่กำลังทำอยู่ (IN_PROGRESS - ของตัวเอง)
+  const currentJobs = allJobItems.filter(j => j.status === 'IN_PROGRESS').slice(0, 5)
 
   const statCards = [
-    { label: 'งานที่รอดำเนินการ', value: pendingJobs.length, emoji: '⏳', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/technician' },
-    { label: 'งานที่กำลังทำ', value: inProgressJobs.length, emoji: '🔨', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/technician' },
-    { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/technician' },
-    { label: 'งานที่เสร็จแล้ว', value: doneJobs.length, emoji: '🏆', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/technician' },
-    ...(unassignedCount > 0 ? [{ label: 'งานที่ยังไม่มีคนรับ', value: unassignedCount, emoji: '📋', from: '#d97706', to: '#b45309', glow: 'rgba(217,119,6,0.25)', href: '/technician' }] : []),
+    { label: 'งานที่ดำเนินการ', sub: `ทั้งระบบ ${jobStatsAllSites.activeJobItems} · ของคุณ ${myStats.activeJobItems}`, value: jobStatsAllSites.activeJobItems, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders?scope=all&status=ACTIVE' },
+    { label: 'งานที่คุณกำลังทำ', sub: 'สถานะกำลังทำ (IN_PROGRESS)', value: myInProgress, emoji: '🔨', from: '#1d4ed8', to: '#1e40af', glow: 'rgba(59,130,246,0.25)', href: '/technician' },
+    { label: 'เสร็จสิ้นวันนี้', sub: `ทั้งระบบ ${jobStatsAllSites.completedToday} · ของคุณ ${myStats.completedToday}`, value: jobStatsAllSites.completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders?scope=all&status=DONE&today=1' },
+    { label: 'งานที่เสร็จแล้วทั้งหมด', sub: `ทั้งระบบ ${jobStatsAllSites.totalDone} · ของคุณ ${myStats.totalDone}`, value: jobStatsAllSites.totalDone, emoji: '🏆', from: '#7c3aed', to: '#6d28d9', glow: 'rgba(124,58,237,0.25)', href: '/work-orders?scope=all&status=DONE' },
+    ...(unassignedCount > 0 ? [{ label: 'งานรอคนรับ (Unassigned)', sub: 'ยังไม่มีช่างรับ', value: unassignedCount, emoji: '🚩', from: '#ef4444', to: '#b91c1c', glow: 'rgba(239,68,68,0.25)', href: '/technician' }] : []),
   ]
 
   return (
@@ -83,8 +75,8 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
           <DateTimeDisplay />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {statCards.map(({ label, value, emoji, from, to, glow, href }) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          {statCards.map(({ label, sub, value, emoji, from, to, glow, href }) => (
             <Link
               key={label}
               href={href}
@@ -98,6 +90,7 @@ export default async function TechnicianDashboard({ userId }: TechnicianDashboar
                 </div>
                 <p className="text-white font-bold text-3xl leading-none mb-1">{value}</p>
                 <p className="text-white/70 text-xs font-medium">{label}</p>
+                <p className="text-white/50 text-[10px] mt-1 leading-snug">{sub}</p>
               </div>
             </Link>
           ))}

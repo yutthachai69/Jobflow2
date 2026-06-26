@@ -1,7 +1,8 @@
-version: '3.8'
-
+# Docker Image = แพ็กเกจพร้อมรัน | Container = ตัวที่รันจริงจาก image
+# compose build → ได้ image (เช่น jobflow:latest) | compose up → รัน containers
+# รายละเอียด: DOCKER.md
 services:
-  # ส่วนของ Database
+  # ส่วนของ Database (local dev เท่านั้น — production ใช้ Supabase)
   db:
     image: postgres:15-alpine
     container_name: jobflow21-db
@@ -20,25 +21,14 @@ services:
       retries: 5
     restart: always
 
-  # ส่วนของเว็บ (Next.js)
+  # ส่วนของเว็บ (Next.js) — production ใช้ Supabase ผ่าน .env.server บน server
   web:
-    build: .
+    image: aomx555/tml:latest
     container_name: jobflow-app
     ports:
       - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/jobflow
-      - NODE_ENV=production
-      - JWT_SECRET=flomac_service_super_secret_jwt_key_2026_production_secure_1234567890
-
-      # 👇 แก้บรรทัดนี้ (ใส่ IP แทน localhost)
-      - NEXT_PUBLIC_APP_URL=http://18.142.112.163:3000
-
-      # 👇 เพิ่มบรรทัดนี้เข้าไปด้วย (สำคัญมากสำหรับ Login)
-      - NEXTAUTH_URL=http://18.142.112.163:3000
-    depends_on:
-      db:
-        condition: service_healthy
+    env_file:
+      - .env.server
     restart: always
 
 volumes:

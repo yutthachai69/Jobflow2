@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateFloor } from '@/app/actions'
+import { updateFloor } from '@/app/actions/locations'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
@@ -59,7 +59,8 @@ export default function EditFloorForm({ floor }: Props) {
       toast.success('แก้ไขชั้นเรียบร้อยแล้ว')
       router.push('/locations')
       router.refresh()
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'NEXT_REDIRECT' || error?.digest?.includes?.('NEXT_REDIRECT')) throw error
       console.error('Error updating floor:', error)
       const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล'
       toast.error(errorMessage)

@@ -10,6 +10,8 @@ import {
   clampChartRange,
   buildWashChartSeries,
 } from '@/lib/client-wash-chart'
+import { formatThaiDate } from '@/lib/date-utils'
+import { getDashboardJobItemStats } from '@/lib/dashboard-job-stats'
 
 interface ClientDashboardProps {
   siteId: string | null
@@ -115,20 +117,15 @@ export default async function ClientDashboard({ siteId, chartFrom, chartTo, char
   const fcuCount = airAssets.filter(a => (a as any).machineType === 'FCU').length
   const splitCount = airAssets.filter(a => (a as any).machineType === 'SPLIT_TYPE').length
 
-  // Exhaust ให้นับจาก assetType = EXHAUST (ไม่ปนกับ machineType ของแอร์)
-  const exhaustCount = allAssets.filter(a => (a as any).assetType === 'EXHAUST').length
+  // Exhaust ให้นับจาก assetType = EXHAUST_DUCT หรือ EXHAUST_FAN (ไม่ปนกับ machineType ของแอร์)
+  const exhaustCount = allAssets.filter(a => (a as any).assetType === 'EXHAUST_DUCT' || (a as any).assetType === 'EXHAUST_FAN' || (a as any).assetType === 'FRESH_AIR').length
 
   /** ขอบเขตนับเครื่องสำหรับวางแผน/อธิบายเป้า: แอร์ = ล้างใหญ่+ล้างย่อย, Exhaust = ล้างย่อยอย่างเดียว (ไม่มีล้างใหญ่) */
   const washMajorScopeCount = airAssets.length
   const washMinorScopeCount = airAssets.length + exhaustCount
 
   const activeWorkOrders = site.workOrders.filter((wo) => wo.status === 'OPEN' || wo.status === 'IN_PROGRESS')
-  const inProgressJobItems = allAssets.flatMap((a) =>
-    a.jobItems.filter((ji) => ji.status === 'IN_PROGRESS' || ji.status === 'PENDING')
-  )
-  const completedToday = site.workOrders.filter(
-    (wo) => wo.status === 'COMPLETED' && new Date(wo.updatedAt).toDateString() === new Date().toDateString()
-  ).length
+  const jobStats = await getDashboardJobItemStats(prisma, siteId)
 
   // กราฟการล้าง: นับ JobItem PM ที่เสร็จ (DONE) — ประเภทจากแผน PM หรือใบมือ (adHocPmType)
   const washDateForJobItem = (wo: { scheduledDate: Date }, ji: { endTime: Date | null; startTime: Date | null }) =>
@@ -148,7 +145,7 @@ export default async function ClientDashboard({ siteId, chartFrom, chartTo, char
       if (pt === 'MAJOR') {
         cell.majorWash += 1
       } else {
-        if (assetType === 'EXHAUST') cell.minorWashExhaust += 1
+        if (assetType === 'EXHAUST_DUCT' || assetType === 'EXHAUST_FAN' || assetType === 'FRESH_AIR') cell.minorWashExhaust += 1
         else cell.minorWashAir += 1
       }
       washByDay.set(k, cell)
@@ -211,13 +208,14 @@ export default async function ClientDashboard({ siteId, chartFrom, chartTo, char
           ))}
         </div>
 
-        {/* สถิติการทำงาน */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {/* สถิติการทำงาน — ใช้ getDashboardJobItemStats เดียวกับแอดมิน (กรองไซต์นี้) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           {[
-            { label: 'งานที่กำลังดำเนินการ', value: activeWorkOrders.length, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders' },
-            { label: 'เสร็จสิ้นวันนี้', value: completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders' },
-            { label: 'เครื่องที่กำลังซ่อม/บำรุง', value: inProgressJobItems.length, emoji: '🔧', from: '#475569', to: '#334155', glow: 'rgba(71,85,105,0.25)', href: '/work-orders' },
-          ].map(({ label, value, emoji, from, to, glow, href }) => (
+            { label: 'งานที่ดำเนินการ', sub: 'รายการเครื่องที่ยังไม่เสร็จ (รวมพบปัญหา)', value: jobStats.activeJobItems, emoji: '📋', from: '#c2a66a', to: '#92761a', glow: 'rgba(194,166,106,0.25)', href: '/work-orders' },
+            { label: 'เสร็จสิ้นวันนี้', sub: 'ตามเวลา endTime (วันนี้)', value: jobStats.completedToday, emoji: '✅', from: '#059669', to: '#047857', glow: 'rgba(5,150,105,0.25)', href: '/work-orders' },
+            { label: 'งานที่เสร็จแล้วทั้งหมด', sub: 'สะสมสถานะ DONE ในไซต์นี้', value: jobStats.totalDone, emoji: '🏆', from: '#0d9488', to: '#0f766e', glow: 'rgba(13,148,136,0.25)', href: '/work-orders' },
+            { label: 'ใบงานที่เปิดอยู่', sub: 'ใบสั่งงาน OPEN / IN_PROGRESS', value: activeWorkOrders.length, emoji: '🔧', from: '#475569', to: '#334155', glow: 'rgba(71,85,105,0.25)', href: '/work-orders' },
+          ].map(({ label, sub, value, emoji, from, to, glow, href }) => (
             <Link
               key={label}
               href={href}
@@ -231,10 +229,15 @@ export default async function ClientDashboard({ siteId, chartFrom, chartTo, char
                 </div>
                 <p className="text-white font-bold text-3xl leading-none mb-1">{value}</p>
                 <p className="text-white/70 text-xs font-medium">{label}</p>
+                <p className="text-white/50 text-[10px] mt-1 leading-snug">{sub}</p>
               </div>
             </Link>
           ))}
         </div>
+
+        <p className="text-xs text-app-muted mb-8">
+          ตัวเลข JobItem ตรงกับแอดมินเมื่อเลือกไซต์ &quot;{site.name}&quot; — ช่างเห็นยอดทั้งระบบบนแดชบอร์ดช่าง
+        </p>
 
         {/* กราฟการล้าง (ตัวกรอง URL อยู่ใน ClientDashboardCharts.tsx) */}
         <div className="mb-8">
@@ -253,47 +256,72 @@ export default async function ClientDashboard({ siteId, chartFrom, chartTo, char
           />
         </div>
 
-        {/* งานล่าสุด */}
+        {/* งานล่าสุด (แสดงรายเครื่องที่ดำเนินการล่าสุด) */}
         <div className="bg-app-card rounded-xl border border-app shadow-lg p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-app-heading">งานล่าสุด</h2>
+            <h2 className="text-lg font-semibold text-app-heading">งานล่าสุด (แยกตามเครื่อง)</h2>
             <Link href="/work-orders" className="text-sm font-medium hover:underline" style={{ color: '#C2A66A' }}>
               ดูทั้งหมด →
             </Link>
           </div>
-          {site.workOrders.slice(0, 5).length > 0 ? (
-            <div className="space-y-3">
-              {site.workOrders.slice(0, 5).map((wo) => {
-                const st = getWOStatus(wo.status)
-                return (
-                  <Link
-                    key={wo.id}
-                    href={`/work-orders/${wo.id}`}
-                    className="block p-4 bg-app-section hover:bg-app-section/80 rounded-lg border border-app border-l-4 transition-all"
-                    style={{ borderLeftColor: st.hex }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <span className="font-medium text-app-heading">
-                            {wo.jobType === 'PM' ? 'PM - บำรุงรักษา' : wo.jobType === 'CM' ? 'CM - ซ่อมฉุกเฉิน' : 'INSTALL - ติดตั้งใหม่'}
-                          </span>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${st.tailwind}`}>{st.label}</span>
+          {(() => {
+            const recentJobItems = allAssets
+              .flatMap((a) => a.jobItems.map((ji) => ({ ...ji, asset: a })))
+              .sort((a, b) => {
+                const dateA = new Date(a.endTime ?? a.startTime ?? a.workOrder.scheduledDate).getTime();
+                const dateB = new Date(b.endTime ?? b.startTime ?? b.workOrder.scheduledDate).getTime();
+                return dateB - dateA;
+              })
+              .slice(0, 10);
+
+            if (recentJobItems.length === 0) {
+              return <div className="text-center py-8 text-app-muted">ยังไม่มีงาน</div>;
+            }
+
+            return (
+              <div className="space-y-3">
+                {recentJobItems.map((ji) => {
+                  const st = ji.status === 'DONE' ? { label: 'เสร็จสิ้น', tailwind: 'bg-green-100 text-green-700', hex: '#10b981' } :
+                             ji.status === 'IN_PROGRESS' ? { label: 'กำลังทำงาน', tailwind: 'bg-blue-100 text-blue-700', hex: '#3b82f6' } :
+                             { label: 'รอดำเนินการ', tailwind: 'bg-yellow-100 text-yellow-700', hex: '#f59e0b' };
+                  
+                  return (
+                    <Link
+                      key={ji.id}
+                      href={`/technician/job-item/${ji.id}`}
+                      className="block p-4 bg-app-section hover:bg-app-section/80 rounded-lg border border-app border-l-4 transition-all"
+                      style={{ borderLeftColor: st.hex }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1 flex-wrap">
+                            <span className="font-bold text-app-heading">{ji.asset.qrCode}</span>
+                            <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wider ${st.tailwind}`}>
+                              {st.label}
+                            </span>
+                          </div>
+                          <div className="text-xs text-app-muted flex items-center gap-2">
+                            <span>{ji.workOrder.jobType}</span>
+                            <span>•</span>
+                            <span>{formatThaiDate(ji.workOrder.scheduledDate, 'numeric')}</span>
+                            {ji.technician && (
+                              <>
+                                <span>•</span>
+                                <span>ช่าง: {ji.technician.fullName || ji.technician.username}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-sm text-app-muted">
-                          <span>{new Date(wo.scheduledDate).toLocaleDateString('th-TH')}</span>
-                          <span className="mx-2">•</span>
-                          <span>{wo.jobItems.length} เครื่อง</span>
+                        <div className="text-right">
+                           <span className="text-xs font-medium text-blue-600">ดูรายละเอียด →</span>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-app-muted">ยังไม่มีงาน</div>
-          )}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Quick Links */}

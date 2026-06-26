@@ -78,6 +78,8 @@ export default function UserForm({ sites }: Props) {
 
     try {
       await createUser(formData)
+      router.push('/users')
+      router.refresh()
     } catch (err: any) {
       setErrors({ submit: err.message || 'เกิดข้อผิดพลาดในการสร้างผู้ใช้' })
       setIsSubmitting(false)

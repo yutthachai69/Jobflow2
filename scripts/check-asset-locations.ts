@@ -13,7 +13,7 @@ function empty(): Counts {
 }
 function add(c: Counts, assetType: string) {
   if (assetType === 'AIR_CONDITIONER') c.air++
-  else if (assetType === 'EXHAUST') c.exhaust++
+  else if (assetType === 'EXHAUST_DUCT' || assetType === 'EXHAUST_FAN') c.exhaust++
   else c.other++
 }
 function total(c: Counts) {

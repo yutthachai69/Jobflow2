@@ -15,7 +15,7 @@ export default async function NewAssetPage() {
   if (user.role !== 'ADMIN') {
     redirect('/assets');
   }
-  // ดึงข้อมูล sites ทั้งหมดพร้อม buildings, floors, rooms
+  // ดึงข้อมูล sites ทั้งหมดพร้อม buildings, floors, rooms (ADMIN ยังคงเห็นทั้งหมด)
   const sites = await prisma.site.findMany({
     include: {
       client: true,

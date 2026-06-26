@@ -55,6 +55,7 @@ const SIDEBAR_COLLAPSED_KEY = 'airservice-sidebar-collapsed'
 const adminItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/work-orders', label: 'ใบสั่งงาน', icon: 'workorder' },
+  { type: 'link', href: '/ad-hoc-repairs', label: 'ซ่อมนอกแผน', icon: 'wrench' },
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/users', label: 'ผู้ใช้งาน', icon: 'users' },
@@ -71,6 +72,7 @@ const clientMainMenuItems: NavItem[] = [
   { type: 'link', href: '/assets', label: 'ทรัพย์สินและอุปกรณ์', icon: 'assets' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
+  { type: 'link', href: '/ad-hoc-repairs', label: 'ซ่อมนอกแผน', icon: 'wrench' },
   {
     type: 'group',
     label: 'รายงาน',
@@ -96,6 +98,7 @@ const technicianItems: NavItem[] = [
   { type: 'link', href: '/', label: 'Dashboard', icon: 'dashboard' },
   { type: 'link', href: '/scan', label: 'สแกน QR Code', icon: 'scan' },
   { type: 'link', href: '/technician', label: 'หน้างาน', icon: 'wrench' },
+  { type: 'link', href: '/ad-hoc-repairs', label: 'ซ่อมนอกแผน', icon: 'wrench' },
   { type: 'link', href: '/work-orders', label: 'ประวัติงาน', icon: 'workorder' },
   // [OLD LIFF] คอมเม้นไว้ - ถ้าอยากใช้ LIFF login กลับ ให้ uncomment
   // { type: 'link', href: '/connect-line', label: 'เชื่อมต่อ LINE', icon: 'line' },

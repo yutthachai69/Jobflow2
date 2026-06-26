@@ -93,10 +93,10 @@ export default function EditUserForm({ user, sites }: Props) {
       submitFormData.append('role', selectedRole)
       submitFormData.append('siteId', selectedRole === 'CLIENT' ? selectedSiteId : '')
 
-      const lineUserId = (formData.get('lineUserId') as string)?.trim()
-      if (lineUserId) {
-        submitFormData.append('lineUserId', lineUserId)
-      }
+      submitFormData.append(
+        'lineUserId',
+        ((formData.get('lineUserId') as string) || '').trim()
+      )
 
       await updateUser(submitFormData)
       router.push('/users')

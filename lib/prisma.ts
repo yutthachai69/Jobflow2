@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client'
+import { assertSafeDatabaseUrl } from '@/lib/assert-safe-database'
 
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient
 }
 
 function createPrismaClient() {
+  assertSafeDatabaseUrl(process.env.DATABASE_URL)
   return new PrismaClient({
     log:
       process.env.NODE_ENV === 'development'

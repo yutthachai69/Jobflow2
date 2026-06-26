@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { deleteJobItem } from '@/app/actions/work-orders';
+import { useRouter } from 'next/navigation';
+import ConfirmModal, { useConfirm } from '@/app/components/ConfirmModal';
 
 type Photo = {
   id: string;
@@ -66,7 +69,33 @@ function PhotoSection({ photos, types, label }: { photos: Photo[]; types: string
   );
 }
 
-function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }) {
+function JobDetailDrawer({ job, onClose, userRole, confirmDelete }: { job: JobItem; onClose: () => void; userRole?: string; confirmDelete: (opts: any) => Promise<boolean> }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const handleDelete = async () => {
+    const isConfirmed = await confirmDelete({
+      title: 'ยืนยันการลบประวัติ',
+      description: 'คุณแน่ใจหรือไม่ว่าต้องการลบประวัติการซ่อมบำรุงนี้? การลบจะรวมถึงรูปภาพทั้งหมดและไม่สามารถกู้คืนได้',
+      confirmText: 'ลบรายการ',
+      cancelText: 'ยกเลิก',
+      variant: 'danger',
+      icon: '🗑️'
+    });
+
+    if (isConfirmed) {
+      startTransition(async () => {
+        const res = await deleteJobItem(job.id);
+        if (res.success) {
+          onClose();
+          router.refresh();
+        } else {
+          alert('ไม่สามารถลบได้: ' + res.error);
+        }
+      });
+    }
+  };
+
   const durationMin = job.startTime && job.endTime
     ? Math.round((new Date(job.endTime).getTime() - new Date(job.startTime).getTime()) / 60000)
     : null;
@@ -165,6 +194,16 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
 
         {/* Footer */}
         <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3">
+          {userRole === 'ADMIN' && (
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="px-4 py-3.5 rounded-2xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 border border-red-200 transition-all disabled:opacity-50 flex-shrink-0"
+              title="ลบรายการนี้"
+            >
+              {isPending ? 'กำลังลบ...' : '🗑️ ลบ'}
+            </button>
+          )}
           <Link
             href={`/reports/job/${job.id}`}
             className="flex-1 text-center py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
@@ -173,7 +212,7 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
           </Link>
           <button
             onClick={onClose}
-            className="px-5 py-3.5 rounded-2xl bg-white border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all"
+            className="px-5 py-3.5 rounded-2xl bg-white border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all flex-shrink-0"
           >
             ปิด
           </button>
@@ -186,11 +225,13 @@ function JobDetailDrawer({ job, onClose }: { job: JobItem; onClose: () => void }
   return createPortal(drawerContent, document.body);
 }
 
-export default function JobHistoryPanel({ jobItems }: { jobItems: JobItem[] }) {
+export default function JobHistoryPanel({ jobItems, userRole }: { jobItems: JobItem[], userRole?: string }) {
   const [selected, setSelected] = useState<JobItem | null>(null);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   return (
     <>
+      <ConfirmDialog />
       {jobItems.length === 0 ? (
         <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
           <div className="text-4xl mb-3 opacity-20">🔧</div>
@@ -285,6 +326,8 @@ export default function JobHistoryPanel({ jobItems }: { jobItems: JobItem[] }) {
         <JobDetailDrawer
           job={selected}
           onClose={() => setSelected(null)}
+          userRole={userRole}
+          confirmDelete={confirm}
         />
       )}
     </>

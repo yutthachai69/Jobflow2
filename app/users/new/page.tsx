@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { createUser } from "@/app/actions";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";

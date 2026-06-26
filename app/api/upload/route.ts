@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { getCurrentUser } from '@/lib/auth'
 import { handleApiError } from '@/lib/error-handler'
 import { createLogContext } from '@/lib/logger'
 import { logger } from '@/lib/logger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIP as getSecurityIP } from '@/lib/security'
+import { getMaxUploadBytes } from '@/lib/upload-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +40,15 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const photoType = formData.get('photoType') as string
+
+    // Validate photoType against allowlist before using in any path
+    const ALLOWED_PHOTO_TYPES = ['BEFORE', 'AFTER', 'DEFECT', 'METER'] as const
+    type AllowedPhotoType = typeof ALLOWED_PHOTO_TYPES[number]
+    const photoTypeRaw = formData.get('photoType') as string
+    if (!photoTypeRaw || !(ALLOWED_PHOTO_TYPES as readonly string[]).includes(photoTypeRaw)) {
+      return NextResponse.json({ error: 'Invalid photo type' }, { status: 400 })
+    }
+    const photoType = photoTypeRaw as AllowedPhotoType
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -49,9 +59,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 })
+    const maxBytes = getMaxUploadBytes()
+    if (file.size > maxBytes) {
+      const mb = (maxBytes / (1024 * 1024)).toFixed(maxBytes >= 10 * 1024 * 1024 ? 0 : 1).replace(/\.0$/, '')
+      return NextResponse.json(
+        { error: `ไฟล์ใหญ่เกินกำหนด (สูงสุด ${mb}MB)` },
+        { status: 400 }
+      )
     }
 
     // Validate file size (min 1 byte)
@@ -96,48 +110,37 @@ export async function POST(request: NextRequest) {
     const extension = fileExtension || 'jpg'
     const filePath = `${photoType}/${timestamp}-${randomStr}.${extension}`
 
-    // Upload via Supabase Storage REST API (production)
+    // Supabase hosted: sb_secret_* / publishable keys are NOT JWTs — raw
+    // Authorization: Bearer <key> breaks Storage ("JWS Protected Header is invalid").
+    // @supabase/supabase-js sends apikey correctly so the gateway can mint a JWT downstream.
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseServiceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+      process.env.SUPABASE_SECRET_KEY?.trim()
 
     console.log('[upload] supabaseUrl set:', !!supabaseUrl, '| serviceKey set:', !!supabaseServiceKey)
 
     if (supabaseUrl && supabaseServiceKey) {
       const BUCKET = 'job-photos'
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET}/${filePath}`
-      console.log('[upload] uploading to:', uploadUrl)
+      const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
 
-      let uploadResponse: Response
-      try {
-        const bodyBuffer = Buffer.from(arrayBuffer)
-        uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'Content-Type': file.type,
-            'Content-Length': bodyBuffer.length.toString(),
-            'x-upsert': 'false',
-          },
-          body: bodyBuffer,
-        } as RequestInit)
-      } catch (fetchErr: any) {
-        const causeCode = fetchErr?.cause?.code || fetchErr?.cause?.message || 'unknown'
-        console.error('[upload] fetch threw error:', fetchErr?.message, fetchErr?.cause)
-        throw new Error(`Supabase: ${fetchErr?.message} (${causeCode})`)
+      const bodyBuffer = Buffer.from(arrayBuffer)
+      const { error: storageError } = await supabase.storage
+        .from(BUCKET)
+        .upload(filePath, bodyBuffer, {
+          contentType: file.type || 'application/octet-stream',
+          upsert: false,
+        })
+
+      if (storageError) {
+        console.error('[upload] supabase storage error:', storageError.message)
+        throw new Error(`Supabase upload failed: ${storageError.message}`)
       }
 
-      console.log('[upload] response status:', uploadResponse.status)
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        console.error('[upload] upload failed:', uploadResponse.status, errText)
-        throw new Error(`Supabase upload failed: ${uploadResponse.status} ${errText}`)
-      }
-
-      // Public URL for public bucket
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${filePath}`
-      return NextResponse.json({ url: publicUrl })
-
+      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
+      return NextResponse.json({ url: urlData.publicUrl })
     } else {
       // Fallback: Local File Storage (development)
       try {

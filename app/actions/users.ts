@@ -2,12 +2,12 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import bcrypt from 'bcryptjs'
 import { sanitizeString, validateUsername, validatePassword } from "@/lib/validation"
 import { requireAdmin } from "@/lib/auth-helpers"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
+import { logSecurityEvent } from "@/lib/security"
 
 export async function createUser(formData: FormData) {
   try {
@@ -65,16 +65,16 @@ export async function createUser(formData: FormData) {
     })
 
     revalidatePath('/users')
+    return { ok: true as const }
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
-  redirect('/users')
 }
 
 export async function updateUser(formData: FormData) {
   try {
-    await requireAdmin()
+    const admin = await requireAdmin()
 
     const userId = sanitizeString(formData.get('userId') as string)
     const username = sanitizeString(formData.get('username') as string)
@@ -139,10 +139,17 @@ export async function updateUser(formData: FormData) {
       data: updateData,
     })
 
+    logSecurityEvent('USER_UPDATED', {
+      updatedBy: admin.id,
+      updatedUserId: userId,
+      updatedUsername: username,
+      timestamp: new Date().toISOString(),
+    })
+
     revalidatePath('/users')
+    return { ok: true as const }
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
-  redirect('/users')
 }

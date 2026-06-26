@@ -91,10 +91,25 @@ export default async function NewBuildingPage({ searchParams }: Props) {
                 aria-label="ชื่ออาคาร"
                 aria-required="true"
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-                placeholder="เช่น อาคาร A (Main Wing), อาคารสำนักงาน"
+                placeholder="เช่น อาคาร A, อาคารหลัก, Wing B"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                รหัสอาคาร (Building Code) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="buildingCode"
+                required
+                maxLength={10}
+                aria-label="รหัสอาคาร"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 uppercase"
+                placeholder="เช่น A, B, MAIN"
               />
               <p className="mt-2 text-xs text-gray-500">
-                💡 ใส่ชื่อที่สื่อความหมาย เช่น ระบุ Wing หรือจุดประสงค์การใช้งาน
+                ใช้สร้าง QR Code เช่น AC-PTS1-<strong>A</strong>-F2-001 (สั้นๆ ไม่เกิน 10 ตัว)
               </p>
             </div>
 

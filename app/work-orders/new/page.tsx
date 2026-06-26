@@ -1,18 +1,26 @@
 export const dynamic = 'force-dynamic'
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
-import WorkOrderForm from "./WorkOrderForm";
+import WorkOrderFormWithDuplicateCheck from "./WorkOrderFormWithDuplicateCheck";
 
 interface Props {
   searchParams?: Promise<{ assetId?: string }>;
 }
 
 export default async function NewWorkOrderPage({ searchParams }: Props) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect('/login');
+  }
+
   const params = await searchParams;
   const assetIdFromUrl = params?.assetId?.trim() || null;
 
   const [sites, technicians] = await Promise.all([
     prisma.site.findMany({
+    where: user.role === 'CLIENT' ? { id: user.siteId || undefined } : undefined,
     include: {
       client: true,
       buildings: {
@@ -84,10 +92,10 @@ export default async function NewWorkOrderPage({ searchParams }: Props) {
               สร้างใบสั่งงานใหม่
             </h1>
           </div>
-          <p className="text-gray-600 ml-15">กำหนดรายละเอียดและเลือกเครื่องที่ต้องการบำรุงรักษา</p>
+          <p className="text-gray-600 ml-15">กำหนดรายละเอียดและเลือกทรัพย์สินในใบงาน (แอร์ / พัดลมและอื่นๆ ตามข้อมูลในระบบ)</p>
         </div>
 
-        <WorkOrderForm sites={sites} technicians={technicians} prefill={prefill} />
+        <WorkOrderFormWithDuplicateCheck sites={sites} technicians={technicians} prefill={prefill} />
       </div>
     </div>
   );

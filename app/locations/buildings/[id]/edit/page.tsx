@@ -32,7 +32,13 @@ export default async function EditBuildingPage({ params }: Props) {
     },
   });
 
-  if (!building) {
+  // Map to include buildingCode
+  const buildingWithCode = building ? {
+    ...building,
+    buildingCode: building.buildingCode || null,
+  } : null;
+
+  if (!buildingWithCode) {
     notFound();
   }
 
@@ -40,8 +46,8 @@ export default async function EditBuildingPage({ params }: Props) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-8">
       <div className="w-full max-w-full">
         {/* Back Link */}
-        <Link 
-          href="/locations" 
+        <Link
+          href="/locations"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6 group transition-all duration-200"
         >
           <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span>
@@ -64,16 +70,16 @@ export default async function EditBuildingPage({ params }: Props) {
           <div className="flex items-start gap-3">
             <div className="flex-1">
               <p className="text-sm text-gray-600 mb-1">สถานที่</p>
-              <p className="font-semibold text-gray-900 text-lg">{building.site.name}</p>
+              <p className="font-semibold text-gray-900 text-lg">{buildingWithCode.site.name}</p>
               <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                <span>{building.site.client.name}</span>
+                <span>{buildingWithCode.site.client.name}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Form */}
-        <EditBuildingForm building={building} />
+        <EditBuildingForm building={buildingWithCode} />
       </div>
     </div>
   );

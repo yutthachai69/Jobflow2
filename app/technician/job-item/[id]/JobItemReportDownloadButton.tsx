@@ -95,10 +95,35 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
     setIsExporting(true)
     try {
       const workOrderNumber = getWorkOrderDisplayNumber(workOrder)
-      const printPhotos = (jobItem.photos || []).filter((p) => p.type === 'BEFORE')
+      const isCM = workOrder.jobType === 'CM'
+      
+      let printPhotos = []
+      let emptyPhotosText = ''
+      let photosTitleText = ''
+
+      if (isCM) {
+        printPhotos = (jobItem.photos || []).filter((p) => p.type === 'DEFECT')
+        emptyPhotosText = 'ไม่มีรูปจุดชำรุด'
+        photosTitleText = 'รูปภาพจุดชำรุด'
+
+        // Fallback สำหรับใบงาน CM เก่าที่มีแต่รูประบบเดิม
+        if (printPhotos.length === 0) {
+          const legacyPhotos = (jobItem.photos || []).filter((p) => p.type === 'BEFORE' || p.type === 'AFTER')
+          if (legacyPhotos.length > 0) {
+            printPhotos = legacyPhotos
+            emptyPhotosText = 'ไม่มีรูป'
+            photosTitleText = 'รูปภาพก่อนทำและหลังทำ (งานเก่า)'
+          }
+        }
+      } else {
+        printPhotos = (jobItem.photos || []).filter((p) => p.type === 'BEFORE' || p.type === 'AFTER')
+        emptyPhotosText = 'ไม่มีรูปก่อนทำและหลังทำ'
+        photosTitleText = 'รูปภาพก่อนทำและหลังทำ'
+      }
+
       const photosHtml =
         printPhotos.length === 0
-          ? '<p class="text-muted">ไม่มีรูปก่อนทำ</p>'
+          ? `<p class="text-muted">${emptyPhotosText}</p>`
           : printPhotos
               .map(
                 (p) => `
@@ -124,7 +149,7 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
           <p><strong>ช่าง:</strong> ${escapeHtml(jobItem.technician?.fullName || jobItem.technician?.username || '-')} &nbsp;|&nbsp; <strong>สถานะ:</strong> ${jobItemStatusLabels[jobItem.status] || jobItem.status}</p>
           ${techNoteHtml}
           <div class="photos-section">
-            <p class="photos-title">รูปภาพก่อนทำ</p>
+            <p class="photos-title">${photosTitleText}</p>
             <div class="photos-grid">${photosHtml}</div>
           </div>
         </div>`
@@ -142,11 +167,11 @@ export default function JobItemReportDownloadButton({ jobItem, workOrder }: Prop
         }
       }
       const asset = jobItem.asset as { qrCode?: string; assetType?: string }
-      if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST' || (asset.qrCode || '').startsWith('EX-'))) {
+      if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST_DUCT' || asset.assetType === 'EXHAUST_FAN' || /^(EX|ExD|ExF)-/.test(asset.qrCode || ''))) {
         formType = 'EXHAUST_FAN'
       }
       const includeFormInPrint =
-        (workOrder.jobType === 'PM' || workOrder.jobType === 'CM') &&
+        (workOrder.jobType === 'PM' || workOrder.jobType === 'CM' || workOrder.jobType === 'AD_HOC') &&
         !!jobItem.checklist
       if (includeFormInPrint && jobItem.checklist) {
         const checklistStr = jobItem.checklist

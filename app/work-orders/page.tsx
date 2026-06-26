@@ -3,11 +3,23 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import WorkOrdersClient from "./WorkOrdersClient";
+import { startOfLocalDay } from "@/lib/dashboard-job-stats";
+import type { Prisma } from "@prisma/client";
 
 export default async function WorkOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ siteId?: string; page?: string }>;
+  searchParams: Promise<{
+    siteId?: string;
+    page?: string;
+    search?: string;
+    /** ช่าง: mine = ของตัวเอง, all = ทั้งระบบ (ตรงตัวเลขแดชบอร์ด) */
+    scope?: string;
+    /** ACTIVE | DONE */
+    status?: string;
+    /** 1 = เฉพาะ endTime วันนี้ (ใช้กับ status=DONE) */
+    today?: string;
+  }>;
 }) {
   const user = await getCurrentUser();
 
@@ -16,7 +28,7 @@ export default async function WorkOrdersPage({
   }
 
   const params = await searchParams;
-  const { siteId: selectedSiteId } = params;
+  const { siteId: selectedSiteId, scope: listScope, status: listStatus, today: listToday, search: searchQuery } = params;
   const currentPage = parseInt(params.page || '1', 10);
   const itemsPerPage = 20;
 
@@ -29,6 +41,20 @@ export default async function WorkOrdersPage({
     jobType: string;
     scheduledDate: Date;
     status: string;
+    duplicateOfId?: string | null;
+    isPotentialDuplicatePmMonthly?: boolean;
+    potentialDuplicateAssetCodes?: string[];
+    potentialDuplicatePmCount?: number;
+    conflictingWorkOrderIds?: string[];
+    potentialDuplicateBuckets?: Array<{
+      assetId: string;
+      assetCode: string;
+      pmTypeLabel: string;
+      workOrderIds: string[];
+    }>;
+    _count: {
+      duplicates: number;
+    };
     site: {
       id: string;
       name: string;
@@ -39,24 +65,112 @@ export default async function WorkOrdersPage({
     jobItems: Array<{
       id: string;
       status: string;
+      adHocPmType?: string | null;
       asset: {
         id: string;
         qrCode: string;
       };
-      technician: {
-        id: string;
-        fullName: string | null;
-        username: string;
-      } | null;
-      // ✅ เพิ่มส่วนนี้เข้าไปครับ
-      photos: Array<{
-        id: string;
-        type: string;
-        url: string;
-        createdAt: Date;
-      }>;
     }>;
   }> = [];
+  let totalItems = 0;
+  const markPotentialPmMonthlyDuplicates = <
+    T extends {
+      id: string;
+      siteId?: string;
+      jobType: string;
+      status: string;
+      scheduledDate: Date;
+      jobItems: Array<{ asset: { id: string; qrCode: string }; adHocPmType?: string | null }>;
+    }
+  >(items: T[]): Array<T & {
+    isPotentialDuplicatePmMonthly: boolean;
+    potentialDuplicateAssetCodes: string[];
+    potentialDuplicatePmCount: number;
+    conflictingWorkOrderIds: string[];
+    potentialDuplicateBuckets: Array<{
+      assetId: string;
+      assetCode: string;
+      pmTypeLabel: string;
+      workOrderIds: string[];
+    }>;
+  }> => {
+    // key: siteId_month_assetId_pmType -> list of workOrderIds
+    const assetPmToWorkOrders = new Map<string, string[]>();
+
+    for (const item of items) {
+      if (item.jobType !== 'PM' || item.status === 'CANCELLED') continue;
+      const date = new Date(item.scheduledDate);
+      const month = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+      
+      const uniqueAssetPmKeys = new Set(
+        item.jobItems
+          .filter((job) => job.adHocPmType === 'MAJOR' || job.adHocPmType === 'MINOR')
+          .map((job) => `${job.asset.id}_${job.adHocPmType}`)
+      );
+
+      for (const assetPm of uniqueAssetPmKeys) {
+        const key = `${item.siteId ?? ''}_${month}_${assetPm}`;
+        const existing = assetPmToWorkOrders.get(key) ?? [];
+        assetPmToWorkOrders.set(key, [...existing, item.id]);
+      }
+    }
+
+    return items.map((item) => {
+      if (item.jobType !== 'PM' || item.status === 'CANCELLED') {
+        return {
+          ...item,
+          isPotentialDuplicatePmMonthly: false,
+          potentialDuplicateAssetCodes: [],
+          potentialDuplicatePmCount: 0,
+          conflictingWorkOrderIds: [],
+          potentialDuplicateBuckets: [],
+        };
+      }
+
+      const date = new Date(item.scheduledDate);
+      const month = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+      const uniqueAssets = new Map<string, { assetId: string; qrCode: string; pmType: string }>();
+      
+      for (const job of item.jobItems) {
+        if (job.adHocPmType !== 'MAJOR' && job.adHocPmType !== 'MINOR') continue;
+        uniqueAssets.set(`${job.asset.id}_${job.adHocPmType}`, {
+          assetId: job.asset.id,
+          qrCode: job.asset.qrCode,
+          pmType: job.adHocPmType === 'MAJOR' ? 'ล้างใหญ่' : 'ล้างย่อย',
+        });
+      }
+
+      const duplicateAssetCodes: string[] = [];
+      const conflictingIdsSet = new Set<string>();
+      const buckets: Array<{ assetId: string; assetCode: string; pmTypeLabel: string; workOrderIds: string[] }> = [];
+
+      for (const [assetPm, info] of uniqueAssets.entries()) {
+        const key = `${item.siteId ?? ''}_${month}_${assetPm}`;
+        const matches = assetPmToWorkOrders.get(key) ?? [];
+        if (matches.length > 1) {
+          duplicateAssetCodes.push(`${info.qrCode} (${info.pmType})`);
+          matches.forEach(id => {
+            if (id !== item.id) conflictingIdsSet.add(id);
+          });
+          buckets.push({
+            assetId: info.assetId,
+            assetCode: info.qrCode,
+            pmTypeLabel: info.pmType,
+            workOrderIds: matches.filter((id) => id !== item.id),
+          });
+        }
+      }
+
+      return {
+        ...item,
+        isPotentialDuplicatePmMonthly: duplicateAssetCodes.length > 0,
+        potentialDuplicateAssetCodes: duplicateAssetCodes,
+        potentialDuplicatePmCount: conflictingIdsSet.size + 1, // Number of work orders in the same "conflict group"
+        conflictingWorkOrderIds: Array.from(conflictingIdsSet),
+        potentialDuplicateBuckets: buckets,
+      };
+    });
+  };
   let allSites: Array<{
     id: string;
     name: string;
@@ -131,32 +245,40 @@ export default async function WorkOrdersPage({
       );
     }
 
-    workOrders = await prisma.workOrder.findMany({
-      where: { siteId: siteId },
+    totalItems = await prisma.workOrder.count({
+      where: { siteId, jobType: { not: 'AD_HOC' } },
+    });
+
+    const fetchedWorkOrders = await prisma.workOrder.findMany({
+      where: { siteId, jobType: { not: 'AD_HOC' } },
       include: {
+        _count: {
+          select: {
+            duplicates: true,
+          },
+        },
         site: {
           include: { client: true },
         },
         jobItems: {
-          include: {
-            asset: true,
-            technician: true,
-            photos: {
-              orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            status: true,
+            adHocPmType: true,
+            asset: {
+              select: {
+                id: true,
+                qrCode: true,
+              },
             },
           },
         },
       },
       orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * itemsPerPage,
+      take: itemsPerPage,
     });
-
-    // ซิงค์สถานะ: ถ้ารายการงานทั้งหมดเสร็จแล้วแต่ใบงานยังไม่เป็น COMPLETED ให้อัปเดต
-    for (const wo of workOrders) {
-      if ((wo.status === 'OPEN' || wo.status === 'IN_PROGRESS') && wo.jobItems.length > 0 && wo.jobItems.every((j) => j.status === 'DONE')) {
-        await prisma.workOrder.update({ where: { id: wo.id }, data: { status: 'COMPLETED' } });
-        wo.status = 'COMPLETED';
-      }
-    }
+    workOrders = markPotentialPmMonthlyDuplicates(fetchedWorkOrders);
 
     // Fetch site name for header display
     const clientSite = await prisma.site.findUnique({
@@ -165,11 +287,24 @@ export default async function WorkOrdersPage({
     });
     (user as any).siteName = clientSite?.name;
   } else if (user.role === 'TECHNICIAN') {
-    // TECHNICIAN: ดึงเฉพาะ Job Items ที่ตัวเองทำ (technicianId = user.id)
+    const scopeAll = listScope === 'all';
+    const jobItemWhere: Prisma.JobItemWhereInput = {};
+
+    if (!scopeAll) {
+      jobItemWhere.technicianId = user.id;
+    }
+
+    if (listStatus === 'DONE') {
+      jobItemWhere.status = 'DONE';
+      if (listToday === '1') {
+        jobItemWhere.endTime = { gte: startOfLocalDay() };
+      }
+    } else if (listStatus === 'ACTIVE') {
+      jobItemWhere.status = { in: ['PENDING', 'IN_PROGRESS', 'ISSUE_FOUND'] };
+    }
+
     technicianJobItems = await prisma.jobItem.findMany({
-      where: {
-        technicianId: user.id,
-      },
+      where: jobItemWhere,
       include: {
         workOrder: {
           include: {
@@ -213,56 +348,71 @@ export default async function WorkOrdersPage({
     });
 
     // ADMIN: ดูทั้งหมด หรือ filter ตาม siteId ที่เลือก
-    workOrders = await prisma.workOrder.findMany({
-      where: selectedSiteId ? { siteId: selectedSiteId } : undefined,
+    const where = selectedSiteId ? { siteId: selectedSiteId } : undefined
+    totalItems = await prisma.workOrder.count({ where });
+
+    const fetchedWorkOrders = await prisma.workOrder.findMany({
+      where,
       include: {
+        _count: {
+          select: {
+            duplicates: true,
+          },
+        },
         site: {
           include: { client: true },
         },
         jobItems: {
-          include: {
-            asset: true,
-            technician: true,
-            photos: {
-              orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            status: true,
+            adHocPmType: true,
+            asset: {
+              select: {
+                id: true,
+                qrCode: true,
+              },
             },
           },
         },
       },
       orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * itemsPerPage,
+      take: itemsPerPage,
     });
-
-    // ซิงค์สถานะ: ถ้ารายการงานทั้งหมดเสร็จแล้วแต่ใบงานยังไม่เป็น COMPLETED ให้อัปเดต
-    for (const wo of workOrders) {
-      if ((wo.status === 'OPEN' || wo.status === 'IN_PROGRESS') && wo.jobItems.length > 0 && wo.jobItems.every((j) => j.status === 'DONE')) {
-        await prisma.workOrder.update({ where: { id: wo.id }, data: { status: 'COMPLETED' } });
-        wo.status = 'COMPLETED';
-      }
-    }
+    workOrders = markPotentialPmMonthlyDuplicates(fetchedWorkOrders);
   }
 
   // สำหรับ TECHNICIAN: ส่งข้อมูล Job Items ไปให้ Client Component
   if (user.role === 'TECHNICIAN') {
+    const scopeAll = listScope === 'all';
+    const listTitle =
+      scopeAll && listStatus === 'DONE' && listToday === '1'
+        ? 'งานที่เสร็จสิ้นวันนี้ (ทั้งระบบ)'
+        : scopeAll && listStatus === 'DONE'
+          ? 'งานที่เสร็จแล้วทั้งหมด (ทั้งระบบ)'
+          : scopeAll && listStatus === 'ACTIVE'
+            ? 'งานที่ดำเนินการ (ทั้งระบบ)'
+            : 'ประวัติการทำงานของฉัน';
+
     return (
       <WorkOrdersClient
         userRole={user.role}
         technicianJobItems={technicianJobItems || []}
+        technicianListTitle={listTitle}
+        technicianListScope={scopeAll ? 'all' : 'mine'}
       />
     );
   }
 
   // Pagination for Work Orders
-  const totalItems = workOrders.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedWorkOrders = workOrders.slice(startIndex, endIndex);
 
   // สำหรับ ADMIN และ CLIENT: ส่งข้อมูล Work Orders ไปให้ Client Component
   return (
     <WorkOrdersClient
       userRole={user.role}
-      workOrders={paginatedWorkOrders}
+      workOrders={workOrders}
       allSites={allSites}
       selectedSiteId={selectedSiteId}
       userSiteName={user.role === 'CLIENT' ? (user as any).siteName : undefined}

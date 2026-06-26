@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { getWOStatus, getJobStatus } from '@/lib/status-colors'
+import { formatThaiDate } from '@/lib/date-utils'
 
 export const metadata = {
   title: 'รายงานการซ่อม - LMT air service',
@@ -222,7 +223,7 @@ export default async function ReportsRepairPage({
                   return (
                     <tr key={r.jobItemId} className="border-b border-app hover:bg-app-section/50">
                       <td className="px-3 py-3 sm:px-6 sm:py-4 text-app-body text-xs sm:text-sm">
-                        {new Date(r.scheduledDate).toLocaleDateString('th-TH')}
+                        {formatThaiDate(r.scheduledDate, 'numeric')}
                       </td>
                       <td className="px-3 py-3 sm:px-6 sm:py-4">
                         <span className={`inline-flex whitespace-nowrap px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${st.tailwind}`}>

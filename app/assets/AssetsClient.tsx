@@ -44,10 +44,11 @@ interface Props {
 export default function AssetsClient({ assets, userRole, defaultSiteName }: Props) {
   const searchParams = useSearchParams()
 
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(searchParams.get('q') || '')
   const [siteFilter, setSiteFilter] = useState(searchParams.get('site') || 'ALL')
-  const [statusFilter, setStatusFilter] = useState('ALL')
-  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'ALL')
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'ALL')
+  const [assetTypeFilter, setAssetTypeFilter] = useState(searchParams.get('assetType') || 'ALL')
+  const [machineTypeFilter, setMachineTypeFilter] = useState(searchParams.get('machineType') || 'ALL')
   const [currentPage, setCurrentPage] = useState(1)
   const [baseUrl, setBaseUrl] = useState<string>('')
 
@@ -56,6 +57,19 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
       setBaseUrl(window.location.origin)
     }
   }, [])
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (search) params.set('q', search)
+    if (assetTypeFilter !== 'ALL') params.set('assetType', assetTypeFilter)
+    if (machineTypeFilter !== 'ALL') params.set('machineType', machineTypeFilter)
+    if (statusFilter !== 'ALL') params.set('status', statusFilter)
+    if (siteFilter !== 'ALL') params.set('site', siteFilter)
+
+    const newUrl = params.toString() ? `/assets?${params.toString()}` : '/assets'
+    window.history.replaceState({}, '', newUrl)
+  }, [search, assetTypeFilter, machineTypeFilter, statusFilter, siteFilter])
 
   // ตรวจสอบว่ามี asset ที่เป็น AIR_CONDITIONER หรือไม่
   const hasAirConditioner = assets.some(a => a.assetType === 'AIR_CONDITIONER')
@@ -74,7 +88,18 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
   const handleSearchChange = (v: string) => { setSearch(v); setCurrentPage(1) }
   const handleSiteChange = (v: string) => { setSiteFilter(v); setCurrentPage(1) }
   const handleStatusChange = (v: string) => { setStatusFilter(v); setCurrentPage(1) }
-  const handleTypeChange = (v: string) => { setTypeFilter(v); setCurrentPage(1) }
+  const handleAssetTypeChange = (v: string) => { setAssetTypeFilter(v); setCurrentPage(1) }
+  const handleMachineTypeChange = (v: string) => { setMachineTypeFilter(v); setCurrentPage(1) }
+
+  const handleClearAll = () => {
+    setSearch('')
+    setSiteFilter('ALL')
+    setStatusFilter('ALL')
+    setAssetTypeFilter('ALL')
+    setMachineTypeFilter('ALL')
+    setCurrentPage(1)
+    window.history.replaceState({}, '', '/assets')
+  }
 
   const filteredAssets = useMemo(() => {
     const result = assets.filter((asset) => {
@@ -93,39 +118,39 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
       // Status filter
       const matchesStatus = statusFilter === 'ALL' || asset.status === statusFilter
 
-      // Type filter
-      let matchesType = false
-      if (typeFilter === 'ALL') {
-        matchesType = true
-      } else if (['AIR_CONDITIONER', 'EXHAUST', 'OTHER'].includes(typeFilter)) {
-        matchesType = asset.assetType === typeFilter
-      } else {
-        matchesType = (asset as any).machineType === typeFilter
-      }
+      // Asset Type filter
+      const matchesAssetType = assetTypeFilter === 'ALL' || asset.assetType === assetTypeFilter
+
+      // Machine Type filter (only for AC)
+      const matchesMachineType =
+        assetTypeFilter !== 'AIR_CONDITIONER' ||
+        machineTypeFilter === 'ALL' ||
+        asset.machineType === machineTypeFilter
 
       // Site filter (ถ้าไม่มี site จะแสดงเฉพาะเมื่อเลือก "ทุกสถานที่")
       const matchesSite = siteFilter === 'ALL' || siteName === siteFilter
 
-      return matchesSearch && matchesStatus && matchesType && matchesSite
+      return matchesSearch && matchesStatus && matchesAssetType && matchesMachineType && matchesSite
     })
 
     // Sort by type (AIR_CONDITIONER first) and then naturally by qrCode
     return result.sort((a, b) => {
       const typeOrder: Record<string, number> = {
         'AIR_CONDITIONER': 1,
-        'EXHAUST': 2,
-        'OTHER': 3,
+        'EXHAUST_DUCT': 2,
+        'EXHAUST_FAN': 3,
+        'FRESH_AIR': 4,
       }
       const orderA = typeOrder[a.assetType] || 99
       const orderB = typeOrder[b.assetType] || 99
-      
+
       if (orderA !== orderB) {
         return orderA - orderB
       }
-      
+
       return a.qrCode.localeCompare(b.qrCode, undefined, { numeric: true, sensitivity: 'base' })
     })
-  }, [assets, search, statusFilter, typeFilter, siteFilter])
+  }, [assets, search, statusFilter, assetTypeFilter, machineTypeFilter, siteFilter])
 
   const paginatedAssets = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE
@@ -156,7 +181,6 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
       FCU: { style: 'background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.3)', label: '💨 FCU' },
       VRF: { style: 'background:rgba(14,165,233,0.15);color:#38bdf8;border:1px solid rgba(14,165,233,0.3)', label: '🔄 VRF' },
       SPLIT_TYPE: { style: 'background:rgba(5,150,105,0.15);color:#34d399;border:1px solid rgba(5,150,105,0.3)', label: '❄️ Split' },
-      EXHAUST: { style: 'background:rgba(217,119,6,0.15);color:#fbbf24;border:1px solid rgba(217,119,6,0.3)', label: '💨 Exhaust' },
     }
     const cfg = configs[machineType] || { style: 'background:rgba(71,85,105,0.15);color:#94a3b8;border:1px solid rgba(71,85,105,0.3)', label: `⚙️ ${machineType}` }
     return (
@@ -205,12 +229,15 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
         searchValue={search}
         siteFilter={siteFilter}
         statusFilter={statusFilter}
-        typeFilter={typeFilter}
+        assetTypeFilter={assetTypeFilter}
+        machineTypeFilter={machineTypeFilter}
         sites={availableSites}
         onSearchChange={handleSearchChange}
         onSiteFilterChange={handleSiteChange}
         onStatusFilterChange={handleStatusChange}
-        onTypeFilterChange={handleTypeChange}
+        onAssetTypeFilterChange={handleAssetTypeChange}
+        onMachineTypeFilterChange={handleMachineTypeChange}
+        onClearAll={handleClearAll}
       />
 
       {/* Mobile Card View */}
@@ -218,10 +245,10 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
         {filteredAssets.length === 0 ? (
           <EmptyState
             icon="🔍"
-            title={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
-            description={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
-            actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
-            actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "/assets/new" : undefined}
+            title={search || statusFilter !== 'ALL' || assetTypeFilter !== 'ALL' || machineTypeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
+            description={search || statusFilter !== 'ALL' || assetTypeFilter !== 'ALL' || machineTypeFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
+            actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && assetTypeFilter === 'ALL' && machineTypeFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
+            actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && assetTypeFilter === 'ALL' && machineTypeFilter === 'ALL' ? "/assets/new" : undefined}
           />
         ) : (
           paginatedAssets.map((asset) => {
@@ -320,10 +347,10 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
                 <td colSpan={hasAirConditioner ? 10 : 9} className="px-6 py-12">
                   <EmptyState
                     icon="🔍"
-                    title={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
-                    description={search || statusFilter !== 'ALL' || typeFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
-                    actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
-                    actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && typeFilter === 'ALL' ? "/assets/new" : undefined}
+                    title={search || statusFilter !== 'ALL' || assetTypeFilter !== 'ALL' || machineTypeFilter !== 'ALL' ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีข้อมูลทรัพย์สิน"}
+                    description={search || statusFilter !== 'ALL' || assetTypeFilter !== 'ALL' || machineTypeFilter !== 'ALL' ? "ลองเปลี่ยนคำค้นหาหรือตัวกรอง" : userRole === 'ADMIN' ? "เริ่มต้นโดยการเพิ่มทรัพย์สินใหม่" : "ยังไม่มีทรัพย์สินในระบบ"}
+                    actionLabel={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && assetTypeFilter === 'ALL' && machineTypeFilter === 'ALL' ? "+ เพิ่มทรัพย์สินใหม่" : undefined}
+                    actionHref={userRole === 'ADMIN' && !search && statusFilter === 'ALL' && assetTypeFilter === 'ALL' && machineTypeFilter === 'ALL' ? "/assets/new" : undefined}
                   />
                 </td>
               </tr>
@@ -332,8 +359,12 @@ export default function AssetsClient({ assets, userRole, defaultSiteName }: Prop
                 // แปลง assetType enum เป็นชื่อภาษาไทย
                 const assetTypeLabels: Record<string, string> = {
                   'AIR_CONDITIONER': 'เครื่องปรับอากาศ',
-                  'EXHAUST': 'พัดลมดูดอากาศ (Exhaust)',
-                  'OTHER': 'อื่นๆ',
+                  'EXHAUST_DUCT': 'พัดลมดูดอากาศ (ท่อ)',
+                  'EXHAUST_FAN': 'พัดลมดูดอากาศ (พัดลม)',
+                  'FRESH_AIR': 'พัดลมอากาศบริสุทธิ์',
+                  'REFRIGERANT': 'น้ำยาแอร์',
+                  'SPARE_PART': 'อะไหล่',
+                  'TOOL': 'เครื่องมือ',
                 }
                 const assetTypeName = assetTypeLabels[asset.assetType] || 'อื่นๆ'
 

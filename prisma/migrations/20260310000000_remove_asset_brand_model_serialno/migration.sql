@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "Asset" DROP COLUMN IF EXISTS "brand";
-ALTER TABLE "Asset" DROP COLUMN IF EXISTS "model";
-ALTER TABLE "Asset" DROP COLUMN IF EXISTS "serialNo";

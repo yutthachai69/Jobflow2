@@ -8,10 +8,12 @@ import CancelWorkOrderButton from "./CancelButton";
 import AssignTechnicianButton from "./AssignTechnicianButton";
 import ExportButton from "./ExportButton";
 import ReopenJobItemButton from "./ReopenJobItemButton";
+import WorkOrderJobItemPhotos from "./WorkOrderJobItemPhotos";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import { getWOStatus, getJobStatus } from "@/lib/status-colors";
 import { getWorkOrderDisplayNumber } from "@/lib/work-order-number";
 import type { Metadata } from "next";
+import { formatThaiDate } from "@/lib/date-utils";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -78,24 +80,21 @@ export default async function WorkOrderDetailPage({ params }: Props) {
     redirect('/login');
   }
 
-  const workOrder = await prisma.workOrder.findUnique({
-    where: { id },
-    include: {
-      site: {
-        include: { client: true },
-      },
-      jobItems: {
-        include: {
-          asset: {
-            include: {
-              room: {
-                include: {
-                  floor: {
-                    include: {
-                      building: {
-                        include: {
-                          site: true,
-                        },
+  const baseInclude = {
+    site: {
+      include: { client: true },
+    },
+    jobItems: {
+      include: {
+        asset: {
+          include: {
+            room: {
+              include: {
+                floor: {
+                  include: {
+                    building: {
+                      include: {
+                        site: true,
                       },
                     },
                   },
@@ -103,15 +102,61 @@ export default async function WorkOrderDetailPage({ params }: Props) {
               },
             },
           },
-          technician: true,
-          pmSchedule: { select: { pmType: true } },
-          photos: {
-            orderBy: { createdAt: 'asc' },
-          },
+        },
+        technician: true,
+        pmSchedule: { select: { pmType: true } },
+        photos: {
+          orderBy: { createdAt: 'asc' },
         },
       },
     },
-  });
+  } as const
+
+  const workOrder = await prisma.workOrder.findUnique({
+    where: { id },
+    include: {
+      ...baseInclude,
+      duplicateOf: {
+        select: {
+          id: true,
+          workOrderNumber: true,
+          status: true,
+          scheduledDate: true,
+          jobItems: {
+            select: {
+              asset: {
+                select: {
+                  qrCode: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      duplicates: {
+        select: {
+          id: true,
+          workOrderNumber: true,
+          status: true,
+          scheduledDate: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  }).catch(async (error) => {
+    // Backward-compatible fallback when Prisma Client is stale and
+    // doesn't include duplicateOf/duplicates relation yet.
+    const message = error instanceof Error ? error.message : ''
+    if (!message.includes('Unknown field `duplicateOf`')) throw error
+
+    const fallback = await prisma.workOrder.findUnique({
+      where: { id },
+      include: baseInclude,
+    })
+
+    if (!fallback) return fallback
+    return { ...fallback, duplicateOf: null, duplicates: [] }
+  })
 
   if (!workOrder) {
     notFound();
@@ -128,6 +173,16 @@ export default async function WorkOrderDetailPage({ params }: Props) {
       siteId = dbUser?.siteId ?? null
     }
     if (!siteId || workOrder.siteId !== siteId) {
+      notFound()
+    }
+  }
+
+  // Access Control: TECHNICIAN สามารถดูได้เฉพาะ Work Order ที่มี jobItem ที่ assign ให้ตัวเองเท่านั้น
+  if (user.role === 'TECHNICIAN') {
+    const isAssigned = workOrder.jobItems.some(
+      (item) => item.technicianId === user.id
+    )
+    if (!isAssigned) {
       notFound()
     }
   }
@@ -155,6 +210,11 @@ export default async function WorkOrderDetailPage({ params }: Props) {
     CM: "ซ่อมแซม",
     INSTALL: "ติดตั้ง",
   };
+  const currentAssetCodes = workOrder.jobItems.map((item) => item.asset.qrCode)
+  const duplicateAssetCodes = workOrder.duplicateOf?.jobItems?.map((item) => item.asset.qrCode) || []
+  const overlappingAssetCodes = currentAssetCodes.filter((code) => duplicateAssetCodes.includes(code))
+  const overlapPreview = overlappingAssetCodes.slice(0, 3).join(', ')
+  const overlapMoreCount = overlappingAssetCodes.length - Math.min(overlappingAssetCodes.length, 3)
 
   return (
     <div className="p-4 md:p-8">
@@ -211,7 +271,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                 </div>
                 <div className="flex items-center gap-2 text-app-body text-sm">
                   <span>📅</span>
-                  <span>วันนัดหมาย: {new Date(workOrder.scheduledDate).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                  <span>วันนัดหมาย: {formatThaiDate(workOrder.scheduledDate, 'long')}</span>
                 </div>
                 {workOrder.assignedTeam && (
                   <div className="flex items-center gap-2 text-app-body text-sm">
@@ -252,6 +312,50 @@ export default async function WorkOrderDetailPage({ params }: Props) {
             </div>
           )}
         </div>
+
+        {(workOrder.duplicateOf || workOrder.duplicates.length > 0) && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6">
+            <h3 className="text-lg font-bold text-amber-900 mb-3">ความสัมพันธ์งานซ้ำ (เครื่อง/เดือนเดียวกัน)</h3>
+
+            {workOrder.duplicateOf && (
+              <div className="text-sm text-amber-900 mb-3">
+                <span className="font-semibold">งานนี้อ้างอิงจากใบงานเดิม: </span>
+                <Link href={`/work-orders/${workOrder.duplicateOf.id}`} className="underline font-semibold hover:text-amber-700">
+                  {workOrder.duplicateOf.workOrderNumber || workOrder.duplicateOf.id}
+                </Link>
+                <span className="text-amber-800"> • {formatThaiDate(workOrder.duplicateOf.scheduledDate, 'short')}</span>
+                <p className="mt-2 text-amber-900">
+                  ซ้ำในความหมายของระบบ: เครื่องเดียวกัน + ประเภทงานเดียวกัน + เดือนเดียวกัน
+                  {overlappingAssetCodes.length > 0 && (
+                    <>
+                      {' '}เช่น {overlapPreview}
+                      {overlapMoreCount > 0 && ` และอีก ${overlapMoreCount} เครื่อง`}
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {workOrder.duplicates.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-amber-900 mb-2">
+                  ใบงานที่ถูกสร้างซ้ำจากงานนี้ ({workOrder.duplicates.length} รายการ)
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {workOrder.duplicates.map((dup) => (
+                    <Link
+                      key={dup.id}
+                      href={`/work-orders/${dup.id}`}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-sm hover:bg-amber-100 transition-colors"
+                    >
+                      {dup.workOrderNumber || dup.id}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Job Items List */}
         <div className="bg-app-card rounded-2xl shadow-xl border border-app overflow-hidden">
@@ -337,23 +441,7 @@ export default async function WorkOrderDetailPage({ params }: Props) {
                     </div>
                   </div>
                   {jobItem.photos.length > 0 && (
-                    <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-                      {jobItem.photos.map((photo) => (
-                        <div key={photo.id} className="relative flex-shrink-0 group">
-                          <img
-                            src={photo.url}
-                            alt={photo.type}
-                            className="w-32 h-32 object-cover rounded-xl border-2 border-app group-hover:border-app-muted transition-all duration-200"
-                          />
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white text-xs px-2 py-1.5 rounded-b-xl font-semibold">
-                            {photo.type === "BEFORE" && "ก่อน"}
-                            {photo.type === "AFTER" && "หลัง"}
-                            {photo.type === "DEFECT" && "ชำรุด"}
-                            {photo.type === "METER" && "เกจ"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <WorkOrderJobItemPhotos photos={jobItem.photos} />
                   )}
                 </div>
               );

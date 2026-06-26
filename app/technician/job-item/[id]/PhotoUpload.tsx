@@ -3,13 +3,50 @@
 import { useState, useRef } from 'react'
 import { createJobPhoto } from '@/app/actions'
 import { useRouter } from 'next/navigation'
+import { compressImageForUpload } from '@/lib/client-image-compress'
+import {
+  getCompressTargetBytes,
+  getMaxUploadBytes,
+  getMaxUploadLabelMb,
+} from '@/lib/upload-config'
 
 interface Props {
   jobItemId: string
   defaultPhotoType?: 'BEFORE' | 'AFTER' | 'DEFECT' | 'METER'
+  isCM?: boolean
 }
 
-export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: Props) {
+async function parseUploadError(res: Response): Promise<string> {
+  const raw = await res.text()
+  const trimmed = raw.trimStart()
+  if (trimmed.startsWith('{')) {
+    try {
+      const j = JSON.parse(raw) as { error?: string }
+      if (typeof j.error === 'string' && j.error.length > 0) {
+        if (j.error.includes('JWS Protected Header')) {
+          return 'ตั้งค่า Supabase ไม่ถูกต้อง (คีย์เซิร์ฟเวอร์) — ตรวจ SUPABASE_SERVICE_ROLE_KEY ให้ตรงโปรเจกต์'
+        }
+        return j.error
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  if (res.status === 413) {
+    return 'ไฟล์ใหญ่เกินที่เซิร์ฟเวอร์รับได้ ลองเลือกรูปอื่นหรือถ่ายใหม่'
+  }
+  if (res.status === 401) {
+    return 'หมดเซสชันหรือไม่มีสิทธิ์อัปโหลด — กรุณาเข้าสู่ระบบใหม่'
+  }
+  if (res.status === 429) {
+    return 'อัปโหลดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่'
+  }
+  return raw.length > 0 && raw.length < 280
+    ? raw
+    : `อัปโหลดไม่สำเร็จ (${res.status})`
+}
+
+export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE', isCM = false }: Props) {
   const router = useRouter()
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -17,15 +54,20 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
+  const maxBytes = getMaxUploadBytes()
+  const labelMb = getMaxUploadLabelMb()
+
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
     await uploadPhoto(file, photoType)
 
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = ''
     }
   }
 
@@ -35,44 +77,45 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
       return
     }
 
-    // Check file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('ขนาดไฟล์ต้องไม่เกิน 10MB')
-      return
-    }
-
     setIsUploading(true)
     setError(null)
 
     try {
-      // Upload to blob storage first
+      const target = getCompressTargetBytes()
+      const prepared = await compressImageForUpload(file, target)
+
+      if (prepared.size > maxBytes) {
+        setError(`ไฟล์ยังใหญ่เกินไปหลังบีบแล้ว (สูงสุด ${labelMb}MB) — ลองเลือกรูปอื่น`)
+        return
+      }
+
       const uploadFormData = new FormData()
-      uploadFormData.append('file', file)
+      uploadFormData.append('file', prepared)
       uploadFormData.append('photoType', photoType)
 
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: uploadFormData,
+        credentials: 'include',
       })
 
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json()
-        throw new Error(errorData.error || 'Failed to upload image')
+        const msg = await parseUploadError(uploadResponse)
+        throw new Error(msg)
       }
 
-      const { url } = await uploadResponse.json()
+      const { url } = (await uploadResponse.json()) as { url: string }
 
-      // Then create job photo record
       const formData = new FormData()
       formData.append('imageUrl', url)
       formData.append('photoType', photoType)
 
       await createJobPhoto(jobItemId, formData)
 
-      // Refresh page to show new photo
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ'
+      setError(message)
     } finally {
       setIsUploading(false)
     }
@@ -87,13 +130,12 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
       )}
 
       <>
-        {/* Photo Type Selection */}
         <div className="mb-4">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             ประเภทรูปภาพ <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(['BEFORE', 'AFTER', 'DEFECT', 'METER'] as const).map((type) => (
+            {(isCM ? ['DEFECT'] as const : ['BEFORE', 'AFTER', 'DEFECT', 'METER'] as const).map((type) => (
               <button
                 key={type}
                 type="button"
@@ -113,7 +155,6 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Upload from Gallery */}
           <label className="flex-1 cursor-pointer">
             <input
               ref={fileInputRef}
@@ -128,7 +169,6 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
             </div>
           </label>
 
-          {/* Take Photo - native camera (works on all mobile browsers) */}
           <label className="flex-1 cursor-pointer">
             <input
               ref={cameraInputRef}
@@ -146,10 +186,9 @@ export default function PhotoUpload({ jobItemId, defaultPhotoType = 'BEFORE' }: 
         </div>
 
         <div className="text-xs text-gray-500 text-center">
-          รองรับไฟล์ JPG, PNG, GIF ขนาดไม่เกิน 10MB
+          รองรับ JPG, PNG, GIF, WebP — ระบบจะบีบรูปจากกล้อง/แกลเลอรีให้เล็กลงอัตโนมัติ (ส่งไม่เกิน {labelMb}MB)
         </div>
       </>
     </div>
   )
 }
-

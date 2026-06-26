@@ -46,7 +46,8 @@ export default function EditClientForm({ client }: Props) {
 
     try {
       await updateClient(formData)
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'NEXT_REDIRECT' || error?.digest?.includes?.('NEXT_REDIRECT')) throw error
       console.error('Error updating client:', error)
       setErrors({ submit: error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการอัพเดท' })
       setIsSubmitting(false)

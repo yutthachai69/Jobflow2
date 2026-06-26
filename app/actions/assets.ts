@@ -9,32 +9,55 @@ import { logSecurityEvent } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
 
-const EXHAUST_CODE_REGEX = /^EX-(\d{4})-(\d{3})$/
+/**
+ * สร้าง QR code ถัดไปจาก roomId
+ * format: {TYPE}-{siteCode}-{buildingCode}-F{floor}-{NNN}
+ * เช่น AC-PTS1-A-F2-079, ExD-PHY-MAIN-F3-005, ExF-PHY-MAIN-F3-005, FA-PHY-MAIN-F3-005
+ */
+async function getNextQrCode(roomId: string, assetType: string): Promise<string> {
+  let prefix: string
+  if (assetType === 'EXHAUST_DUCT') prefix = 'ExD'
+  else if (assetType === 'EXHAUST_FAN') prefix = 'ExF'
+  else if (assetType === 'FRESH_AIR') prefix = 'FA'
+  else prefix = 'AC'
 
-/** สร้างรหัส Exhaust ตัวถัดไปในรูปแบบ EX-YYYY-NNN (เช่น EX-2025-001) */
-async function getNextExhaustCode(): Promise<string> {
-  const year = new Date().getFullYear()
-  const prefix = `EX-${year}-`
-  const existing = await prisma.asset.findMany({
-    where: {
-      assetType: 'EXHAUST',
-      qrCode: { startsWith: prefix },
+  const room = await prisma.room.findUnique({
+    where: { id: roomId },
+    include: {
+      floor: {
+        include: {
+          building: {
+            include: { site: true },
+          },
+        },
+      },
     },
+  })
+  if (!room) throw new Error('Room not found')
+
+  const siteCode     = room.floor.building.site.siteCode     || 'XX'
+  const buildingCode = room.floor.building.buildingCode      || 'X'
+  const floorRaw     = room.floor.name.replace(/^ชั้น\s*/u, '').trim() // "ชั้น 2" → "2", "ชั้น G" → "G"
+  const floorCode    = `F${floorRaw}`                                   // "F2", "FG"
+
+  const qrPrefix = `${prefix}-${siteCode}-${buildingCode}-${floorCode}-`
+
+  const existing = await prisma.asset.findMany({
+    where: { qrCode: { startsWith: qrPrefix } },
     select: { qrCode: true },
   })
+
   let maxN = 0
   for (const a of existing) {
-    const m = a.qrCode.match(EXHAUST_CODE_REGEX)
-    if (m && m[1] === String(year)) {
-      const n = parseInt(m[2], 10)
-      if (n > maxN) maxN = n
-    }
+    const numPart = a.qrCode.slice(qrPrefix.length)
+    const n = parseInt(numPart, 10)
+    if (!isNaN(n) && n > maxN) maxN = n
   }
-  const nextN = maxN + 1
-  return `${prefix}${String(nextN).padStart(3, '0')}`
+
+  return `${qrPrefix}${String(maxN + 1).padStart(3, '0')}`
 }
 
-export async function createAsset(formData: FormData): Promise<{ error: string } | void> {
+export async function createAsset(formData: FormData): Promise<{ error: string } | { success: true } | void> {
   try {
     await requireAdmin()
 
@@ -50,9 +73,6 @@ export async function createAsset(formData: FormData): Promise<{ error: string }
     // Validation
     if (!roomId) {
       return { error: 'กรุณาเลือกห้องก่อนบันทึก' }
-    }
-    if (assetType === 'AIR_CONDITIONER' && !serialNo) {
-      return { error: 'กรุณากรอก Serial Number / QR Code' }
     }
 
     // Check if QR Code (serialNo) already exists
@@ -75,39 +95,50 @@ export async function createAsset(formData: FormData): Promise<{ error: string }
       return { error: 'รูปแบบวันที่ไม่ถูกต้อง' }
     }
 
-    // Exhaust: ไม่บังคับกรอกรหัส → สร้างรูปแบบ EX-YYYY-NNN ให้อัตโนมัติ
+    // ถ้าไม่ได้กรอก QR → auto-gen จาก site+building+floor
     let qrCode: string
-    if (assetType === 'EXHAUST' && !serialNo) {
-      qrCode = await getNextExhaustCode()
+    if (!serialNo) {
+      qrCode = await getNextQrCode(roomId, assetType)
     } else {
-      qrCode = serialNo || `ASSET-${Date.now()}`
+      qrCode = serialNo
     }
 
-    await prisma.asset.create({
-      data: {
-        roomId,
-        qrCode,
-        assetType: assetType as any,
-        machineType: assetType === 'AIR_CONDITIONER' ? (machineType as any) : null,
-        btu: btu || null,
-        installDate: installDate || null,
-        status: 'ACTIVE',
-      },
-    })
+    const assetData = {
+      roomId,
+      qrCode,
+      assetType: assetType as any,
+      machineType: assetType === 'AIR_CONDITIONER' ? (machineType as any) : null,
+      btu: btu || null,
+      installDate: installDate || null,
+      status: 'ACTIVE' as const,
+    }
+
+    try {
+      await prisma.asset.create({ data: assetData })
+    } catch (e: any) {
+      // P2002 = unique constraint violation (race condition บน qrCode)
+      if (e?.code === 'P2002' && !serialNo) {
+        // Retry ครั้งเดียวด้วย QR code ใหม่
+        const retryQr = await getNextQrCode(roomId, assetType)
+        await prisma.asset.create({ data: { ...assetData, qrCode: retryQr } })
+      } else {
+        throw e
+      }
+    }
 
     revalidatePath('/assets')
+    return { success: true }
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     return { error: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : String(error)}` }
   }
-  redirect('/assets')
 }
 
 export async function updateAsset(formData: FormData): Promise<{ error: string } | void> {
+  const assetId = sanitizeString(formData.get('assetId') as string)
+
   try {
     const user = await requireAdmin()
-
-    const assetId = sanitizeString(formData.get('assetId') as string)
     const roomId = sanitizeString(formData.get('roomId') as string)
     const serialNo = sanitizeString(formData.get('serialNo') as string)
     const assetType = formData.get('assetType') as string || 'AIR_CONDITIONER'
@@ -186,7 +217,7 @@ export async function updateAsset(formData: FormData): Promise<{ error: string }
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     return { error: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : String(error)}` }
   }
-  redirect(`/assets/${(formData.get('assetId') as string)}`)
+  redirect(`/assets/${assetId}`)
 }
 
 export async function deleteAsset(assetId: string) {
@@ -228,36 +259,3 @@ export async function deleteAsset(assetId: string) {
   redirect('/assets')
 }
 
-/** อัปเดตรหัส Exhaust ที่ยังไม่ใช่รูปแบบ EX-YYYY-NNN ให้เป็น EX-YYYY-NNN (เรียงตามวันที่สร้าง) */
-export async function migrateExhaustAssetCodes(): Promise<{ updated: number; error?: string }> {
-  try {
-    await requireAdmin()
-
-    const allExhaust = await prisma.asset.findMany({
-      where: { assetType: 'EXHAUST' },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true, qrCode: true },
-    })
-    const exhaustToMigrate = allExhaust.filter((a) => !EXHAUST_CODE_REGEX.test(a.qrCode))
-
-    if (exhaustToMigrate.length === 0) {
-      return { updated: 0 }
-    }
-
-    let updated = 0
-    for (const asset of exhaustToMigrate) {
-      const newCode = await getNextExhaustCode()
-      await prisma.asset.update({
-        where: { id: asset.id },
-        data: { qrCode: newCode },
-      })
-      updated++
-    }
-
-    revalidatePath('/assets')
-    return { updated }
-  } catch (error) {
-    await handleServerActionError(error, await getCurrentUser().catch(() => null))
-    return { updated: 0, error: error instanceof Error ? error.message : 'เกิดข้อผิดพลาด' }
-  }
-}

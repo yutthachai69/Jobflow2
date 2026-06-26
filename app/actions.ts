@@ -17,7 +17,14 @@ import {
 import { checkRateLimit as checkApiRateLimit, recordRequest, resetRateLimit } from "@/lib/rate-limit"
 import { generateWorkOrderNumber } from '@/lib/work-order-number'
 import { handleServerActionError } from '@/lib/error-handler'
-import { createWorkOrder as createWorkOrderImpl } from './actions/work-orders'
+import {
+  createWorkOrder as createWorkOrderImpl,
+  updateJobItemStatus as updateJobItemStatusImpl,
+} from './actions/work-orders'
+import {
+  createUser as createUserImpl,
+  updateUser as updateUserImpl,
+} from './actions/users'
 
 export async function createMockMaintenance(assetId: string) {
   try {
@@ -277,70 +284,11 @@ export async function assignTechnicianToJobItem(jobItemId: string, technicianId:
   revalidatePath(`/technician/job-item/${jobItemId}`)
 }
 
-export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'ISSUE_FOUND') {
-  // Authorization: Only TECHNICIAN or ADMIN can update job item status
-  const user = await getCurrentUser()
-  if (!user || (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN')) {
-    logSecurityEvent('UNAUTHORIZED_ACCESS_ATTEMPT', {
-      userId: user?.id,
-      username: user?.username,
-      action: `UPDATE_JOB_ITEM_STATUS:${jobItemId}`
-    })
-    throw new Error('Unauthorized')
-  }
-
-  const jobItem = await prisma.jobItem.findUnique({
-    where: { id: jobItemId },
-    include: {
-      workOrder: true,
-      photos: true,
-    },
-  })
-
-  if (!jobItem) {
-    throw new Error('Job item not found')
-  }
-
-  // Authorization: TECHNICIAN can update their own job items or unassigned job items (unless ADMIN)
-  if (user.role === 'TECHNICIAN') {
-    // Allow if job item is unassigned (null) or assigned to this technician
-    if (jobItem.technicianId !== null && jobItem.technicianId !== user.id) {
-      throw new Error('Unauthorized')
-    }
-  }
-
-  // Validation: Must have BEFORE and AFTER photos before completing (unless ADMIN)
-  if (status === 'DONE' && user.role === 'TECHNICIAN') {
-    const hasBefore = jobItem.photos.some(photo => photo.type === 'BEFORE')
-    const hasAfter = jobItem.photos.some(photo => photo.type === 'AFTER')
-
-    if (!hasBefore || !hasAfter) {
-      throw new Error('กรุณาอัปโหลดรูปภาพก่อนทำ (BEFORE) และหลังทำ (AFTER) ก่อนเสร็จสิ้นงาน')
-    }
-  }
-
-  const updateData: any = { status }
-
-  if (status === 'IN_PROGRESS' && !jobItem.startTime) {
-    updateData.startTime = new Date()
-    // Auto-assign technician if not assigned
-    if (!jobItem.technicianId && user.role === 'TECHNICIAN') {
-      updateData.technicianId = user.id
-    }
-  }
-
-  if (status === 'DONE' && !jobItem.endTime) {
-    updateData.endTime = new Date()
-  }
-
-  await prisma.jobItem.update({
-    where: { id: jobItemId },
-    data: updateData,
-  })
-
-  revalidatePath(`/technician/job-item/${jobItemId}`)
-  revalidatePath(`/technician/work-order/${jobItem.workOrderId}`)
-  revalidatePath(`/work-orders/${jobItem.workOrderId}`)
+export async function updateJobItemStatus(
+  jobItemId: string,
+  status: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'ISSUE_FOUND'
+) {
+  return updateJobItemStatusImpl(jobItemId, status)
 }
 
 export async function adminReopenJobItem(jobItemId: string) {
@@ -1488,144 +1436,11 @@ export async function deleteAsset(assetId: string) {
 }
 
 export async function createUser(formData: FormData) {
-  // Authorization: Only ADMIN can create users
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
-  }
-
-  const username = sanitizeString(formData.get('username') as string)
-  const password = formData.get('password') as string
-  const fullName = sanitizeString(formData.get('fullName') as string)
-  const role = formData.get('role') as 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
-  const siteId = sanitizeString(formData.get('siteId') as string)
-
-  // Validation
-  const usernameValidation = validateUsername(username || '')
-  if (!usernameValidation.valid) {
-    throw new Error(usernameValidation.error || 'Invalid username')
-  }
-
-  const passwordValidation = validatePassword(password || '')
-  if (!passwordValidation.valid) {
-    throw new Error(passwordValidation.error || 'Invalid password')
-  }
-
-  if (!role || !['ADMIN', 'TECHNICIAN', 'CLIENT'].includes(role)) {
-    throw new Error('Invalid role')
-  }
-
-  // Check if username already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { username: username! },
-  })
-
-  if (existingUser) {
-    throw new Error('Username already exists')
-  }
-
-  // สำหรับ CLIENT role ต้องมี siteId
-  if (role === 'CLIENT' && !siteId) {
-    throw new Error('Site ID is required for CLIENT role')
-  }
-
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10)
-
-  // Create user
-  await prisma.user.create({
-    data: {
-      username: username!,
-      password: hashedPassword,
-      fullName: fullName || null,
-      role,
-      siteId: role === 'CLIENT' ? siteId : null,
-    },
-  })
-
-  revalidatePath('/users')
-  redirect('/users')
+  return createUserImpl(formData)
 }
 
 export async function updateUser(formData: FormData) {
-  // Authorization: Only ADMIN can update users
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    throw new Error('Unauthorized')
-  }
-
-  const userId = sanitizeString(formData.get('userId') as string)
-  const username = sanitizeString(formData.get('username') as string)
-  const password = formData.get('password') as string
-  const fullName = sanitizeString(formData.get('fullName') as string)
-  const role = formData.get('role') as 'ADMIN' | 'TECHNICIAN' | 'CLIENT'
-  const siteId = sanitizeString(formData.get('siteId') as string)
-
-  if (!userId) {
-    throw new Error('User ID is required')
-  }
-
-  // Validation
-  const usernameValidation = validateUsername(username || '')
-  if (!usernameValidation.valid) {
-    throw new Error(usernameValidation.error || 'Invalid username')
-  }
-
-  // Password is optional when updating (only validate if provided)
-  if (password && password.length > 0) {
-    const passwordValidation = validatePassword(password)
-    if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.error || 'Invalid password')
-    }
-  }
-
-  if (!role || !['ADMIN', 'TECHNICIAN', 'CLIENT'].includes(role)) {
-    throw new Error('Invalid role')
-  }
-
-  // Check if username already exists (excluding current user)
-  const existingUser = await prisma.user.findUnique({
-    where: { username: username! },
-  })
-
-  if (existingUser && existingUser.id !== userId) {
-    throw new Error('Username already exists')
-  }
-
-  // สำหรับ CLIENT role ต้องมี siteId
-  if (role === 'CLIENT' && !siteId) {
-    throw new Error('Site ID is required for CLIENT role')
-  }
-
-  // Prepare update data
-  const updateData: any = {
-    username: username!,
-    fullName: fullName || null,
-    role,
-    siteId: role === 'CLIENT' ? siteId : null,
-  }
-
-  // Only update password if provided
-  if (password && password.length > 0) {
-    const hashedPassword = await bcrypt.hash(password, 10)
-    updateData.password = hashedPassword
-  }
-
-  // Update user
-  await prisma.user.update({
-    where: { id: userId },
-    data: updateData,
-  })
-
-  logSecurityEvent('USER_UPDATED', {
-    updatedBy: user.id,
-    updatedUserId: userId,
-    updatedUsername: username,
-    timestamp: new Date().toISOString(),
-  })
-
-  revalidatePath('/users')
-  redirect('/users')
+  return updateUserImpl(formData)
 }
 
 export async function updateContactInfo(formData: FormData) {

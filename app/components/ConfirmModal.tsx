@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -25,8 +26,10 @@ export default function ConfirmModal({
   variant = 'primary',
   icon = '❓'
 }: ConfirmModalProps) {
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (isOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
@@ -38,7 +41,7 @@ export default function ConfirmModal({
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const confirmBtnClass = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white',
@@ -46,8 +49,8 @@ export default function ConfirmModal({
     warning: 'bg-amber-500 hover:bg-amber-600 text-white',
   }[variant];
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+  const content = (
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center px-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0"
@@ -56,7 +59,7 @@ export default function ConfirmModal({
       />
 
       {/* Card */}
-      <div className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
         {/* Top accent */}
         <div className={`h-1.5 w-full ${variant === 'danger' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-blue-600'}`} />
 
@@ -74,13 +77,13 @@ export default function ConfirmModal({
           <div className="flex flex-col gap-3">
             <button
               onClick={() => { onConfirm(); onClose(); }}
-              className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-all ${confirmBtnClass}`}
+              className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-all ${confirmBtnClass} active:scale-95`}
             >
               {confirmText}
             </button>
             <button
               onClick={onClose}
-              className="w-full py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-all"
+              className="w-full py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-all active:scale-95"
             >
               {cancelText}
             </button>
@@ -89,7 +92,10 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }
+
 
 // Hook for programmatic usage
 export function useConfirm() {

@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import type { Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { sanitizeString } from "@/lib/validation"
@@ -9,6 +10,94 @@ import { logSecurityEvent } from "@/lib/security"
 import { handleServerActionError } from "@/lib/error-handler"
 import { getCurrentUser } from "@/lib/auth"
 import { generateWorkOrderNumber, getWorkOrderDisplayNumber } from "@/lib/work-order-number"
+import { syncWorkOrderStatusFromJobItems } from "@/lib/sync-work-order-status"
+
+// Function to find potential duplicate work orders
+async function findPotentialDuplicates(
+  siteId: string,
+  jobType: 'PM' | 'CM' | 'INSTALL',
+  assetIds: string[],
+  scheduledDate: Date,
+  pmWashType?: 'MAJOR' | 'MINOR'
+) {
+  const conditions: Prisma.WorkOrderWhereInput[] = []
+  
+  if (jobType === 'PM') {
+    // PM duplicate rule: same site + same calendar month + overlapping selected assets + same PM wash type
+    const startOfMonth = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), 1)
+    const endOfMonth = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth() + 1, 0, 23, 59, 59)
+    if (!pmWashType) return []
+
+    conditions.push({
+      jobType: 'PM',
+      siteId,
+      jobItems: {
+        some: {
+          assetId: { in: assetIds },
+          adHocPmType: pmWashType,
+        }
+      },
+      scheduledDate: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+      status: { not: 'CANCELLED' }
+    })
+  } else if (jobType === 'CM') {
+    // Check for CM with same assets in last 7 days
+    const sevenDaysAgo = new Date(scheduledDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+    
+    conditions.push({
+      jobType: 'CM',
+      status: { in: ['OPEN', 'IN_PROGRESS'] },
+      jobItems: {
+        some: {
+          assetId: { in: assetIds }
+        }
+      },
+      createdAt: { gte: sevenDaysAgo }
+    })
+  } else if (jobType === 'INSTALL') {
+    // Check for INSTALL with same assets in last 3 days
+    const threeDaysAgo = new Date(scheduledDate.getTime() - 3 * 24 * 60 * 60 * 1000)
+    
+    conditions.push({
+      jobType: 'INSTALL',
+      status: { not: 'CANCELLED' },
+      jobItems: {
+        some: {
+          assetId: { in: assetIds }
+        }
+      },
+      createdAt: { gte: threeDaysAgo }
+    })
+  }
+
+  if (conditions.length === 0) return []
+
+  const duplicates = await prisma.workOrder.findMany({
+    where: {
+      OR: conditions
+    },
+    include: {
+      site: {
+        select: { name: true }
+      },
+      jobItems: {
+        select: {
+          id: true,
+          asset: {
+            select: { qrCode: true }
+          },
+          status: true
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  return duplicates
+}
 
 export async function createMockMaintenance(assetId: string) {
   try {
@@ -175,11 +264,19 @@ export async function createWorkOrder(formData: FormData) {
 
       revalidatePath('/work-orders')
       revalidatePath('/assets')
-      redirect(`/work-orders/${workOrder.id}`)
+      return { success: true as const, workOrderId: workOrder.id }
     }
 
     if (assetIds.length === 0) {
       throw new Error('At least one asset is required')
+    }
+
+    const formTemplateSanitized = sanitizeString(formTemplate)
+    const allowedPmCmForms = ['AIRBORNE_INFECTION', 'EXHAUST_FAN'] as const
+    if (jobType === 'PM' || jobType === 'CM') {
+      if (!allowedPmCmForms.includes(formTemplateSanitized as (typeof allowedPmCmForms)[number])) {
+        throw new Error('Please select a work form template')
+      }
     }
 
     let adHocPmType: 'MAJOR' | 'MINOR' | undefined
@@ -190,15 +287,43 @@ export async function createWorkOrder(formData: FormData) {
       adHocPmType = pmWashRaw as 'MAJOR' | 'MINOR'
     }
 
-    const formTemplateSanitized = sanitizeString(formTemplate)
-    const allowedPmCmForms = ['AIRBORNE_INFECTION', 'EXHAUST_FAN'] as const
-    if (jobType === 'PM' || jobType === 'CM') {
-      if (!allowedPmCmForms.includes(formTemplateSanitized as (typeof allowedPmCmForms)[number])) {
-        throw new Error('กรุณาเลือกแบบฟอร์มบันทึกการทำงาน')
+    // Check for potential duplicates
+    const potentialDuplicates = await findPotentialDuplicates(siteId, jobType, assetIds, scheduledDate, adHocPmType)
+    
+    // Check if user wants to force create despite duplicates
+    const forceCreate = formData.get('forceCreate') === 'true'
+    const duplicateOfIdRaw = sanitizeString((formData.get('duplicateOfId') as string) || '')
+    const duplicateOfId = duplicateOfIdRaw || (forceCreate && potentialDuplicates.length > 0 ? potentialDuplicates[0].id : null)
+    
+    // PM duplicates คือ hard-block เสมอ (forceCreate ไม่มีผล)
+    if (jobType === 'PM' && potentialDuplicates.length > 0) {
+      return {
+        success: false as const,
+        duplicateBlocked: true as const,
+        pmHardBlock: true as const, // บอก UI ว่าไม่มี override — ไม่ต้องแสดงปุ่ม Force Create
+        error: 'มีใบงาน PM ซ้ำแล้วสำหรับเครื่องนี้ในเดือนเดียวกันและประเภทล้างเดียวกัน (ไม่สามารถสร้างซ้ำได้)',
       }
     }
 
-    // สร้าง Work Order
+    if (potentialDuplicates.length > 0 && !forceCreate) {
+      // Return duplicates for confirmation instead of throwing error
+      return {
+        requiresConfirmation: true,
+        duplicates: potentialDuplicates,
+        message: `Found ${potentialDuplicates.length} potential duplicate work order(s)`,
+        details: potentialDuplicates.map((wo: any) => ({
+          id: wo.id,
+          workOrderNumber: wo.workOrderNumber,
+          jobType: wo.jobType,
+          status: wo.status,
+          siteName: wo.site?.name || 'Unknown Site',
+          scheduledDate: wo.scheduledDate,
+          assets: wo.jobItems?.map((item: any) => item.asset?.qrCode || '').join(', ') || ''
+        }))
+      }
+    }
+
+    //  Create Work Order
     const workOrder = await prisma.workOrder.create({
       data: {
         siteId,
@@ -207,6 +332,7 @@ export async function createWorkOrder(formData: FormData) {
         assignedTeam: assignedTeamDisplay,
         status: 'OPEN',
         workOrderNumber,
+        duplicateOfId: duplicateOfId || null,
       },
     })
 
@@ -226,10 +352,35 @@ export async function createWorkOrder(formData: FormData) {
     })
 
     revalidatePath('/work-orders')
-    redirect(`/work-orders/${workOrder.id}`)
+    return { success: true as const, workOrderId: workOrder.id }
   } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      (
+        (error as { message?: string }).message === 'NEXT_REDIRECT' ||
+        (typeof (error as { digest?: string }).digest === 'string' && (error as { digest?: string }).digest!.includes('NEXT_REDIRECT'))
+      )
+    ) {
+      throw error
+    }
+
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const isDuplicatePmError = errorMessage.includes('PM_DUPLICATE_ASSET_MONTH_TYPE')
+    if (isDuplicatePmError) {
+      return {
+        success: false as const,
+        duplicateBlocked: true as const,
+        error: 'มีใบงาน PM ซ้ำแล้วสำหรับเครื่องนี้ในเดือนเดียวกันและประเภทล้างเดียวกัน',
+      }
+    }
+
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
-    throw error
+    const userFacingMessage = error instanceof Error ? error.message : 'ไม่สามารถสร้างใบงานได้'
+    return {
+      success: false as const,
+      error: userFacingMessage || 'ไม่สามารถสร้างใบงานได้',
+    }
   }
 }
 
@@ -247,10 +398,12 @@ export async function updateWorkOrderStatus(workOrderId: string, status: 'OPEN' 
 }
 
 export async function updateWorkOrder(formData: FormData) {
+  let workOrderId = ''
+
   try {
     await requireAdmin()
 
-    const workOrderId = sanitizeString(formData.get('workOrderId') as string)
+    workOrderId = sanitizeString(formData.get('workOrderId') as string) || ''
     const siteId = sanitizeString(formData.get('siteId') as string)
     const jobType = formData.get('jobType') as 'PM' | 'CM' | 'INSTALL'
     const scheduledDateStr = formData.get('scheduledDate') as string
@@ -301,11 +454,12 @@ export async function updateWorkOrder(formData: FormData) {
 
     revalidatePath(`/work-orders/${workOrderId}`)
     revalidatePath('/work-orders')
-    redirect(`/work-orders/${workOrderId}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
   }
+
+  redirect(`/work-orders/${workOrderId}`)
 }
 
 export async function deleteWorkOrder(workOrderId: string, force?: boolean) {
@@ -405,7 +559,8 @@ export async function assignTechnicianToJobItem(jobItemId: string, technicianId:
 
         if (workOrder && workOrder.site.users.length > 0) {
           const { sendLineMessage, createNotificationFlexMessage } = await import('@/app/lib/line-messaging')
-          const technician = await prisma.user.findUnique({ where: { id: technicianId! } })
+          // ใช้ค่าจาก DB (jobItem.technicianId) แทน parameter เพื่อหลีกเลี่ยง non-null assertion bug
+          const technician = await prisma.user.findUnique({ where: { id: jobItem.technicianId! } })
 
           const message = createNotificationFlexMessage({
             title: '👷 มอบหมายช่างแล้ว',
@@ -510,8 +665,11 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
           console.error('Failed to send LINE triggers', e)
         }
 
+        await syncWorkOrderStatusFromJobItems(prisma, jobItem.workOrderId)
         revalidatePath(`/technician/job-item/${jobItemId}`)
         revalidatePath('/technician')
+        revalidatePath(`/work-orders/${jobItem.workOrderId}`)
+        revalidatePath('/work-orders')
         return
       }
     }
@@ -535,6 +693,8 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
         technicianId: user.role === 'TECHNICIAN' && !jobItem.technicianId ? user.id : jobItem.technicianId,
       },
     })
+
+    const statusChange = await syncWorkOrderStatusFromJobItems(prisma, jobItem.workOrderId)
 
     // สร้าง notification สำหรับ CLIENT เมื่องานเสร็จ
     if (status === 'DONE') {
@@ -560,20 +720,10 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
       })
 
       if (workOrder) {
-        // ตรวจสอบจาก DB หลังอัปเดตว่า every job item เป็น DONE หรือยัง (ใช้ count เพื่อให้ได้ข้อมูลล่าสุด)
-        const [total, doneCount] = await Promise.all([
-          prisma.jobItem.count({ where: { workOrderId: jobItem.workOrderId } }),
-          prisma.jobItem.count({ where: { workOrderId: jobItem.workOrderId, status: 'DONE' } }),
-        ])
-        const allDone = total > 0 && total === doneCount
+        const justCompleted =
+          statusChange?.next === 'COMPLETED' && statusChange.previous !== 'COMPLETED'
 
-        if (allDone) {
-          // Auto-close the work order immediately when all jobs are complete
-          await prisma.workOrder.update({
-            where: { id: workOrder.id },
-            data: { status: 'COMPLETED' },
-          })
-
+        if (justCompleted) {
           // ถ้าทุกงานเสร็จแล้ว สร้าง notification สำหรับ CLIENT
           if (workOrder.site.users.length > 0) {
             for (const client of workOrder.site.users) {
@@ -620,6 +770,7 @@ export async function updateJobItemStatus(jobItemId: string, status: 'PENDING' |
     revalidatePath(`/technician/job-item/${jobItemId}`)
     revalidatePath('/technician')
     revalidatePath('/work-orders')
+    revalidatePath(`/work-orders/${jobItem.workOrderId}`)
   } catch (error) {
     await handleServerActionError(error, await getCurrentUser().catch(() => null))
     throw error
@@ -829,7 +980,8 @@ export async function updateJobItemChecklist(jobItemId: string, checklistJson: s
 
     // Authorization
     if (user.role === 'TECHNICIAN') {
-      if (jobItem.technicianId && jobItem.technicianId !== user.id) {
+      // ต้อง assign ให้ตัวเองก่อนถึงจะแก้ได้ (null = unassigned = ไม่มีสิทธิ์)
+      if (jobItem.technicianId !== user.id) {
         throw new Error('Unauthorized')
       }
       // ต้องเริ่มงานก่อนจึงจะกรอกฟอร์มได้
@@ -862,6 +1014,11 @@ export async function createRepairRequest(assetId: string, description: string, 
   try {
     const user = await getCurrentUser()
     if (!user) throw new Error('Unauthorized')
+
+    // ป้องกัน notification spoofing: non-admin ต้องใช้ userId ของตัวเองเท่านั้น
+    if (user.role !== 'ADMIN' && requesterUserId !== user.id) {
+      throw new Error('Unauthorized: requesterUserId mismatch')
+    }
 
     // Check if asset exists and get site info
     const asset = await prisma.asset.findUnique({
@@ -951,5 +1108,264 @@ export async function createRepairRequest(assetId: string, description: string, 
   } catch (error) {
     console.error('Error creating repair request:', error)
     return { success: false, error: 'Failed to create repair request' }
+  }
+}
+
+export async function deleteJobItem(jobItemId: string) {
+  try {
+    const user = await requireAdmin()
+
+    // Find the JobItem
+    const jobItem = await prisma.jobItem.findUnique({
+      where: { id: jobItemId },
+      include: { 
+        photos: true, 
+        workOrder: { include: { jobItems: true } } 
+      },
+    })
+
+    if (!jobItem) {
+      throw new Error('Job Item not found')
+    }
+
+    // ครอบทุก delete ใน transaction เดียว เพื่อป้องกัน inconsistent state
+    await prisma.$transaction(async (tx) => {
+      // Reset PMSchedule status if it's linked
+      if (jobItem.pmScheduleId) {
+        await tx.pMSchedule.update({
+          where: { id: jobItem.pmScheduleId },
+          data: { status: 'PLANNED' }
+        })
+      }
+
+      // Delete related photos first
+      await tx.jobPhoto.deleteMany({
+        where: { jobItemId: jobItem.id },
+      })
+
+      // Delete the JobItem itself
+      await tx.jobItem.delete({
+        where: { id: jobItemId },
+      })
+
+      // If this was the last JobItem in the WorkOrder, delete the WorkOrder to keep DB clean
+      if (jobItem.workOrder && jobItem.workOrder.jobItems.length === 1) {
+        await tx.workOrder.delete({
+          where: { id: jobItem.workOrderId }
+        })
+      }
+    })
+
+    // Revalidate paths so the history updates
+    revalidatePath(`/assets/${jobItem.assetId}`)
+    revalidatePath('/work-orders')
+
+    return { success: true }
+  } catch (error) {
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false, error: message }
+  }
+}
+
+export async function createAdHocRepair(formData: FormData) {
+  let workOrderId = ''
+
+  try {
+    await requireAdmin()
+
+    const siteId = sanitizeString(formData.get('siteId') as string)
+    const repairType = formData.get('repairType') as string
+    const locationDescription = sanitizeString(formData.get('locationDescription') as string)
+    const problemDescription = sanitizeString(formData.get('problemDescription') as string)
+    const scheduledDateStr = formData.get('scheduledDate') as string
+    const technicianId = formData.get('technicianId') as string
+    const reportType = formData.get('reportType') as string
+
+    if (!siteId) throw new Error('Site is required')
+    if (!repairType) throw new Error('Repair type is required')
+    if (!locationDescription) throw new Error('Location is required')
+    if (!problemDescription) throw new Error('Problem description is required')
+    if (!scheduledDateStr) throw new Error('Scheduled date is required')
+    if (!technicianId) throw new Error('Technician is required')
+    if (!reportType) throw new Error('Report type is required')
+
+    const scheduledDate = new Date(scheduledDateStr)
+    if (isNaN(scheduledDate.getTime())) {
+      throw new Error('Invalid date format')
+    }
+
+    const workOrderNumber = await generateWorkOrderNumber(scheduledDate)
+    const user = await getCurrentUser()
+
+    // หา room ใด ๆ ของ site นี้ เพื่อสร้าง temporary asset
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      include: {
+        buildings: {
+          include: {
+            floors: {
+              include: {
+                rooms: { take: 1 },
+              },
+              take: 1,
+            },
+          },
+          take: 1,
+        },
+      },
+    })
+
+    if (!site || !site.buildings[0]?.floors[0]?.rooms[0]) {
+      throw new Error('Site ต้องมีห้องอย่างน้อย 1 ห้อง')
+    }
+
+    const roomId = site.buildings[0].floors[0].rooms[0].id
+
+    // สร้าง temporary asset สำหรับ ad-hoc repair
+    const tempAsset = await prisma.asset.create({
+      data: {
+        qrCode: `AD-HOC-${Date.now()}`,
+        assetType: 'TOOL',
+        roomId,
+        status: 'ACTIVE',
+      },
+    })
+
+    const workOrder = await prisma.workOrder.create({
+      data: {
+        jobType: 'AD_HOC',
+        workOrderNumber,
+        siteId,
+        repairType: repairType as any,
+        reportFormType: reportType as any,
+        locationDescription,
+        problemDescription,
+        scheduledDate,
+        status: 'OPEN',
+        jobItems: {
+          create: {
+            assetId: tempAsset.id,
+            technicianId,
+            status: 'PENDING',
+          },
+        },
+      },
+    })
+
+    workOrderId = workOrder.id
+
+    logSecurityEvent('AD_HOC_REPAIR_CREATED', {
+      createdBy: user?.id,
+      workOrderId,
+      timestamp: new Date().toISOString(),
+    })
+
+    revalidatePath('/ad-hoc-repairs')
+  } catch (error) {
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
+
+  if (!workOrderId) throw new Error('Failed to create ad-hoc repair: workOrderId missing')
+  redirect(`/ad-hoc-repairs/${workOrderId}`)
+}
+
+export async function updateAdHocRepair(formData: FormData) {
+  let workOrderId: string
+
+  try {
+    await requireAdmin()
+
+    workOrderId = sanitizeString(formData.get('workOrderId') as string) || ""
+    const repairType = formData.get('repairType') as string
+    const locationDescription = sanitizeString(formData.get('locationDescription') as string)
+    const problemDescription = sanitizeString(formData.get('problemDescription') as string)
+    const scheduledDateStr = formData.get('scheduledDate') as string
+
+    if (!workOrderId) throw new Error('Work order ID is required')
+    if (!repairType) throw new Error('Repair type is required')
+    if (!locationDescription) throw new Error('Location is required')
+    if (!problemDescription) throw new Error('Problem description is required')
+    if (!scheduledDateStr) throw new Error('Scheduled date is required')
+
+    const scheduledDate = new Date(scheduledDateStr)
+    if (isNaN(scheduledDate.getTime())) {
+      throw new Error('Invalid date format')
+    }
+
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id: workOrderId },
+    })
+
+    if (!workOrder || workOrder.jobType !== 'AD_HOC') {
+      throw new Error('Ad-hoc repair not found')
+    }
+
+    await prisma.workOrder.update({
+      where: { id: workOrderId },
+      data: {
+        repairType: repairType as any,
+        locationDescription,
+        problemDescription,
+        scheduledDate,
+      },
+    })
+
+    const user = await getCurrentUser()
+    logSecurityEvent('AD_HOC_REPAIR_UPDATED', {
+      updatedBy: user?.id,
+      workOrderId,
+      timestamp: new Date().toISOString(),
+    })
+
+    revalidatePath('/ad-hoc-repairs')
+  } catch (error) {
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
+  }
+
+  redirect(`/ad-hoc-repairs/${workOrderId}`)
+}
+
+export async function deleteAdHocRepair(workOrderId: string) {
+  try {
+    await requireAdmin()
+
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id: workOrderId },
+      include: { jobItems: true },
+    })
+
+    if (!workOrder || workOrder.jobType !== 'AD_HOC') {
+      throw new Error('Ad-hoc repair not found')
+    }
+
+    // Delete JobPhotos first (foreign key constraint)
+    await prisma.jobPhoto.deleteMany({
+      where: { jobItem: { workOrderId } },
+    })
+
+    // Delete JobItems (cascade)
+    await prisma.jobItem.deleteMany({
+      where: { workOrderId },
+    })
+
+    // Delete WorkOrder
+    await prisma.workOrder.delete({
+      where: { id: workOrderId },
+    })
+
+    const user = await getCurrentUser()
+    logSecurityEvent('AD_HOC_REPAIR_DELETED', {
+      deletedBy: user?.id,
+      workOrderId,
+      timestamp: new Date().toISOString(),
+    })
+
+    revalidatePath('/ad-hoc-repairs')
+  } catch (error) {
+    await handleServerActionError(error, await getCurrentUser().catch(() => null))
+    throw error
   }
 }

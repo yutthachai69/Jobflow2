@@ -43,18 +43,7 @@ function getSecretKey() {
 async function verifyToken(token: string): Promise<boolean> {
   try {
     const secretKey = getSecretKey()
-    const { payload } = await jwtVerify(token, secretKey)
-
-    // Check inactivity timeout (30 minutes)
-    const INACTIVITY_TIMEOUT = 30 * 60 // 30 minutes in seconds
-    const lastActivity = (payload.lastActivity as number) || payload.iat!
-    const now = Math.floor(Date.now() / 1000) // Current time in seconds
-
-    if (now - lastActivity > INACTIVITY_TIMEOUT) {
-      // Session expired due to inactivity
-      return false
-    }
-
+    await jwtVerify(token, secretKey)
     return true
   } catch (error) {
     // Token invalid or expired

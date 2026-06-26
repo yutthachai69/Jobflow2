@@ -122,10 +122,34 @@ export default function ExportButton({ workOrder }: Props) {
       }
 
       const reportItemsHtml = workOrder.jobItems.map((item, index) => {
-        const printPhotos = (item.photos || []).filter((p) => p.type === 'BEFORE')
+        const isCM = workOrder.jobType === 'CM'
+        
+        let printPhotos = []
+        let emptyPhotosText = ''
+        let photosTitleText = ''
+
+        if (isCM) {
+          printPhotos = (item.photos || []).filter((p) => p.type === 'DEFECT')
+          emptyPhotosText = 'ไม่มีรูปจุดชำรุด'
+          photosTitleText = 'รูปภาพจุดชำรุด'
+
+          // Fallback สำหรับใบงาน CM เก่าที่มีแต่รูประบบเดิม
+          if (printPhotos.length === 0) {
+            const legacyPhotos = (item.photos || []).filter((p) => p.type === 'BEFORE' || p.type === 'AFTER')
+            if (legacyPhotos.length > 0) {
+              printPhotos = legacyPhotos
+              emptyPhotosText = 'ไม่มีรูป'
+              photosTitleText = 'รูปภาพก่อนทำและหลังทำ (งานเก่า)'
+            }
+          }
+        } else {
+          printPhotos = (item.photos || []).filter((p) => p.type === 'BEFORE' || p.type === 'AFTER')
+          emptyPhotosText = 'ไม่มีรูปก่อนทำและหลังทำ'
+          photosTitleText = 'รูปภาพก่อนทำและหลังทำ'
+        }
         const photosHtml =
           printPhotos.length === 0
-            ? '<p class="text-muted">ไม่มีรูปก่อนทำ</p>'
+            ? `<p class="text-muted">${emptyPhotosText}</p>`
             : printPhotos
                 .map(
                   (p) => `
@@ -148,7 +172,7 @@ export default function ExportButton({ workOrder }: Props) {
           <p><strong>ช่าง:</strong> ${escapeHtml(item.technician?.fullName || item.technician?.username || '-')} &nbsp;|&nbsp; <strong>สถานะ:</strong> ${jobItemStatusLabels[item.status] || item.status}</p>
           ${techNoteHtml}
           <div class="photos-section">
-            <p class="photos-title">รูปภาพก่อนทำ</p>
+            <p class="photos-title">${photosTitleText}</p>
             <div class="photos-grid">${photosHtml}</div>
           </div>
         </div>`
@@ -223,7 +247,7 @@ export default function ExportButton({ workOrder }: Props) {
           const p = JSON.parse(j.checklist) as { formType?: string }
           if (p?.formType === 'EXHAUST_FAN') return true
           const asset = j.asset as { qrCode?: string; assetType?: string }
-          return asset?.assetType === 'EXHAUST' || (asset?.qrCode || '').startsWith('EX-')
+          return asset?.assetType === 'EXHAUST_DUCT' || asset?.assetType === 'EXHAUST_FAN' || /^(EX|ExD|ExF)-/.test(asset?.qrCode || '')
         } catch { return false }
       })
       return hasExhaust ? AIRBORNE_REPORT_CSS + EXHAUST_REPORT_CSS : AIRBORNE_REPORT_CSS
@@ -249,7 +273,7 @@ export default function ExportButton({ workOrder }: Props) {
       if (p?.formType) formType = p.formType === 'CLEAN_ROOM' ? 'AIRBORNE_INFECTION' : p.formType
     } catch { /* keep default */ }
     const asset = j.asset as { qrCode?: string; assetType?: string }
-    if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST' || (asset.qrCode || '').startsWith('EX-'))) formType = 'EXHAUST_FAN'
+    if (formType === 'AIRBORNE_INFECTION' && asset && (asset.assetType === 'EXHAUST_DUCT' || asset.assetType === 'EXHAUST_FAN' || /^(EX|ExD|ExF)-/.test(asset.qrCode || ''))) formType = 'EXHAUST_FAN'
     const jobForReport = { ...j, checklist: j.checklist ?? null }
     const pmOpts = { pmWashLabel: getPmWashTypeLabelThai(workOrder.jobType, j) }
     return formType === 'EXHAUST_FAN'
@@ -272,7 +296,7 @@ export default function ExportButton({ workOrder }: Props) {
       // รอให้เนื้อหาและรูปโหลดก่อน แล้วค่อยสั่งพิมพ์
       printWindow.onload = () => {
         const hasPhotos = workOrder.jobItems.some((j) =>
-          (j.photos || []).some((p) => p.type === 'BEFORE')
+          (j.photos || []).some((p) => p.type === 'BEFORE' || p.type === 'DEFECT' || p.type === 'AFTER')
         )
         const hasAirborneSheets =
           (workOrder.jobType === 'PM' || workOrder.jobType === 'CM') &&

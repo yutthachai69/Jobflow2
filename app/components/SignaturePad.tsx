@@ -31,9 +31,20 @@ export default function SignaturePad({ label, onSave, initialDataUrl }: Signatur
     const handleEndPosition = () => {
         setIsEmpty(false);
         if (sigCanvas.current) {
-            // Save as standard Base64 PNG string
-            const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
-            onSave(dataUrl);
+            const rawCanvas = sigCanvas.current.getCanvas();
+            const copy = document.createElement("canvas");
+            copy.width = rawCanvas.width;
+            copy.height = rawCanvas.height;
+            const ctx = copy.getContext("2d");
+            if (ctx) {
+                ctx.drawImage(rawCanvas, 0, 0);
+                const trimmedCanvas = trimCanvas(copy);
+                const dataUrl = trimmedCanvas.toDataURL("image/png");
+                onSave(dataUrl);
+            } else {
+                const dataUrl = rawCanvas.toDataURL("image/png");
+                onSave(dataUrl);
+            }
         }
     };
 
@@ -71,3 +82,62 @@ export default function SignaturePad({ label, onSave, initialDataUrl }: Signatur
         </div>
     );
 }
+
+function trimCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    const context = canvas.getContext("2d");
+    if (!context) return canvas;
+
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const imgData = context.getImageData(0, 0, imgWidth, imgHeight).data;
+
+    const scanY = (fromTop: boolean): number | null => {
+        const offset = fromTop ? 1 : -1;
+        const firstCol = fromTop ? 0 : imgHeight - 1;
+
+        for (let y = firstCol; fromTop ? y < imgHeight : y > -1; y += offset) {
+            for (let x = 0; x < imgWidth; x++) {
+                if (imgData[(imgWidth * y + x) * 4 + 3]) {
+                    return y;
+                }
+            }
+        }
+        return null;
+    };
+
+    const scanX = (fromLeft: boolean): number | null => {
+        const offset = fromLeft ? 1 : -1;
+        const firstRow = fromLeft ? 0 : imgWidth - 1;
+
+        for (let x = firstRow; fromLeft ? x < imgWidth : x > -1; x += offset) {
+            for (let y = 0; y < imgHeight; y++) {
+                if (imgData[(imgWidth * y + x) * 4 + 3]) {
+                    return x;
+                }
+            }
+        }
+        return null;
+    };
+
+    const cropTop = scanY(true);
+    const cropBottom = scanY(false);
+    const cropLeft = scanX(true);
+    const cropRight = scanX(false);
+
+    if (cropTop === null || cropBottom === null || cropLeft === null || cropRight === null) {
+        return canvas;
+    }
+
+    const cropXDiff = cropRight - cropLeft + 1;
+    const cropYDiff = cropBottom - cropTop + 1;
+
+    const trimmedData = context.getImageData(cropLeft, cropTop, cropXDiff, cropYDiff);
+
+    canvas.width = cropXDiff;
+    canvas.height = cropYDiff;
+    context.clearRect(0, 0, cropXDiff, cropYDiff);
+    context.putImageData(trimmedData, 0, 0);
+
+    return canvas;
+}
+

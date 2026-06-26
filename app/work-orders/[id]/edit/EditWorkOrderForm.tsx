@@ -14,7 +14,7 @@ interface Site {
 
 interface WorkOrder {
   id: string
-  jobType: 'PM' | 'CM' | 'INSTALL'
+  jobType: 'PM' | 'CM' | 'INSTALL' | 'AD_HOC'
   scheduledDate: Date
   assignedTeam: string | null
   site: {
@@ -42,7 +42,7 @@ interface Props {
 export default function EditWorkOrderForm({ workOrder, sites, technicians, currentTechnicianId }: Props) {
   const router = useRouter()
   const [selectedSiteId, setSelectedSiteId] = useState<string>(workOrder.site.id)
-  const [jobType, setJobType] = useState<'PM' | 'CM' | 'INSTALL'>(workOrder.jobType)
+  const [jobType, setJobType] = useState<'PM' | 'CM' | 'INSTALL' | 'AD_HOC'>(workOrder.jobType)
   const [scheduledDate, setScheduledDate] = useState<string>(() => {
     const date = new Date(workOrder.scheduledDate)
     const year = date.getFullYear()

@@ -46,6 +46,8 @@ export default function AssetForm({ sites }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [serverError, setServerError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [nextQrPreview, setNextQrPreview] = useState<string | null>(null)
+  const [qrWarning, setQrWarning] = useState<string | null>(null)
 
   const selectedSite = sites.find(s => s.id === selectedSiteId)
   const selectedBuilding = selectedSite?.buildings.find(b => b.id === selectedBuildingId)
@@ -68,6 +70,21 @@ export default function AssetForm({ sites }: Props) {
   const handleFloorChange = (floorId: string) => {
     setSelectedFloorId(floorId)
     setSelectedRoomId('')
+    setNextQrPreview(null)
+    setQrWarning(null)
+  }
+
+  const handleRoomChange = async (roomId: string) => {
+    setSelectedRoomId(roomId)
+    setNextQrPreview(null)
+    setQrWarning(null)
+    if (!roomId) return
+    try {
+      const res = await fetch(`/api/assets/next-qr?roomId=${roomId}&type=${assetType}`)
+      const data = await res.json()
+      setNextQrPreview(data.qrCode || null)
+      setQrWarning(data.warning || null)
+    } catch { /* ignore */ }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -94,12 +111,7 @@ export default function AssetForm({ sites }: Props) {
     const assetTypeValue = formData.get('assetType') as string || 'AIR_CONDITIONER'
     const machineTypeValue = formData.get('machineType') as string || 'SPLIT_TYPE'
 
-    // QR Code/Serial Number เป็น required เฉพาะเครื่องปรับอากาศ
-    if (assetTypeValue === 'AIR_CONDITIONER') {
-      if (!qrCode || qrCode.trim() === '') {
-        newErrors.serialNo = 'กรุณากรอกรหัสทรัพย์สิน / QR Code'
-      }
-    }
+    // QR Code เป็น optional แล้ว — ระบบจะ auto-gen ถ้าเว้นว่าง
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -121,10 +133,15 @@ export default function AssetForm({ sites }: Props) {
     submitFormData.set('installDate', (formData.get('installDate') as string) || '')
 
     const result = await createAsset(submitFormData)
-    if (result?.error) {
+    if (result && 'error' in result) {
       setServerError(result.error)
       setIsSubmitting(false)
+      return
     }
+
+    // Success - redirect to assets list
+    router.push('/assets')
+    router.refresh()
   }
 
   return (
@@ -250,7 +267,7 @@ export default function AssetForm({ sites }: Props) {
             <select
               value={selectedRoomId}
               onChange={(e) => {
-                setSelectedRoomId(e.target.value)
+                handleRoomChange(e.target.value)
                 if (errors.roomId) setErrors({ ...errors, roomId: '' })
               }}
               className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 ${errors.roomId ? 'border-red-400 bg-red-50/50' : 'border-gray-200'
@@ -312,12 +329,21 @@ export default function AssetForm({ sites }: Props) {
           <select
             name="assetType"
             value={assetType}
-            onChange={(e) => setAssetType(e.target.value)}
+            onChange={async (e) => {
+              setAssetType(e.target.value)
+              if (selectedRoomId) {
+                const res = await fetch(`/api/assets/next-qr?roomId=${selectedRoomId}&type=${e.target.value}`)
+                const data = await res.json()
+                setNextQrPreview(data.qrCode || null)
+                setQrWarning(data.warning || null)
+              }
+            }}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900"
           >
             <option value="AIR_CONDITIONER">เครื่องปรับอากาศ</option>
-            <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
-            <option value="OTHER">อื่นๆ</option>
+            <option value="EXHAUST_DUCT">ท่อดูดอากาศ (Exhaust Duct)</option>
+            <option value="EXHAUST_FAN">พัดลมฝังฝ้า/ติดผนัง (Exhaust Fan)</option>
+            <option value="FRESH_AIR">เติมอากาศ (Fresh Air)</option>
           </select>
           <p className="mt-2 text-xs text-gray-500">
             เลือกประเภทของทรัพย์สินที่ต้องการเพิ่ม
@@ -340,7 +366,6 @@ export default function AssetForm({ sites }: Props) {
               <option value="FCU">เครื่องเป่าลมเย็น (FCU)</option>
               <option value="AHU">เครื่องส่งลมเย็นขนาดใหญ่ (AHU)</option>
               <option value="VRF">เครื่องปรับอากาศแบบ VRF</option>
-              <option value="OTHER">อื่นๆ</option>
             </select>
             <p className="mt-2 text-xs text-gray-500">
               เลือกชนิดของแอร์เพื่อใช้จัดกลุ่มในรายงาน Dashboard
@@ -348,55 +373,37 @@ export default function AssetForm({ sites }: Props) {
           </div>
         )}
 
-        {/* รหัสทรัพย์สิน / QR Code และ BTU */}
+        {/* รหัส QR Code และ BTU */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {assetType === 'AIR_CONDITIONER' ? (
-            <div data-error={errors.serialNo ? 'true' : undefined}>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <span className="flex items-center gap-2">
-                  Serial Number / QR Code <span className="text-red-500">*</span>
-                  <Tooltip content="Serial Number จะถูกใช้เป็น QR Code สำหรับสแกนหาทรัพย์สิน ต้องไม่ซ้ำกับทรัพย์สินอื่น">
-                    <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
-                  </Tooltip>
-                </span>
-              </label>
-              <input
-                type="text"
-                name="serialNo"
-                autoFocus
-                className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400 ${errors.serialNo ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200'
-                  }`}
-                placeholder="เช่น SN-00001"
-              />
-              {errors.serialNo && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <span>{errors.serialNo}</span>
-                </p>
-              )}
-              {!errors.serialNo && (
-                <p className="mt-2 text-xs text-gray-500">
-                  🔖 Serial Number นี้จะใช้เป็น QR Code (ต้องไม่ซ้ำ)
-                </p>
-              )}
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                รหัสทรัพย์สิน {assetType === 'EXHAUST' ? '(ถ้าว่าง ระบบจะสร้าง EX-YYYY-NNN ให้)' : ''}
-              </label>
-              <input
-                type="text"
-                name="serialNo"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
-                placeholder={assetType === 'EXHAUST' ? 'เว้นว่าง = สร้าง EX-2025-001 ให้อัตโนมัติ' : 'เช่น REF-001, PART-001'}
-              />
-              <p className="mt-2 text-xs text-gray-500">
-                {assetType === 'EXHAUST'
-                  ? 'พัดลมดูดอากาศไม่ใช้ QR Code — รหัสใช้สำหรับระบุในระบบเท่านั้น'
-                  : 'รหัสสำหรับระบุทรัพย์สิน (ไม่จำเป็นต้องมี QR Code)'}
-              </p>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              QR Code / รหัสทรัพย์สิน
+            </label>
+
+            {/* Preview QR จากระบบ */}
+            {selectedRoomId && nextQrPreview && (
+              <div className="mb-2 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2">
+                <span className="text-green-600 text-sm">รหัสถัดไป:</span>
+                <span className="font-mono font-bold text-green-800 text-sm">{nextQrPreview}</span>
+                <span className="text-xs text-green-600">(เว้นว่างเพื่อใช้รหัสนี้)</span>
+              </div>
+            )}
+            {selectedRoomId && qrWarning && (
+              <div className="mb-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2">
+                <p className="text-xs text-yellow-800">⚠️ {qrWarning}</p>
+              </div>
+            )}
+
+            <input
+              type="text"
+              name="serialNo"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+              placeholder={nextQrPreview ? `เว้นว่าง = ${nextQrPreview}` : 'เว้นว่าง = ระบบสร้างให้อัตโนมัติ'}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              ถ้าเว้นว่าง ระบบจะสร้าง QR Code ให้อัตโนมัติตาม pattern ของสถานที่
+            </p>
+          </div>
 
           {assetType === 'AIR_CONDITIONER' && (
             <div>

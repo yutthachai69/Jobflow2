@@ -42,6 +42,20 @@ interface Asset {
   id: string
   qrCode: string
   btu: number | null
+  /** จาก Prisma — ใช้แสดงประเภท (แอร์ / พัดลม / อื่นๆ) */
+  assetType?: string
+  machineType?: string | null
+}
+
+function assetKindLabel(asset: Asset): string {
+  const t = asset.assetType
+  if (t === 'EXHAUST_DUCT' || t === 'EXHAUST_FAN') return 'พัดลม / ระบายอากาศ'
+  if (t === 'FRESH_AIR') return 'พัดลมอากาศบริสุทธิ์'
+  if (t === 'AIR_CONDITIONER') {
+    return 'เครื่องปรับอากาศ'
+  }
+  if (t === 'REFRIGERANT' || t === 'SPARE_PART' || t === 'TOOL') return 'อุปกรณ์อื่น'
+  return t ? String(t) : 'ทรัพย์สิน'
 }
 
 interface Prefill {
@@ -62,11 +76,13 @@ interface Props {
   sites: Site[]
   technicians: Technician[]
   prefill?: Prefill | null
+  onSubmit?: (formData: FormData) => Promise<void>
+  isSubmitting?: boolean
 }
 
 type SelectionStage = 'site' | 'building' | 'floor' | 'room' | 'done'
 
-export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
+export default function WorkOrderForm({ sites, technicians, prefill, onSubmit, isSubmitting: externalIsSubmitting }: Props) {
   const router = useRouter()
   const [selectedSiteId, setSelectedSiteId] = useState<string>('')
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('')
@@ -282,7 +298,7 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
     } else {
       // PM/CM: ต้องเลือก asset อย่างน้อย 1
       if (assetIds.length === 0) {
-        newErrors.assetIds = 'กรุณาเลือกเครื่องปรับอากาศอย่างน้อย 1 เครื่อง'
+        newErrors.assetIds = 'กรุณาเลือกทรัพย์สินอย่างน้อย 1 รายการ'
       }
     }
 
@@ -321,7 +337,16 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
       formData.set('roomId', selectedRoomId)
     }
 
-    await createWorkOrder(formData)
+    try {
+      if (onSubmit) {
+        await onSubmit(formData)
+      } else {
+        await createWorkOrder(formData)
+      }
+    } finally {
+      // Keep button/loading state in sync when creation is blocked (e.g. duplicate PM)
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -779,8 +804,8 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
           <div data-error={errors.assetIds ? 'true' : undefined}>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               <span className="flex items-center gap-2">
-                เลือกเครื่องปรับอากาศ <span className="text-red-500">*</span>
-                <Tooltip content="เลือกเครื่องปรับอากาศที่ต้องการบำรุงรักษาในใบสั่งงานนี้ (เลือกได้หลายเครื่อง)">
+                เลือกทรัพย์สินในใบงาน <span className="text-red-500">*</span>
+                <Tooltip content="แสดงทรัพย์สินที่ active ในห้อง/ชั้นนี้ตามข้อมูลในระบบ — ทั้งแอร์และพัดลม/ระบายอากาศ (ถ้ามีใน DB) หากชีทมีแต่หน้านี้ไม่ขึ้น แปลว่ายังไม่ได้นำเข้าทรัพย์สินนั้นในห้องนี้">
                   <span className="text-gray-400 hover:text-gray-600 cursor-help text-xs">ℹ️</span>
                 </Tooltip>
               </span>
@@ -789,29 +814,29 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
             {!selectedSiteId ? (
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
                 <p className="text-gray-600 font-medium mb-2">กรุณาเลือกสถานที่ก่อน</p>
-                <p className="text-sm text-gray-500">หลังจากเลือกสถานที่ อาคาร และชั้นแล้ว จะแสดงเครื่องปรับอากาศ</p>
+                <p className="text-sm text-gray-500">หลังจากเลือกสถานที่ อาคาร และชั้นแล้ว จะแสดงทรัพย์สินในชั้นนั้น</p>
               </div>
             ) : !selectedBuildingId ? (
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
                 <p className="text-gray-600 font-medium mb-2">กรุณาเลือกอาคารก่อน</p>
-                <p className="text-sm text-gray-500">หลังจากเลือกอาคารและชั้นแล้ว จะแสดงเครื่องปรับอากาศ</p>
+                <p className="text-sm text-gray-500">หลังจากเลือกอาคารและชั้นแล้ว จะแสดงทรัพย์สิน</p>
               </div>
             ) : !selectedFloorId ? (
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
                 <p className="text-gray-600 font-medium mb-2">กรุณาเลือกชั้นก่อน</p>
-                <p className="text-sm text-gray-500">หลังจากเลือกชั้นแล้ว จะแสดงเครื่องปรับอากาศในชั้นนั้น</p>
+                <p className="text-sm text-gray-500">หลังจากเลือกชั้นแล้ว จะแสดงทรัพย์สินในชั้นนั้น</p>
               </div>
             ) : filteredAssets.length === 0 ? (
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
                 <p className="text-gray-600 font-medium mb-2">
                   {selectedRoomId
-                    ? 'ไม่พบเครื่องปรับอากาศในห้องนี้'
-                    : 'ไม่พบเครื่องปรับอากาศในชั้นนี้'}
+                    ? 'ไม่พบทรัพย์สินในห้องนี้'
+                    : 'ไม่พบทรัพย์สินในชั้นนี้'}
                 </p>
                 <p className="text-sm text-gray-500">
                   {selectedRoomId
-                    ? 'ห้องนี้ยังไม่มีเครื่องปรับอากาศ'
-                    : 'ชั้นนี้ยังไม่มีเครื่องปรับอากาศ'}
+                    ? 'ห้องนี้ยังไม่มีทรัพย์สิน active ในระบบ หรือยังไม่ได้นำเข้าพัดลม/อุปกรณ์ตามชีท'
+                    : 'ชั้นนี้ยังไม่มีทรัพย์สิน active ในระบบ'}
                 </p>
               </div>
             ) : (
@@ -819,7 +844,7 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-3">
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span>
-                      พบเครื่องปรับอากาศทั้งหมด <span className="font-bold text-blue-700">{filteredAssets.length}</span> เครื่อง
+                      พบทรัพย์สินทั้งหมด <span className="font-bold text-blue-700">{filteredAssets.length}</span> รายการ
                       {selectedRoomId ? ` ในห้อง ${selectedRoom?.name}` : ` ในชั้น ${selectedFloor?.name}`}
                     </span>
                   </div>
@@ -839,12 +864,15 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
                         className="mt-1.5 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <div className="font-semibold text-gray-900">
                             {item.asset.qrCode}
                           </div>
                           <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
                             {item.asset.qrCode}
+                          </span>
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                            {assetKindLabel(item.asset)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600 mb-1 flex-wrap">
@@ -867,7 +895,7 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-                  <span>เลือกเครื่องที่ต้องการบำรุงรักษาในใบสั่งงานนี้ (เลือกได้หลายเครื่อง)</span>
+                  <span>เลือกทรัพย์สินที่ต้องการใส่ในใบงานนี้ (เลือกได้หลายรายการ) — รายการตามข้อมูลในระบบเท่านั้น</span>
                 </p>
               </>
             )}
@@ -887,11 +915,11 @@ export default function WorkOrderForm({ sites, technicians, prefill }: Props) {
         <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
           <button
             type="submit"
-            disabled={isSubmitting || !selectedSiteId || !selectedBuildingId || !selectedFloorId || (jobType !== 'INSTALL' && filteredAssets.length === 0)}
-            aria-label="สร้างใบสั่งงาน"
+            disabled={isSubmitting || externalIsSubmitting || !selectedSiteId || !selectedBuildingId || !selectedFloorId || (jobType !== 'INSTALL' && filteredAssets.length === 0)}
+            aria-label="Create Work Order"
             className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 font-semibold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
           >
-            <span>{isSubmitting ? 'กำลังสร้าง...' : 'สร้างใบสั่งงาน'}</span>
+            <span>{isSubmitting || externalIsSubmitting ? 'Creating...' : 'Create Work Order'}</span>
           </button>
           <button
             type="button"

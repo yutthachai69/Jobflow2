@@ -178,12 +178,14 @@ export async function createSiteWithStructure(formData: FormData) {
 
     const clientId = sanitizeString(formData.get('clientId') as string)
     const siteName = sanitizeString(formData.get('name') as string)
+    const siteCode = sanitizeString(formData.get('siteCode') as string)?.toUpperCase() || null
     const address = sanitizeString(formData.get('address') as string)
     const latitudeStr = formData.get('latitude') as string
     const longitudeStr = formData.get('longitude') as string
     const latitude = latitudeStr ? parseFloat(latitudeStr) : null
     const longitude = longitudeStr ? parseFloat(longitudeStr) : null
     const buildingName = sanitizeString(formData.get('buildingName') as string)
+    const buildingCode = sanitizeString(formData.get('buildingCode') as string)?.toUpperCase() || null
     const floorName = sanitizeString(formData.get('floorName') as string)
     const roomName = sanitizeString(formData.get('roomName') as string)
 
@@ -198,13 +200,14 @@ export async function createSiteWithStructure(formData: FormData) {
         data: {
           clientId,
           name: siteName,
+          siteCode,
           address: address || null,
           latitude,
           longitude,
         },
       })
       const building = await tx.building.create({
-        data: { siteId: site.id, name: buildingName },
+        data: { siteId: site.id, name: buildingName, buildingCode },
       })
       const floor = await tx.floor.create({
         data: { buildingId: building.id, name: floorName },
@@ -235,6 +238,7 @@ export async function updateSite(formData: FormData) {
     const siteId = sanitizeString(formData.get('siteId') as string)
     const clientId = sanitizeString(formData.get('clientId') as string)
     const name = sanitizeString(formData.get('name') as string)
+    const siteCode = sanitizeString(formData.get('siteCode') as string)?.toUpperCase() || null
     const address = sanitizeString(formData.get('address') as string)
     const latitudeStr = formData.get('latitude') as string
     const longitudeStr = formData.get('longitude') as string
@@ -263,6 +267,7 @@ export async function updateSite(formData: FormData) {
       data: {
         clientId,
         name,
+        siteCode,
         address: address || null,
         latitude,
         longitude,
@@ -340,6 +345,7 @@ export async function createBuilding(formData: FormData) {
 
     const siteId = sanitizeString(formData.get('siteId') as string)
     const name = sanitizeString(formData.get('name') as string)
+    const buildingCode = sanitizeString(formData.get('buildingCode') as string)?.toUpperCase() || null
 
     if (!siteId) {
       throw new Error('Site ID is required')
@@ -352,6 +358,7 @@ export async function createBuilding(formData: FormData) {
       data: {
         siteId,
         name,
+        buildingCode,
       },
     })
 
@@ -375,6 +382,7 @@ export async function updateBuilding(formData: FormData) {
     const buildingId = sanitizeString(formData.get('buildingId') as string)
     const siteId = sanitizeString(formData.get('siteId') as string)
     const name = sanitizeString(formData.get('name') as string)
+    const buildingCode = sanitizeString(formData.get('buildingCode') as string)?.toUpperCase() || null
 
     if (!buildingId) {
       throw new Error('Building ID is required')
@@ -398,6 +406,7 @@ export async function updateBuilding(formData: FormData) {
       data: {
         siteId,
         name,
+        buildingCode,
       },
     })
 

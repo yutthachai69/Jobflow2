@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { migrateExhaustAssetCodes } from '@/app/actions/assets'
+// migration function removed — exhaust codes now use per-site pattern
 
 export default function MigrateExhaustBanner({
   needMigrateCount,
@@ -21,7 +21,7 @@ export default function MigrateExhaustBanner({
     setLoading(true)
     setMessage(null)
     try {
-      const result = await migrateExhaustAssetCodes()
+      const result = { updated: 0, error: 'Migration function removed' }
       if (result.error) {
         setMessage({ type: 'error', text: result.error })
       } else {

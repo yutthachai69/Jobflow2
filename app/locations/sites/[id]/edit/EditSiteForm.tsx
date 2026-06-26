@@ -27,6 +27,7 @@ interface Site {
   address: string | null
   latitude: number | null
   longitude: number | null
+  siteCode: string | null
   clientId: string
   client: {
     id: string
@@ -43,6 +44,7 @@ export default function EditSiteForm({ site, clients }: Props) {
   const router = useRouter()
   const [selectedClientId, setSelectedClientId] = useState<string>(site.clientId)
   const [name, setName] = useState<string>(site.name)
+  const [siteCode, setSiteCode] = useState<string>(site.siteCode || '')
   const [address, setAddress] = useState<string>(site.address || '')
   const [latitude, setLatitude] = useState<number | null>(site.latitude)
   const [longitude, setLongitude] = useState<number | null>(site.longitude)
@@ -75,6 +77,7 @@ export default function EditSiteForm({ site, clients }: Props) {
     formData.set('siteId', site.id)
     formData.set('clientId', selectedClientId)
     formData.set('name', name)
+    formData.set('siteCode', siteCode)
     formData.set('address', address)
     if (latitude != null) formData.set('latitude', latitude.toString())
     if (longitude != null) formData.set('longitude', longitude.toString())
@@ -84,7 +87,8 @@ export default function EditSiteForm({ site, clients }: Props) {
       toast.success('อัพเดทข้อมูลสถานที่เรียบร้อยแล้ว')
       router.push('/locations')
       router.refresh()
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'NEXT_REDIRECT' || error?.digest?.includes?.('NEXT_REDIRECT')) throw error
       console.error('Error updating site:', error)
       const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการอัพเดท'
       toast.error(errorMessage)
@@ -151,6 +155,22 @@ export default function EditSiteForm({ site, clients }: Props) {
               <span>{errors.name}</span>
             </div>
           )}
+        </div>
+
+        {/* Site Code */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Site Code (รหัสสถานที่)
+          </label>
+          <input
+            type="text"
+            name="siteCode"
+            value={siteCode}
+            onChange={(e) => setSiteCode(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm hover:bg-white text-gray-900 placeholder:text-gray-400"
+            placeholder="เช่น KP, PTS, A, MAIN (2-4 ตัวอักษร)"
+          />
+          <p className="mt-2 text-xs text-gray-500">ใช้ในการสร้าง QR Code อัตโนมัติ (เช่น AC-KP-A-F1-001)</p>
         </div>
 
         {/* Address */}

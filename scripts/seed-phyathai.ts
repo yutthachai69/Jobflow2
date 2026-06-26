@@ -58,11 +58,10 @@ async function main() {
     let r2 = await prisma.room.findFirst({ where: { floorId: f2.id, name: 'พื้นที่รวม' } })
     if (!r2) r2 = await prisma.room.create({ data: { name: 'พื้นที่รวม', floorId: f2.id } })
 
-    // Helper function to create assets in batches
+    // Helper function to create AC assets in batches
     async function createAssets(roomId: string, prefix: string, machineType: MachineType, count: number) {
         console.log(`Creating ${count} ${machineType} for ${prefix}...`)
         const assets = []
-        // Add timestamp to ensure unique QR codes if script is run multiple times
         const uniqueId = Date.now().toString().slice(-4)
 
         for (let i = 1; i <= count; i++) {
@@ -79,11 +78,29 @@ async function main() {
             })
         }
 
-        // Prisma createMany is efficient for bulk inserts
-        await prisma.asset.createMany({
-            data: assets,
-            skipDuplicates: true // Just in case
-        })
+        await prisma.asset.createMany({ data: assets })
+    }
+
+    // Helper function to create exhaust assets in batches
+    async function createExhaustAssets(roomId: string, prefix: string, count: number) {
+        console.log(`Creating ${count} EXHAUST_FAN for ${prefix}...`)
+        const assets = []
+        const uniqueId = Date.now().toString().slice(-4)
+
+        for (let i = 1; i <= count; i++) {
+            const code = `${prefix}-ExF-${uniqueId}-${i.toString().padStart(3, '0')}`
+            assets.push({
+                roomId,
+                qrCode: code,
+                assetType: AssetType.EXHAUST_FAN,
+                brand: 'Default Brand',
+                model: 'Exhaust Fan',
+                serialNo: code,
+                status: 'ACTIVE' as const
+            })
+        }
+
+        await prisma.asset.createMany({ data: assets })
     }
 
     // Site 1 Data: AHU 30, FCU 96, Split Type 25, Exhaust 151
@@ -91,14 +108,14 @@ async function main() {
     await createAssets(r1.id, 'PT1', MachineType.AHU, 30)
     await createAssets(r1.id, 'PT1', MachineType.FCU, 96)
     await createAssets(r1.id, 'PT1', MachineType.SPLIT_TYPE, 25)
-    await createAssets(r1.id, 'PT1', MachineType.EXHAUST, 151)
+    await createExhaustAssets(r1.id, 'PT1', 151)
 
     // Site 2 Data: AHU 2, FCU 82, Split Type 1, Exhaust 113
     console.log('--- Setting up Site 2 Assets ---')
     await createAssets(r2.id, 'PT2', MachineType.AHU, 2)
     await createAssets(r2.id, 'PT2', MachineType.FCU, 82)
     await createAssets(r2.id, 'PT2', MachineType.SPLIT_TYPE, 1)
-    await createAssets(r2.id, 'PT2', MachineType.EXHAUST, 113)
+    await createExhaustAssets(r2.id, 'PT2', 113)
 
     console.log('✅ Seeding completed successfully!')
 

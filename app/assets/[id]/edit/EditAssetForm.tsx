@@ -182,8 +182,9 @@ export default function EditAssetForm({ asset, sites }: Props) {
             className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
           >
             <option value="AIR_CONDITIONER">เครื่องปรับอากาศ</option>
-            <option value="EXHAUST">พัดลมดูดอากาศ (Exhaust)</option>
-            <option value="OTHER">อื่นๆ</option>
+            <option value="EXHAUST_DUCT">ท่อดูดอากาศ (Exhaust Duct)</option>
+            <option value="EXHAUST_FAN">พัดลมฝังฝ้า/ติดผนัง (Exhaust Fan)</option>
+            <option value="FRESH_AIR">เติมอากาศ (Fresh Air)</option>
           </select>
         </div>
 
@@ -203,7 +204,6 @@ export default function EditAssetForm({ asset, sites }: Props) {
               <option value="FCU">เครื่องเป่าลมเย็น (FCU)</option>
               <option value="AHU">เครื่องส่งลมเย็นขนาดใหญ่ (AHU)</option>
               <option value="VRF">เครื่องปรับอากาศแบบ VRF</option>
-              <option value="OTHER">อื่นๆ</option>
             </select>
             <p className="mt-2 text-xs text-gray-500">
               เลือกชนิดของแอร์เพื่อใช้จัดกลุ่มในรายงาน Dashboard
